@@ -1,0 +1,100 @@
+# Solana Security Patterns — by Jelleo
+# https://github.com/Copenhagen0x/solana-security-guidance
+# Audits + bounty wins: https://jelleo.com
+#
+# Deterministic per-edit patterns drawn from real-world Solana bounty findings.
+# Companion to .claude/claude-security-guidance.md (semantic rules for the
+# model-backed reviews).
+#
+# Each `reminder` is what your IDE shows when the pattern fires. Reminders
+# start with "Jelleo SOL-NNN:" so the rule provenance is visible.
+
+patterns:
+  - rule_name: sol_001_unauth_now_slot
+    regex: "fn\\s+\\w+\\([^)]*now_slot\\s*:\\s*u64"
+    paths: ["**/*.rs"]
+    exclude_paths: ["**/tests/**", "**/test/**"]
+    reminder: "Jelleo SOL-001: handler accepts `now_slot` from instruction data. Authenticate against Clock::get()?.slot before use — caller-controlled clocks enable permanent DoS of permissionless cranks. See: github.com/Copenhagen0x/solana-security-guidance#sol-001 (Bounty 6 H2, percolator-prog#107)."
+
+  - rule_name: sol_002_cross_market_counter
+    regex: "pnl_pos_bound_tot|cross_market_counter|insurance_fund_total|shared_pool_total"
+    paths: ["**/*.rs"]
+    exclude_paths: ["**/tests/**"]
+    reminder: "Jelleo SOL-002: cross-market aggregate counter. Verify EVERY write to this field is gated by per-market authorization — permissionless cross-market inflation enables insurance-fund drain (the bug class 0x-SquidSol used to win bounty 5 primary). See: github.com/Copenhagen0x/solana-security-guidance#sol-002."
+
+  - rule_name: sol_005_realloc_no_guard
+    substrings: [".realloc("]
+    paths: ["**/*.rs"]
+    exclude_paths: ["**/tests/**"]
+    reminder: "Jelleo SOL-005: AccountInfo.realloc() called. Verify (1) account owner == program_id, (2) new size is bounded, (3) rent-exemption maintained after resize. See: github.com/Copenhagen0x/solana-security-guidance#sol-005."
+
+  - rule_name: sol_006_raw_account_info
+    regex: "AccountInfo<['_]?\\s*'?info"
+    paths: ["**/*.rs"]
+    exclude_paths: ["**/tests/**"]
+    reminder: "Jelleo SOL-006: raw `AccountInfo` (no Signer<>/Account<> type). If this account represents a privileged caller, verify `account.is_signer == true` before mutating state. Prefer Anchor's `Signer<>` typed account for compile-time enforcement. See: github.com/Copenhagen0x/solana-security-guidance#sol-006."
+
+  - rule_name: sol_007_raw_data_borrow
+    regex: "&\\*\\w+\\.data\\.borrow\\(\\)"
+    paths: ["**/*.rs"]
+    exclude_paths: ["**/tests/**"]
+    reminder: "Jelleo SOL-007: raw `&*account.data.borrow()` access. Verify `account.owner == program_id` BEFORE deserializing — attacker can pass a same-length account from a different program whose layout matches. See: github.com/Copenhagen0x/solana-security-guidance#sol-007."
+
+  - rule_name: sol_009_invoke_signed
+    regex: "invoke_signed\\s*\\("
+    paths: ["**/*.rs"]
+    exclude_paths: ["**/tests/**"]
+    reminder: "Jelleo SOL-009: `invoke_signed` CPI. Verify the CALLER has authority for this operation BEFORE the CPI — `invoke_signed` just signs with a PDA, it doesn't validate upstream authority. See: github.com/Copenhagen0x/solana-security-guidance#sol-009."
+
+  - rule_name: sol_010_init_if_needed
+    substrings: ["init_if_needed"]
+    paths: ["**/*.rs"]
+    exclude_paths: ["**/tests/**"]
+    reminder: "Jelleo SOL-010: init_if_needed enables reinit attacks. If the account holds value or grants authority, a second call can drop balances. Use plain `init` with explicit existence checks unless reinit is truly required. See: github.com/Copenhagen0x/solana-security-guidance#sol-010."
+
+  - rule_name: sol_011_close_attr
+    regex: "#\\[account\\([^)]*close\\s*="
+    paths: ["**/*.rs"]
+    exclude_paths: ["**/tests/**"]
+    reminder: "Jelleo SOL-011: `#[account(close = ...)]`. Verify (1) account is fully drained before close, (2) lamports go to a controlled destination, (3) any token accounts are closed via Token program, not just zeroed. See: github.com/Copenhagen0x/solana-security-guidance#sol-011."
+
+  - rule_name: sol_013_hardcoded_token_program
+    substrings: ["TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"]
+    paths: ["**/*.rs"]
+    reminder: "Jelleo SOL-013: hardcoded SPL Token program ID. Use `anchor_spl::token::ID` (or `anchor_spl::token_2022::ID` for Token-2022 accounts) so the typed account ensures the right program is invoked. See: github.com/Copenhagen0x/solana-security-guidance#sol-013."
+
+  - rule_name: sol_014_unchecked_arithmetic
+    regex: "(?:u64|i64|u128|i128)\\s*=\\s*\\w+\\s*[+*]\\s*\\w+\\s*[;,)]"
+    paths: ["**/*.rs"]
+    exclude_paths: ["**/tests/**"]
+    reminder: "Jelleo SOL-014: integer arithmetic without checked_*. Debug panics on overflow; release wraps silently — silent wrap is the financial bug. Use `a.checked_add(b).ok_or(ErrorCode::Overflow)?`. See: github.com/Copenhagen0x/solana-security-guidance#sol-014."
+
+  - rule_name: sol_016_bump_field_read
+    regex: "\\.bump\\s*[;,)}]"
+    paths: ["**/*.rs"]
+    exclude_paths: ["**/tests/**", "**/state*.rs", "**/state/**"]
+    reminder: "Jelleo SOL-016: reading a stored `.bump` field. Verify the bump matches `Pubkey::find_program_address(seeds, &program_id).1` (canonical bump) on the FIRST read — subsequent reads of the same bump are OK. Without this, an attacker can pre-create a PDA with a non-canonical bump. See: github.com/Copenhagen0x/solana-security-guidance#sol-016."
+
+  - rule_name: sol_017_unsafe_transmute
+    substrings: ["unsafe { transmute", "unsafe{transmute"]
+    paths: ["**/*.rs"]
+    exclude_paths: ["**/tests/**"]
+    reminder: "Jelleo SOL-017: `unsafe transmute` on account data. Use bytemuck/anchor typed deserialize with explicit length + discriminator checks. transmute skips both. See: github.com/Copenhagen0x/solana-security-guidance#sol-017."
+
+  - rule_name: sol_018_hardcoded_system_program
+    substrings: ["\"11111111111111111111111111111111\""]
+    paths: ["**/*.rs"]
+    exclude_paths: ["**/tests/**"]
+    reminder: "Jelleo SOL-018: hardcoded System Program ID literal (32 ones in quotes — the canonical empty pubkey). Use `solana_program::system_program::ID` so the comparison is type-safe and a future renaming/typo doesn't silently break verification. See: github.com/Copenhagen0x/solana-security-guidance#sol-018."
+
+  - rule_name: sol_019_try_deserialize_unchecked
+    substrings: ["try_deserialize_unchecked"]
+    paths: ["**/*.rs"]
+    exclude_paths: ["**/tests/**"]
+    reminder: "Jelleo SOL-019: `try_deserialize_unchecked` skips the 8-byte discriminator check. An attacker can pass a different account type with matching length. Use `try_deserialize` (with discriminator check) unless you've already verified the discriminator manually. See: github.com/Copenhagen0x/solana-security-guidance#sol-019."
+
+  - rule_name: sol_020_set_authority
+    regex: "\\b(SetAuthority\\b|set_authority\\s*\\()"
+    paths: ["**/*.rs"]
+    exclude_paths: ["**/tests/**"]
+    reminder: "Jelleo SOL-020: SetAuthority CPI. Verify the CURRENT authority matches the expected key BEFORE invoking — without this check, an attacker can hijack ownership of any token account that flows through this handler. See: github.com/Copenhagen0x/solana-security-guidance#sol-020."

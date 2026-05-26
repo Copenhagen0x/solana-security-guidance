@@ -1,0 +1,25 @@
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.iml
+
+# Python (used by validation scripts in CI)
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# Local Claude Code overrides — per Anthropic's spec, ".local.md" is
+# intended to be gitignored so individual devs can add personal rules
+# without committing them to the team-wide ruleset.
+.claude/claude-security-guidance.local.md
+.claude/security-patterns.local.yaml
+.claude/security-patterns.local.yml
+.claude/security-patterns.local.json

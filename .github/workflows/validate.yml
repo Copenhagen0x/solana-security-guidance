@@ -1,0 +1,84 @@
+name: validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    name: Validate guidance files
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Validate claude-security-guidance.md size cap (8 KB per Anthropic spec)
+        run: |
+          SIZE=$(wc -c < claude-security-guidance.md)
+          echo "claude-security-guidance.md: $SIZE bytes / 8192 cap"
+          if [ "$SIZE" -gt 8192 ]; then
+            echo "::error::claude-security-guidance.md exceeds 8192 byte cap ($SIZE bytes)"
+            exit 1
+          fi
+
+      - name: Validate security-patterns.yaml
+        run: |
+          python <<'PYEOF'
+          import re, sys, yaml
+          with open("security-patterns.yaml") as f:
+              data = yaml.safe_load(f)
+          patterns = data.get("patterns", [])
+          assert len(patterns) <= 50, f"too many rules: {len(patterns)} > 50 (Anthropic plugin cap)"
+          print(f"rule count: {len(patterns)} / 50 cap")
+          errors = []
+          for r in patterns:
+              name = r.get("rule_name", "?")
+              if not r.get("rule_name"):
+                  errors.append(f"rule missing rule_name: {r}")
+              if not r.get("reminder"):
+                  errors.append(f"{name}: missing reminder")
+              else:
+                  rb = len(r["reminder"].encode("utf-8"))
+                  if rb > 1024:
+                      errors.append(f"{name}: reminder is {rb} bytes (>1024 cap)")
+              if "regex" in r:
+                  try:
+                      re.compile(r["regex"])
+                  except re.error as e:
+                      errors.append(f"{name}: invalid regex: {e}")
+              if "regex" not in r and "substrings" not in r:
+                  errors.append(f"{name}: must have either regex or substrings")
+          if errors:
+              print("::error::validation failures:")
+              for e in errors:
+                  print(f"  - {e}")
+              sys.exit(1)
+          print(f"all {len(patterns)} rules valid")
+          PYEOF
+
+      - name: Verify all YAML rule IDs have matching MD sections
+        run: |
+          python <<'PYEOF'
+          import re
+          with open("security-patterns.yaml") as f:
+              yaml_text = f.read()
+          with open("claude-security-guidance.md") as f:
+              md_text = f.read()
+          yaml_ids = sorted(set(re.findall(r"sol_(\d{3})_", yaml_text)))
+          md_ids = sorted(set(re.findall(r"### SOL-(\d{3})", md_text)))
+          missing = [x for x in yaml_ids if x not in md_ids]
+          if missing:
+              print(f"::error::YAML rules missing MD sections: {missing}")
+              raise SystemExit(1)
+          print(f"YAML/MD cross-reference: all {len(yaml_ids)} YAML rule IDs have MD sections")
+          PYEOF
