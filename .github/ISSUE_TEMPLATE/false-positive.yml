@@ -1,0 +1,88 @@
+name: False positive
+description: A Jelleo rule fired on safe code
+title: "[FP] SOL-NNN on <filename or pattern>"
+labels: ["false-positive", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. False positives are how we tighten the ruleset. The more concrete your report, the faster we can fix it.
+
+  - type: dropdown
+    id: rule
+    attributes:
+      label: Which rule fired?
+      description: Pick the SOL-NNN ID
+      options:
+        - "SOL-001 · Unauthenticated now_slot"
+        - "SOL-002 · Cross-market state asymmetry"
+        - "SOL-005 · Anchor realloc without checks"
+        - "SOL-006 · Missing signer check"
+        - "SOL-007 · Missing owner verification"
+        - "SOL-009 · CPI without authority check"
+        - "SOL-010 · Reinit attack (init_if_needed)"
+        - "SOL-011 · Lamport drain via close"
+        - "SOL-013 · Token Program ID confusion"
+        - "SOL-014 · Unchecked integer arithmetic"
+        - "SOL-016 · Bump seed unvalidated"
+        - "SOL-017 · Raw AccountInfo / unsafe transmute"
+        - "SOL-018 · Hardcoded System Program ID"
+        - "SOL-019 · try_deserialize_unchecked"
+        - "SOL-020 · SetAuthority without verification"
+        - Other / not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: code
+    attributes:
+      label: Code that triggered the flag (sanitized if proprietary)
+      description: Paste the lines (or a minimal repro) that the rule fired on. Strip anything sensitive.
+      render: rust
+    validations:
+      required: true
+
+  - type: textarea
+    id: reminder-text
+    attributes:
+      label: What the plugin said
+      description: Paste the reminder text the plugin appended to Claude's context.
+    validations:
+      required: true
+
+  - type: textarea
+    id: why-safe
+    attributes:
+      label: Why this code is actually safe
+      description: Explain why the rule is wrong in this context. What invariant makes the flagged pattern OK here?
+    validations:
+      required: true
+
+  - type: input
+    id: regex-suggestion
+    attributes:
+      label: Suggested regex tightening (optional)
+      description: If you can see how to tighten the pattern to avoid this false positive, propose it.
+      placeholder: e.g. add exclude_paths or a stricter character class
+
+  - type: input
+    id: ruleset-version
+    attributes:
+      label: Ruleset version
+      description: Which Jelleo guidance version are you on? Check the first line of .claude/claude-security-guidance.md or the v1.x.x tag you installed.
+      placeholder: e.g. v1.0.0
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched [existing false-positive issues](https://github.com/Copenhagen0x/solana-security-guidance/issues?q=is%3Aissue+label%3Afalse-positive) for duplicates
+          required: true
+        - label: The code I'm pasting is sanitized / OK to share publicly
+          required: true

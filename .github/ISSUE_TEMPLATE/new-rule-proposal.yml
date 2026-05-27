@@ -1,0 +1,104 @@
+name: New rule proposal
+description: Propose a new SOL-NNN rule drawn from a disclosed Solana finding
+title: "[SOL-???] <one-line bug class>"
+labels: ["new-rule", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing a new rule. The strongest proposals trace back to a real, disclosed Solana bug. See [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md) for the full process.
+
+  - type: input
+    id: rule-name
+    attributes:
+      label: Proposed rule name (one-line)
+      description: 'Format: "<noun> <mode>" — e.g. "unauthenticated now_slot", "missing signer check"'
+      placeholder: e.g. unauthenticated now_slot
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Bug-class category
+      description: Pick the category that best fits
+      options:
+        - Trust boundary (caller-controlled value flowing into trusted state)
+        - Authority (signer/owner/PDA verification gaps)
+        - State integrity (cross-account leaks, lifecycle stage skips)
+        - Time / sequence (slot, clock, lifecycle fields)
+        - Anchor framework (constraint=, has_one, init_if_needed)
+        - Token program (Token vs Token-2022, SetAuthority)
+        - Math (overflow, signed/unsigned, scaling)
+        - CPI (authority verification, program ID confusion)
+        - Account closure (lamport drain, residual data)
+        - Other (please describe in "additional context")
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What the rule catches
+      description: 1-2 sentences. What goes wrong, what's the consequence.
+      placeholder: e.g. Handler accepts now_slot from instruction data. Attacker passes u64::MAX, market becomes stuck forever.
+    validations:
+      required: true
+
+  - type: textarea
+    id: source
+    attributes:
+      label: Source — link to disclosed finding
+      description: Link to a published bounty disclosure, GitHub issue, audit report, or other public artifact. If the bug is yours, link the disclosure once it's public.
+      placeholder: e.g. https://github.com/aeyakovenko/percolator-prog/issues/107
+    validations:
+      required: true
+
+  - type: textarea
+    id: bad-code
+    attributes:
+      label: Bad code example (Rust)
+      description: Minimal vulnerable snippet. Anchor or native Solana, ~10-25 lines.
+      render: rust
+    validations:
+      required: true
+
+  - type: textarea
+    id: good-code
+    attributes:
+      label: Good code example (Rust)
+      description: Same code with the fix applied. Should be safe to ship.
+      render: rust
+    validations:
+      required: true
+
+  - type: input
+    id: suggested-regex
+    attributes:
+      label: Suggested regex (optional)
+      description: If the bug has a clean textual signature, propose a Python regex. Otherwise we'll keep this rule markdown-only.
+      placeholder: e.g. fn\s+\w+\([^)]*now_slot\s*:\s*u64
+
+  - type: textarea
+    id: qa
+    attributes:
+      label: QA notes
+      description: Did you test the regex against a real codebase? Match count? False positive rate?
+      placeholder: e.g. Tested against percolator-prog (~10k LOC). 3 matches, 0 false positives.
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched [existing issues](https://github.com/Copenhagen0x/solana-security-guidance/issues?q=is%3Aissue) for duplicates
+          required: true
+        - label: The finding I'm citing is publicly disclosed (or I have permission to disclose it here)
+          required: true
+        - label: I agree my contribution will be licensed under MIT (per [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md))
+          required: true
