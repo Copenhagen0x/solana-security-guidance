@@ -14,19 +14,19 @@ patterns:
     regex: "fn\\s+\\w+\\([^)]*now_slot\\s*:\\s*u64"
     paths: ["**/*.rs"]
     exclude_paths: ["**/tests/**", "**/test/**"]
-    reminder: "Jelleo SOL-001: handler accepts `now_slot` from instruction data. Authenticate against Clock::get()?.slot before use — caller-controlled clocks enable permanent DoS of permissionless cranks. See: github.com/Copenhagen0x/solana-security-guidance#sol-001 (Bounty 6 H2, percolator-prog#107)."
+    reminder: "Jelleo SOL-001: handler accepts `now_slot` from instruction data. Authenticate against Clock::get()?.slot before use — caller-controlled clocks enable permanent DoS of permissionless cranks. Two confirmed-exploitable bounty wins in this class: percolator-prog#107 (ACTIVATE, fixed 6512fa1) + percolator-cli#78 F33 (RETIRE, fixed 3fd9b1d). See: github.com/Copenhagen0x/solana-security-guidance#sol-001."
 
   - rule_name: sol_002_cross_market_counter
     regex: "pnl_pos_bound_tot|cross_market_counter|insurance_fund_total|shared_pool_total"
     paths: ["**/*.rs"]
     exclude_paths: ["**/tests/**"]
-    reminder: "Jelleo SOL-002: cross-market aggregate counter. Verify EVERY write to this field is gated by per-market authorization — permissionless cross-market inflation enables insurance-fund drain (the bug class 0x-SquidSol used to win bounty 5 primary). See: github.com/Copenhagen0x/solana-security-guidance#sol-002."
+    reminder: "Jelleo SOL-002: cross-market aggregate counter. Verify EVERY write to this field is gated by per-market authorization — permissionless cross-market inflation enables insurance-fund drain. Documented public class (percolator-prog#104); not a Jelleo bounty win — included because the pattern is reproducible across perp-DEX programs. See: github.com/Copenhagen0x/solana-security-guidance#sol-002."
 
   - rule_name: sol_005_realloc_no_guard
     substrings: [".realloc("]
     paths: ["**/*.rs"]
     exclude_paths: ["**/tests/**"]
-    reminder: "Jelleo SOL-005: AccountInfo.realloc() called. Verify (1) account owner == program_id, (2) new size is bounded, (3) rent-exemption maintained after resize. See: github.com/Copenhagen0x/solana-security-guidance#sol-005."
+    reminder: "Jelleo SOL-005: AccountInfo.realloc() called. Verify (1) account owner == program_id, (2) new size is bounded, (3) rent-exemption maintained after resize. Latent pattern documented in our bounty 5 disclosure (percolator-cli#78 F12) — reachable when the per-program asset cap is lifted. See: github.com/Copenhagen0x/solana-security-guidance#sol-005."
 
   - rule_name: sol_006_raw_account_info
     regex: "AccountInfo<['_]?\\s*'?info"

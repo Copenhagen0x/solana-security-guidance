@@ -6,8 +6,8 @@
 
 [![CI](https://github.com/Copenhagen0x/solana-security-guidance/actions/workflows/validate.yml/badge.svg)](https://github.com/Copenhagen0x/solana-security-guidance/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](CHANGELOG.md)
-[![Powered by](https://img.shields.io/badge/powered_by-38_bounty_findings-orange)](https://jelleo.com/cycles)
+[![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)](CHANGELOG.md)
+[![Bounty wins](https://img.shields.io/badge/bounty_wins-2_confirmed_(SOL--001)-orange)](https://jelleo.com/cycles)
 
 Drop these two files into your Solana project's `.claude/` directory and your IDE will flag Solana-specific bugs while you code — caller-controlled clock values, cross-market state asymmetry, wrapper handlers that drift from engine logic, missing Anchor constraints, and 16 more bug classes drawn from real audits.
 
@@ -32,15 +32,15 @@ Done. Open a Solana program file in Claude Code and the plugin will catch issues
 
 ## What you get
 
-20 rules covering the dominant Solana program bug classes. The 5 headline rules trace to real published bounty findings; the remaining 15 cover the rest of the Solana attack surface (Anchor constraints, signer checks, PDA verification, CPI authority, lamport drains, etc.).
+20 rules covering the dominant Solana program bug classes. **SOL-001 covers two confirmed-exploitable bounty wins (the same caller-controlled `now_slot` class fixed in both the ACTIVATE and RETIRE branches of percolator).** The remaining 19 rules are drawn from documented Solana audit patterns — some from our published disclosures (with maintainer triage classifications noted in the Source column), some from public bug-class taxonomy.
 
 | Rule | Catches | Source |
 |---|---|---|
-| [SOL-001](claude-security-guidance.md#sol-001--unauthenticated-now_slot) | Unauthenticated `now_slot` / clock spoofing | Bounty 6 H2 ([percolator-prog#107](https://github.com/aeyakovenko/percolator-prog/issues/107)) |
-| [SOL-002](claude-security-guidance.md#sol-002--cross-market-state-asymmetry) | Cross-market state asymmetry → counter inflation | Bounty 5 primary class |
-| [SOL-003](claude-security-guidance.md#sol-003--wrapper-re-implements-engine) | Wrapper handler re-implements engine logic | Bounty 5 F1 ([percolator-cli#78](https://github.com/aeyakovenko/percolator-cli/issues/78)) |
-| [SOL-004](claude-security-guidance.md#sol-004--penaltyhealth-terms-omitted) | Health/penalty terms omitted from calc | Bounty 5 F2 (percolator-cli#78) |
-| [SOL-005](claude-security-guidance.md#sol-005--anchor-resize-without-checks) | Anchor `realloc()` without guards | Bounty 5 F12 |
+| [SOL-001](claude-security-guidance.md#sol-001--unauthenticated-now_slot) | Unauthenticated `now_slot` / clock spoofing | **Bounty wins (2):** [percolator-prog#107](https://github.com/aeyakovenko/percolator-prog/issues/107) ACTIVATE + [percolator-cli#78](https://github.com/aeyakovenko/percolator-cli/issues/78) F33 RETIRE |
+| [SOL-002](claude-security-guidance.md#sol-002--cross-market-state-asymmetry) | Cross-market state asymmetry → counter inflation | Documented public class ([percolator-prog#104](https://github.com/aeyakovenko/percolator-prog/issues/104)) — not our bounty |
+| [SOL-003](claude-security-guidance.md#sol-003--wrapper-re-implements-engine) | Wrapper handler re-implements engine logic | Pattern from our [#78](https://github.com/aeyakovenko/percolator-cli/issues/78) F1 — maintainer fixed in-flight, not bountied |
+| [SOL-004](claude-security-guidance.md#sol-004--penaltyhealth-terms-omitted) | Health/penalty terms omitted from calc | Pattern from our [#78](https://github.com/aeyakovenko/percolator-cli/issues/78) F2 — engine-side, separate disclosure pending |
+| [SOL-005](claude-security-guidance.md#sol-005--anchor-resize-without-checks) | Anchor `realloc()` without guards | Latent pattern from our [#78](https://github.com/aeyakovenko/percolator-cli/issues/78) F12 — reachable when 14-asset cap lifted |
 | [SOL-006](claude-security-guidance.md#sol-006--missing-signer-check) | Missing signer check on privileged handler | Generic Solana |
 | [SOL-007](claude-security-guidance.md#sol-007--missing-owner-verification) | Missing `account.owner == program_id` | Generic Solana |
 | [SOL-008](claude-security-guidance.md#sol-008--unverified-pda) | Unverified PDA derivation | Generic Solana |
@@ -57,15 +57,15 @@ Done. Open a Solana program file in Claude Code and the plugin will catch issues
 | [SOL-019](claude-security-guidance.md#sol-019--missing-discriminator-check) | Missing discriminator check on deserialize | Generic Solana |
 | [SOL-020](claude-security-guidance.md#sol-020--setauthority-without-verification) | `SetAuthority` without prior verification | Generic Solana |
 
-## Why these rules
+## Why these rules — honest provenance
 
-Each headline rule traces to a real bug we found and disclosed:
+We disclose exactly where each rule came from. Some are confirmed-exploitable bounty wins; some are documented patterns we surfaced but the maintainer classified differently in triage. We list both kinds because all of them are real Solana attack surfaces worth flagging — but we don't claim bounty credit we didn't earn.
 
-- **SOL-001** → Bounty 6 H2, accepted + fixed by Toly at [percolator-prog#107](https://github.com/aeyakovenko/percolator-prog/issues/107). Our suggested patch (`authenticated_slot_or_fallback`) shipped verbatim.
-- **SOL-002** → The cross-market `pnl_pos_bound_tot` inflation class that drained `header.insurance`. We documented this surface in our percolator audits.
-- **SOL-003, SOL-004, SOL-005** → 3 of the 36 findings in our Bounty 5 final disclosure at [percolator-cli#78](https://github.com/aeyakovenko/percolator-cli/issues/78) (2 Critical + 17 High + 12 Medium + 5 Low).
+- **SOL-001 — TWO confirmed-exploitable bounty wins (same class, two code paths).** ACTIVATE branch: [percolator-prog#107](https://github.com/aeyakovenko/percolator-prog/issues/107), fixed in `6512fa1`. RETIRE branch: [percolator-cli#78 F33](https://github.com/aeyakovenko/percolator-cli/issues/78), fixed in `3fd9b1d`. Both maintainer-acknowledged via Lean theorem-prover models. Our suggested `authenticated_slot_or_fallback` patch shipped verbatim.
+- **SOL-002 — public class, not our bounty.** The cross-market `pnl_pos_bound_tot` inflation class was publicly disclosed at [percolator-prog#104](https://github.com/aeyakovenko/percolator-prog/issues/104) by another researcher. Included because the pattern is reproducible across perp-DEX programs.
+- **SOL-003, SOL-004, SOL-005 — patterns from our bounty 5 disclosure.** All three were in our [#78](https://github.com/aeyakovenko/percolator-cli/issues/78) submission (36 findings total). Maintainer triage outcomes: F1 already fixed in `0925ed4` before triage; F2 engine-side (separate disclosure pending at `aeyakovenko/percolator`); F12 latent (reachable when the 14-asset cap is lifted). Real Solana patterns worth flagging in future code, none paid as new bounties.
 
-The 15 generic rules cover the rest of the Solana attack surface — every common bug class an auditor checks for. Together they give the Claude Code plugin enough Solana-specific context to catch issues before they reach a pull request.
+The remaining 15 rules (SOL-006 through SOL-020) cover documented Solana audit patterns — signer/owner/PDA verification, Anchor constraints, CPI authority, lamport drains, Token Program ID confusion, integer overflow, etc. Standard auditor checklist territory.
 
 All published cycle reports: [jelleo.com/cycles](https://jelleo.com/cycles)
 

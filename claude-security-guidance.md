@@ -6,59 +6,40 @@
 This file extends Claude Code's security-guidance plugin with Solana-specific
 review rules. Each rule traces to a real bug class we've disclosed.
 
-## Threat model (Solana programs)
+## Threat model
 
-Solana programs are stateless executables anyone can invoke with arbitrary
-instruction data. Assume every caller is hostile until proven otherwise via
-cryptographic verification. The dominant bug classes in our published audits:
-
-1. **Trust boundary breaks** — instruction-data values flowing into trusted state without authentication
-2. **Authority confusion** — wrong signer accepted, wrong PDA derived, wrong owner trusted
-3. **State integrity** — partial updates, cross-account/cross-market leaks, lifecycle stage skips
-4. **Time/sequence** — slot, clock, lifecycle field controlled by caller instead of authenticated
-5. **Anchor framework gaps** — missing `has_one`/`constraint=`, unsafe `init_if_needed`, bump skipped
+Solana programs are stateless executables anyone can invoke. Assume every caller is hostile until proven otherwise via cryptographic verification. Dominant bug classes: trust-boundary breaks (instruction-data flowing into trusted state), authority confusion (wrong signer/PDA/owner), state integrity (cross-account/market leaks), time/sequence (caller-supplied clock or lifecycle field), and Anchor framework gaps (missing constraints, unsafe `init_if_needed`, bump skipped).
 
 ## Review checklist
 
-When reviewing a Solana-program diff, verify:
-
-- Every privileged handler verifies the expected signer(s)
-- Every account read verifies `account.owner == program_id`
-- PDA-derived accounts verify bump via canonical `find_program_address`
-- Anchor constraints (`has_one`, `constraint=`, `seeds=`, `bump=`) present on every cross-referenced account
-- No `now_slot` / clock value comes from instruction data without being authenticated against `Clock::get()`
-- Wrapper handlers delegate to engine logic; never re-implement (drifts, skips spec terms)
-- Health, penalty, fee, PnL calculations include every spec-mandated term — sample the spec, then audit the impl
-- CPI calls verify invocation authority BEFORE executing
-- Account closure sweeps lamports to a known destination and zeroes data
-- Token Program ID is the imported `anchor_spl::token::ID` (or Token-2022 equivalent), not a hardcoded literal
-- Integer arithmetic uses `checked_*`, not raw operators (release builds wrap silently)
-- Discriminator checked on every account deserialize — never trust the layout from raw `AccountInfo`
-- `SetAuthority` calls verify the prior authority matches the expected key
+When reviewing a Solana-program diff, verify each rule below. Critical priorities: no instruction-data `now_slot`/clock value persisted without `Clock::get()` authentication (SOL-001); wrapper handlers delegate to engine instead of reimplementing (SOL-003); health/penalty calculations include every spec term (SOL-004); Anchor `Account<>` cross-references carry `has_one`/`constraint=`/`seeds=` (SOL-015); every privileged handler verifies its signer (SOL-006) and account owner (SOL-007); integer arithmetic uses `checked_*` (SOL-014); discriminator checked on every deserialize (SOL-019).
 
 ## Detailed rules
 
 ### SOL-001 · Unauthenticated `now_slot`
 Caller-controlled clock value flowing into market/asset state. Attacker passes `u64::MAX`, stamps state ahead of real chain time; real cranks then reject as stale — permanent DoS.
 **Fix:** `let now_slot = authenticated_slot_or_fallback(now_slot, Clock::get()?.slot);`
-**Reference:** Bounty 6 H2, percolator-prog#107 (closed/fixed 2026-05-26).
+**References (two confirmed-exploitable bounty wins, same class):**
+- ACTIVATE branch — `aeyakovenko/percolator-prog#107`, fixed in `6512fa1`
+- RETIRE branch — `aeyakovenko/percolator-cli#78` F33, fixed in `3fd9b1d`
 
 ### SOL-002 · Cross-market state asymmetry
 Counter or aggregate written by one market read by another with no per-market scoping. Permissionless caller inflates a cross-market counter → drains the shared pool (e.g. insurance fund).
-**Reference:** Bounty 5 primary class (`pnl_pos_bound_tot` insurance drain pattern).
+**Reference:** Documented cross-market exploitation class (the `pnl_pos_bound_tot` insurance-drain pattern publicly disclosed in `aeyakovenko/percolator-prog#104`). Not our finding — included because the pattern is reproducible across perp-DEX programs.
 
 ### SOL-003 · Wrapper re-implements engine
 Wrapper handler reimplements logic the engine already provides (close, settle, accrue). Reimplementation drifts, skips hooks/side-effects, silently diverges.
 **Fix:** Delegate to engine; wrapper marshals accounts and calls the engine method.
-**Reference:** Bounty 5 F1 (Critical), percolator-cli#78.
+**Reference:** Pattern documented in our bounty 5 disclosure (`aeyakovenko/percolator-cli#78` F1). Maintainer independently fixed in `0925ed4` before triage.
 
 ### SOL-004 · Penalty/health terms omitted
 Health, margin, or penalty calculations omit spec-mandated terms. Result understates risk, allowing under-collateralized positions.
-**Reference:** Bounty 5 F2 (Critical, 9 missing penalty terms), percolator-cli#78.
+**Reference:** Pattern documented in our bounty 5 disclosure (`aeyakovenko/percolator-cli#78` F2). Engine-side per maintainer triage; separate disclosure pending at `aeyakovenko/percolator`.
 
 ### SOL-005 · Anchor resize without checks
 `AccountInfo.realloc()` without owner verification, size bounds, or rent-exemption invariant.
 **Look for:** `.realloc(` without preceding owner + size guards.
+**Reference:** Latent pattern documented in our bounty 5 disclosure (`aeyakovenko/percolator-cli#78` F12). Reachable when the 14-asset cap is lifted.
 
 ### SOL-006 · Missing signer check
 Privileged handler mutates state without verifying signer. Permissionless caller spoofs identity.
@@ -116,10 +97,10 @@ Token `SetAuthority` invoked without verifying current authority matches the exp
 
 ## References
 
-Headline rules trace to published Jelleo audit cycles:
-
-- **Bounty 6 H2** → jelleo.com/cycles/20260526-bounty6-h2-activate-future-slot-dos
-- **Bounty 5 final (36 findings)** → jelleo.com/cycles/20260526-bounty5-final-36findings
+- **Bounty 6 H2** (`percolator-prog#107`, fixed `6512fa1`) → jelleo.com/cycles/20260526-bounty6-h2-activate-future-slot-dos
+- **Bounty 5 disclosure** (`percolator-cli#78`, F33 fixed `3fd9b1d`) → jelleo.com/cycles/20260526-bounty5-final-36findings
 - **All cycles** → jelleo.com/cycles
+
+**Honest provenance:** SOL-001 covers two confirmed-exploitable maintainer-fixed bounty wins (ACTIVATE + RETIRE). SOL-002 is a documented public class disclosed by a separate researcher. SOL-003 / SOL-004 / SOL-005 are real Solana patterns surfaced in our bounty 5 disclosure; the maintainer's triage classified F1 as already-fixed in-flight, F2 as engine-side (pending separate disclosure), and F12 as latent. The remaining 15 rules (SOL-006 through SOL-020) are documented Solana hygiene patterns.
 
 Maintained by [Jelleo](https://jelleo.com). MIT licensed. PRs welcome.
