@@ -1,0 +1,45 @@
+{
+  "name": "@jelleo/solana-security-standard",
+  "version": "0.1.0",
+  "description": "Scan Solana/Anchor Rust code against the Solana Security Standard (SOL-0XX) — by Jelleo.",
+  "bin": {
+    "solana-security-standard": "bin.js",
+    "sol-scan": "bin.js"
+  },
+  "main": "src/scanner.js",
+  "files": [
+    "bin.js",
+    "src/",
+    "rules.json",
+    "README.md"
+  ],
+  "scripts": {
+    "sync": "node scripts/sync-rules.js",
+    "test": "node --test",
+    "prepack": "node scripts/sync-rules.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "solana",
+    "anchor",
+    "security",
+    "static-analysis",
+    "audit",
+    "sast",
+    "sol-0xx",
+    "solana-security-standard"
+  ],
+  "author": "Jelleo (https://jelleo.com)",
+  "license": "MIT",
+  "homepage": "https://github.com/Copenhagen0x/solana-security-guidance",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Copenhagen0x/solana-security-guidance.git",
+    "directory": "cli"
+  },
+  "devDependencies": {
+    "js-yaml": "^4.1.0"
+  }
+}

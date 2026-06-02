@@ -11,7 +11,7 @@
 
 Drop these two files into your Solana project's `.claude/` directory and your IDE will flag Solana-specific bugs while you code — caller-controlled clock values, cross-market state asymmetry, wrapper handlers that drift from engine logic, missing Anchor constraints, and 24 more bug classes drawn from real audits.
 
-## Install (30 seconds)
+## Install in Claude Code (30 seconds)
 
 ```bash
 mkdir -p .claude && \
@@ -29,6 +29,45 @@ Then make sure you have Anthropic's security-guidance plugin installed:
 ```
 
 Done. Open a Solana program file in Claude Code and the plugin will catch issues as you write.
+
+## Run it in CI — GitHub Action
+
+Gate every pull request on the standard. The same SOL-0XX patterns run as a check, with inline annotations on the diff:
+
+```yaml
+# .github/workflows/solana-security.yml
+name: Solana Security Standard
+on: [pull_request]
+permissions:
+  contents: read
+  security-events: write   # optional — enables inline PR annotations
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Copenhagen0x/solana-security-guidance@v1
+        with:
+          paths: ./programs        # what to scan (default: .)
+          # fail-on-findings: true # red X on findings (default)
+          # upload-sarif: true     # GitHub code scanning (default)
+```
+
+Then show the world you adopt it — drop this badge in your README:
+
+```md
+[![Solana Security Standard](https://img.shields.io/badge/Solana%20Security%20Standard-SOL--0XX-7c3aed)](https://github.com/Copenhagen0x/solana-security-guidance)
+```
+
+[![Solana Security Standard](https://img.shields.io/badge/Solana%20Security%20Standard-SOL--0XX-7c3aed)](https://github.com/Copenhagen0x/solana-security-guidance)
+
+## Run it from the CLI
+
+```bash
+npx @jelleo/solana-security-standard scan ./programs
+```
+
+Human, JSON, or SARIF output; exits non-zero on findings (so it gates any CI). Zero dependencies. Details in [`cli/`](cli/).
 
 ## What you get
 

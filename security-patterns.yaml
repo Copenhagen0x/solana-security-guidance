@@ -11,7 +11,7 @@
 
 patterns:
   - rule_name: sol_001_unauth_now_slot
-    regex: "fn\\s+\\w+\\([^)]*now_slot\\s*:\\s*u64"
+    regex: "fn\\s+\\w+(?:<[^>]{0,120}>)?\\([^)]{0,500}now_slot\\s*:\\s*u64"
     paths: ["**/*.rs"]
     exclude_paths: ["**/tests/**", "**/test/**"]
     reminder: "Jelleo SOL-001: handler accepts `now_slot` from instruction data. Authenticate against Clock::get()?.slot before use — caller-controlled clocks enable permanent DoS of permissionless cranks. Two confirmed-exploitable bounty wins in this class: percolator-prog#107 (ACTIVATE, fixed 6512fa1) + percolator-cli#78 F33 (RETIRE, fixed 3fd9b1d). See: github.com/Copenhagen0x/solana-security-guidance#sol-001."
@@ -29,7 +29,7 @@ patterns:
     reminder: "Jelleo SOL-005: AccountInfo.realloc() called. Verify (1) account owner == program_id, (2) new size is bounded, (3) rent-exemption maintained after resize. Latent pattern documented in our bounty 5 disclosure (percolator-cli#78 F12) — reachable when the per-program asset cap is lifted. See: github.com/Copenhagen0x/solana-security-guidance#sol-005."
 
   - rule_name: sol_006_raw_account_info
-    regex: "AccountInfo<['_]?\\s*'?info"
+    regex: "\\bAccountInfo\\s*<"
     paths: ["**/*.rs"]
     exclude_paths: ["**/tests/**"]
     reminder: "Jelleo SOL-006: raw `AccountInfo` (no Signer<>/Account<> type). If this account is a privileged CALLER, verify `account.is_signer == true` before mutating state, or use Anchor's `Signer<>`. (A documented `/// CHECK:` account used only as a CPI target / program ID / read-only ref is fine — this is a heuristic flag.) See: github.com/Copenhagen0x/solana-security-guidance#sol-006."
@@ -53,7 +53,7 @@ patterns:
     reminder: "Jelleo SOL-010: init_if_needed enables reinit attacks. If the account holds value or grants authority, a second call can drop balances. Use plain `init` with explicit existence checks unless reinit is truly required. See: github.com/Copenhagen0x/solana-security-guidance#sol-010."
 
   - rule_name: sol_011_close_attr
-    regex: "#\\[account\\([^)]*close\\s*="
+    regex: "#\\[account\\((?:[^)(]|\\((?:[^)(]|\\([^)(]{0,100}\\)){0,150}\\)){0,300}close\\s*="
     paths: ["**/*.rs"]
     exclude_paths: ["**/tests/**"]
     reminder: "Jelleo SOL-011: `#[account(close = ...)]`. Verify (1) account is fully drained before close, (2) lamports go to a controlled destination, (3) any token accounts are closed via Token program, not just zeroed. See: github.com/Copenhagen0x/solana-security-guidance#sol-011."

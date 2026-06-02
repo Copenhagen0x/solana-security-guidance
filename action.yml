@@ -1,0 +1,73 @@
+name: 'Solana Security Standard'
+description: 'Scan Solana/Anchor Rust code against the Solana Security Standard (SOL-0XX) — by Jelleo.'
+author: 'Jelleo'
+branding:
+  icon: 'shield'
+  color: 'purple'
+
+inputs:
+  paths:
+    description: 'Files or directories to scan (space-separated). Do NOT wire this from untrusted PR data.'
+    required: false
+    default: '.'
+  fail-on-findings:
+    description: 'Fail the check (red X) when findings are present.'
+    required: false
+    default: 'true'
+  upload-sarif:
+    description: 'Upload results to GitHub code scanning for inline PR annotations (needs `security-events: write`).'
+    required: false
+    default: 'true'
+  patterns:
+    description: 'Path to a custom rules.json (default: the bundled SOL-0XX rules).'
+    required: false
+    default: ''
+
+runs:
+  using: 'composite'
+  steps:
+    # Produce SARIF first, never failing here, so the upload step always has a file.
+    - name: Scan → SARIF
+      shell: bash
+      env:
+        # Inputs are passed via env (NOT interpolated into the script body) so a
+        # caller who wires an input from untrusted PR data can't inject shell.
+        SSS_PATHS: ${{ inputs.paths }}
+        SSS_PATTERNS: ${{ inputs.patterns }}
+        SSS_BIN: ${{ github.action_path }}/cli/bin.js
+        SSS_SARIF: ${{ runner.temp }}/solana-security-standard.sarif
+      run: |
+        set -f  # no shell globbing of path args; the scanner walks dirs itself
+        # Flags first, then a `--` sentinel: anything word-split out of $SSS_PATHS
+        # is treated as a PATH, never a flag — so untrusted input can't inject
+        # --patterns / --no-fail / -o. --root keeps SARIF paths repo-root-relative.
+        args=(scan --format sarif --output "$SSS_SARIF" --root "$GITHUB_WORKSPACE" --no-fail)
+        if [ -n "$SSS_PATTERNS" ]; then args+=(--patterns "$SSS_PATTERNS"); fi
+        args+=(-- $SSS_PATHS)
+        node "$SSS_BIN" "${args[@]}"
+
+    # Inline PR annotations + the Security tab. Best-effort: a missing
+    # security-events permission must not break the check itself.
+    - name: Upload SARIF
+      if: ${{ inputs.upload-sarif == 'true' }}
+      continue-on-error: true
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ runner.temp }}/solana-security-standard.sarif
+        category: solana-security-standard
+
+    # Human-readable summary in the log, and the gate that sets the check status.
+    - name: Report & gate
+      shell: bash
+      env:
+        SSS_PATHS: ${{ inputs.paths }}
+        SSS_PATTERNS: ${{ inputs.patterns }}
+        SSS_BIN: ${{ github.action_path }}/cli/bin.js
+        SSS_NOFAIL: ${{ inputs.fail-on-findings == 'false' && '1' || '' }}
+      run: |
+        set -f
+        args=(scan --no-color --root "$GITHUB_WORKSPACE")
+        if [ -n "$SSS_PATTERNS" ]; then args+=(--patterns "$SSS_PATTERNS"); fi
+        if [ -n "$SSS_NOFAIL" ]; then args+=(--no-fail); fi
+        args+=(-- $SSS_PATHS)
+        node "$SSS_BIN" "${args[@]}"

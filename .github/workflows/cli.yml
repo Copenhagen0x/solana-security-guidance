@@ -1,0 +1,43 @@
+name: cli
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'cli/**'
+      - 'security-patterns.yaml'
+      - 'action.yml'
+      - '.github/workflows/cli.yml'
+  pull_request:
+    paths:
+      - 'cli/**'
+      - 'security-patterns.yaml'
+      - 'action.yml'
+      - '.github/workflows/cli.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: scanner (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    defaults:
+      run:
+        working-directory: cli
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - name: rules.json is in sync with security-patterns.yaml
+        run: node scripts/sync-rules.js --check
+      - name: unit tests
+        run: node --test
+      - name: smoke — self-scan the vulnerable examples (report only)
+        run: node bin.js scan ../examples --no-fail
