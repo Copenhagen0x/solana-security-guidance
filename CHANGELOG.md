@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] — 2026-06-02
+
+Rebranded as the **Solana Security Standard** — `SOL-0XX` is now positioned as a stable, citable bug-class taxonomy (cite it the way you'd cite a CWE). Adds 8 rules (SOL-021 through SOL-028) and corrects several rule definitions that an adversarial review found technically wrong before they shipped.
+
+### Added — 8 new rules (SOL-021 → SOL-028)
+
+- **SOL-021 — Terminal op gated on a live-only condition.** A close/resolve/wind-down path reuses a guard (`status == Fresh`, `expiry > now`) that can never hold once the program's status is terminal → the call reverts forever and funds lock. From our percolator v16 engine audit (F1); the maintainer fixed it as "Finding C".
+- **SOL-022 — Write-only "impaired" counter.** A counter incremented when state migrates into a degraded bucket but never decremented → funds encumbered forever, slot never reusable. From our v16 audit (F2); disclosed at [percolator#74](https://github.com/aeyakovenko/percolator/issues/74), code-confirmed, not reproduced on-chain.
+- **SOL-023 — Fee/penalty rounds toward the user.** Integer `/` rounds down so the user underpays and small amounts round to 0. Fix: `u64::div_ceil` the amount owed — round each amount against the less-trusted party (fee/penalty up, the user's payout down). From our v16 audit (F3, Low).
+- **SOL-024 — Stale / unchecked oracle price.** A Pyth/Switchboard price used with no staleness or confidence-interval check. Documented Solana DeFi pattern.
+- **SOL-025 — Sysvar read by raw deserialize.** A sysvar read by raw-deserializing account data (`bincode::deserialize::<Clock>`) instead of `Clock::get()` / `Sysvar::from_account_info` (both of which key-check internally). Documented Solana pattern.
+- **SOL-026 — Duplicate mutable account.** Two accounts that must differ aren't checked → attacker passes the same one. Anchor's error 2040 (`ConstraintDuplicateMutableAccount`) auto-rejects this for `Account<>` fields — but NOT for `AccountLoader`, `UncheckedAccount`, or duplicates passed via `remaining_accounts` (confirmed by Anchor's own test suite), which still need an explicit `require_keys_neq!`. `AccountLoader` is especially deceptive: Anchor skips the check because zero-copy accounts don't serialize on exit, but the two borrows still alias the same memory, so a write through one corrupts the other.
+- **SOL-027 — Unvalidated `remaining_accounts`.** `ctx.remaining_accounts` read/written/invoked without validating each one's owner/key/signer.
+- **SOL-028 — Missing slippage / min-out bound.** A swap/withdraw/settle with no caller-supplied min-out / max-in.
+- **2 new `security-patterns.yaml` patterns** (`sol_024` oracle staleness, `sol_025` raw-sysvar-deserialize), bringing the fast-pattern count from 15 to 17.
+
+### Changed — corrections from adversarial review (before shipping)
+
+These rule definitions were wrong in draft and were fixed against the actual Solana/Anchor semantics:
+
+- **SOL-021** is gated on the program's **terminal status field**, not a "frozen clock" — Solana's clock never freezes. Wording corrected.
+- **SOL-025** now targets the **raw deserialize** anti-pattern. `Clock::from_account_info` / `Sysvar::from_account_info` are SAFE (the SDK calls `check_id` internally); the project's own LiteSVM test confirms this. The exploitable variant is hand-deserializing the account buffer. The `security-patterns.yaml` matcher was re-pointed from `*::from_account_info` (false-positive) to `bincode::deserialize::<Clock|Rent>`.
+- **SOL-026** now states the **exact scope of Anchor's protection**: error 2040 covers duplicate mutable `Account<>` fields only. `AccountLoader` (zero-copy), `UncheckedAccount`, and duplicates routed through `remaining_accounts` are NOT covered — so the rule no longer gives Anchor devs false comfort on those types.
+- **SOL-023** fix now specifies `u64::div_ceil` on the amount the user owes, with the round-up-fee / round-down-payout rule made explicit.
+- **`security-patterns.yaml` SOL-024** gained `exclude_paths` for `**/client/**`, `**/cli/**`, `**/offchain/**`, `**/sdk/**` so the `get_price_unchecked` matcher doesn't fire on off-chain client code where it's harmless.
+- **`claude-security-guidance.md`** rewritten to a compact per-rule format (`### SOL-0XX · Title` + one tight bug→fix line) so all 28 rules + threat model + checklist + provenance fit the hard 8192-byte plugin-file cap. Full catalog detail lives in the README.
+
 ## [1.0.1] — 2026-05-26
 
 ### Changed (honest-provenance correction)
@@ -33,5 +60,6 @@ The original v1.0.0 framing was wrong about which findings translated to paid bo
 - MIT license
 - **Note:** the v1.0.0 release's specific bounty attributions for SOL-002/SOL-003/SOL-004/SOL-005 were superseded by the v1.0.1 honest-provenance correction after the maintainer's triage of `percolator-cli#78` clarified disposition. See v1.0.1 entry above.
 
+[1.1.0]: https://github.com/Copenhagen0x/solana-security-guidance/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/Copenhagen0x/solana-security-guidance/releases/tag/v1.0.1
 [1.0.0]: https://github.com/Copenhagen0x/solana-security-guidance/releases/tag/v1.0.0

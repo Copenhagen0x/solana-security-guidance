@@ -1,106 +1,105 @@
 # Solana Security Guidance — by Jelleo
 
-> Real-world rules drawn from 38+ disclosed Solana bounty findings.
-> Maintained: github.com/Copenhagen0x/solana-security-guidance · Audits: jelleo.com
+> The **Solana Security Standard** — `SOL-0XX` rules from real Solana audits + 2 confirmed bounty wins. Full catalog → github.com/Copenhagen0x/solana-security-guidance · Audits → jelleo.com
 
-This file extends Claude Code's security-guidance plugin with Solana-specific
-review rules. Each rule traces to a real bug class we've disclosed.
+Extends Claude Code's security-guidance plugin with Solana-specific rules. Each has a stable ID (`SOL-0XX`) — cite it like a CWE. Full detail in the README.
 
 ## Threat model
 
-Solana programs are stateless executables anyone can invoke. Assume every caller is hostile until proven otherwise via cryptographic verification. Dominant bug classes: trust-boundary breaks (instruction-data flowing into trusted state), authority confusion (wrong signer/PDA/owner), state integrity (cross-account/market leaks), time/sequence (caller-supplied clock or lifecycle field), and Anchor framework gaps (missing constraints, unsafe `init_if_needed`, bump skipped).
+Solana programs are stateless — assume every caller is hostile until cryptographically proven otherwise. Dominant classes: trust-boundary breaks (instruction data → trusted state), authority confusion (wrong signer/PDA/owner), state integrity (cross-account/market leaks), time & lifecycle (caller clock, terminal guards that never clear), oracle trust (stale/unchecked prices), Anchor gaps (missing constraints, unsafe `init_if_needed`, skipped bump).
 
-## Review checklist
+## Review checklist — critical priorities
 
-When reviewing a Solana-program diff, verify each rule below. Critical priorities: no instruction-data `now_slot`/clock value persisted without `Clock::get()` authentication (SOL-001); wrapper handlers delegate to engine instead of reimplementing (SOL-003); health/penalty calculations include every spec term (SOL-004); Anchor `Account<>` cross-references carry `has_one`/`constraint=`/`seeds=` (SOL-015); every privileged handler verifies its signer (SOL-006) and account owner (SOL-007); integer arithmetic uses `checked_*` (SOL-014); discriminator checked on every deserialize (SOL-019).
+Caller `now_slot`/clock authenticated via `Clock::get()` (SOL-001); wrappers delegate to the engine (SOL-003); risk math includes every spec term (SOL-004); terminal/close paths not gated on live-only conditions (SOL-021); fees round against the user (SOL-023); oracle prices checked for staleness+confidence (SOL-024); Anchor cross-refs carry constraints (SOL-015); privileged handlers verify signer (SOL-006) + owner (SOL-007); `checked_*` arithmetic (SOL-014); discriminator checked on deserialize (SOL-019).
 
-## Detailed rules
+## Rules
 
-### SOL-001 · Unauthenticated `now_slot`
-Caller-controlled clock value flowing into market/asset state. Attacker passes `u64::MAX`, stamps state ahead of real chain time; real cranks then reject as stale — permanent DoS.
-**Fix:** `let now_slot = authenticated_slot_or_fallback(now_slot, Clock::get()?.slot);`
-**References (two confirmed-exploitable bounty wins, same class):**
-- ACTIVATE branch — `aeyakovenko/percolator-prog#107`, fixed in `6512fa1`
-- RETIRE branch — `aeyakovenko/percolator-cli#78` F33, fixed in `3fd9b1d`
+### SOL-001 · Unauthenticated now_slot
+Caller-controlled clock into market/asset state (pass `u64::MAX`, real cranks then reject as stale → permanent DoS). Fix: `authenticated_slot_or_fallback(now_slot, Clock::get()?.slot)`. *(two confirmed wins: percolator-prog#107, -cli#78 F33)*
 
 ### SOL-002 · Cross-market state asymmetry
-Counter or aggregate written by one market read by another with no per-market scoping. Permissionless caller inflates a cross-market counter → drains the shared pool (e.g. insurance fund).
-**Reference:** Documented cross-market exploitation class (the `pnl_pos_bound_tot` insurance-drain pattern publicly disclosed in `aeyakovenko/percolator-prog#104`). Not our finding — included because the pattern is reproducible across perp-DEX programs.
+Counter written by one market and read by another with no per-market scoping → permissionless cross-market inflation drains a shared pool. Fix: gate every write by per-market authorization. *(public class, percolator-prog#104)*
 
 ### SOL-003 · Wrapper re-implements engine
-Wrapper handler reimplements logic the engine already provides (close, settle, accrue). Reimplementation drifts, skips hooks/side-effects, silently diverges.
-**Fix:** Delegate to engine; wrapper marshals accounts and calls the engine method.
-**Reference:** Pattern documented in our bounty 5 disclosure (`aeyakovenko/percolator-cli#78` F1). Maintainer independently fixed in `0925ed4` before triage.
+Wrapper handler redoes engine logic (close/settle/accrue), drifts, skips side-effects. Fix: delegate to the engine; the wrapper only marshals accounts.
 
 ### SOL-004 · Penalty/health terms omitted
-Health, margin, or penalty calculations omit spec-mandated terms. Result understates risk, allowing under-collateralized positions.
-**Reference:** Pattern documented in our bounty 5 disclosure (`aeyakovenko/percolator-cli#78` F2). Engine-side per maintainer triage; separate disclosure pending at `aeyakovenko/percolator`.
+Risk/margin math drops a spec-mandated term → under-collateralized positions allowed. Fix: include every term the spec lists.
 
 ### SOL-005 · Anchor resize without checks
-`AccountInfo.realloc()` without owner verification, size bounds, or rent-exemption invariant.
-**Look for:** `.realloc(` without preceding owner + size guards.
-**Reference:** Latent pattern documented in our bounty 5 disclosure (`aeyakovenko/percolator-cli#78` F12). Reachable when the 14-asset cap is lifted.
+`realloc()` with no owner / size-bound / rent-exemption guard. Fix: verify all three before resizing.
 
 ### SOL-006 · Missing signer check
-Privileged handler mutates state without verifying signer. Permissionless caller spoofs identity.
-**Look for:** Handler mutating state without `account.is_signer` check or Anchor `Signer<>` typed account.
+Privileged handler mutates state without verifying the signer. Fix: Anchor `Signer<>` typed account, or check `is_signer`.
 
 ### SOL-007 · Missing owner verification
-`AccountInfo` read without `account.owner == program_id` check. Attacker passes different-owner account whose layout matches.
-**Look for:** Manual deserialization from `AccountInfo` without prior owner check.
+`AccountInfo` deserialized without `owner == program_id` → attacker passes a same-layout account from another program. Fix: check owner first.
 
 ### SOL-008 · Unverified PDA
-PDA derived from instruction data without canonical `find_program_address` validation. Attacker passes any account, claims it's the PDA.
+PDA used without `find_program_address` validation → attacker passes any account and claims it's the PDA. Fix: derive and compare.
 
 ### SOL-009 · CPI without authority check
-Cross-program invocation executes without verifying caller authority. `invoke_signed` just signs with a PDA — doesn't validate upstream authority.
+`invoke_signed` runs without verifying the caller's authority (signing with a PDA ≠ authorization). Fix: check authority before the CPI.
 
 ### SOL-010 · Reinit attack
-`init_if_needed` on accounts that hold value or grant authority. Second call re-initializes state, dropping balances/ownership.
-**Fix:** Plain `init` with explicit existence guards unless reinit is truly required.
+`init_if_needed` on accounts holding value/authority → a second call re-initializes, dropping balances. Fix: plain `init` + explicit existence guard.
 
 ### SOL-011 · Lamport drain via close
-`close = receiver` on accounts not fully drained; OR closure that doesn't zero data — attacker reads residual fields.
+`close =` on an account not fully drained, or a close that doesn't zero data (residual reads). Fix: drain + zero + controlled destination.
 
 ### SOL-012 · Rent exemption check missing
-Account funded but not verified rent-exempt. Balance below rent floor → account purged by runtime → state lost.
+Funded account not verified rent-exempt → runtime purges it, state lost. Fix: assert rent-exempt.
 
 ### SOL-013 · Token Program ID confusion
-Token Program ID hardcoded as legacy SPL Token, but account is Token-2022 (or vice versa). Wrong program receives the invocation.
-**Fix:** `anchor_spl::token::ID` via typed accounts; never hardcode `Tokenkeg...`.
+Hardcoded SPL Token ID but the account is Token-2022 (or vice versa). Fix: `anchor_spl::token::ID` via typed accounts; never hardcode.
 
 ### SOL-014 · Unchecked integer arithmetic
-`+`, `-`, `*` on `u64`/`i64` without `checked_*`. Release builds wrap silently — silent wrap is the financial bug.
-**Fix:** `a.checked_add(b).ok_or(ErrorCode::Overflow)?`
+`+ - *` on ints without `checked_*` → release builds wrap silently, and the wrap IS the bug. Fix: `a.checked_add(b).ok_or(Overflow)?`.
 
 ### SOL-015 · Anchor constraints missing
-`Account<'info, T>` cross-references another account without `has_one =` / `constraint =`.
-**Look for:** `#[derive(Accounts)]` structs with multiple accounts and no constraints tying them together.
+`Account<'info, T>` cross-references another account with no `has_one =` / `constraint =`. Fix: tie related accounts together with constraints.
 
 ### SOL-016 · Bump seed unvalidated
-PDA derived with `bump` stored on the account, but the bump isn't checked against `find_program_address` canonical bump on the first read.
+A stored `.bump` isn't checked against the canonical bump on first read → attacker pre-creates a non-canonical PDA. Fix: compare to the `find_program_address` bump once.
 
 ### SOL-017 · Raw AccountInfo without typed deserialize
-Handler casts the data buffer to a struct without deserialize-then-validate.
-**Look for:** `&*account.data.borrow()`; `unsafe { transmute }` on account data.
+Data buffer cast to a struct with no deserialize-then-validate (`&*account.data.borrow()`, `transmute`). Fix: typed deserialize + length/field checks.
 
 ### SOL-018 · Hardcoded System Program ID
-System Program ID as a literal string rather than imported constant.
-**Fix:** `solana_program::system_program::ID`, not `"11111111111111111111111111111111"`.
+`"111…"` literal instead of the imported constant. Fix: `solana_program::system_program::ID`.
 
 ### SOL-019 · Missing discriminator check
-Account deserialize without verifying the 8-byte Anchor discriminator. Attacker passes wrong-type account with matching length.
-**Look for:** `try_deserialize_unchecked`; manual `bytemuck::cast` without discriminator check.
+Deserialize without the 8-byte Anchor discriminator (`try_deserialize_unchecked`) → wrong-type account of matching length accepted. Fix: `try_deserialize`.
 
 ### SOL-020 · SetAuthority without verification
-Token `SetAuthority` invoked without verifying current authority matches the expected key. Attacker hijacks ownership.
+`SetAuthority` invoked without checking the current authority matches the expected key → ownership hijack. Fix: verify current authority first.
 
-## References
+### SOL-021 · Terminal op gated on a live-only condition
+A close/resolve path reuses a guard (`status==Fresh`, `expiry>now`) that can't hold once the program's status is **terminal** → the call reverts forever, funds lock. Fix: a terminal release that ignores freshness/expiry. *(v16 audit F1; maintainer fixed as "Finding C")*
 
-- **Bounty 6 H2** (`percolator-prog#107`, fixed `6512fa1`) → jelleo.com/cycles/20260526-bounty6-h2-activate-future-slot-dos
-- **Bounty 5 disclosure** (`percolator-cli#78`, F33 fixed `3fd9b1d`) → jelleo.com/cycles/20260526-bounty5-final-36findings
-- **All cycles** → jelleo.com/cycles
+### SOL-022 · Write-only "impaired" counter
+A counter incremented when state migrates to a degraded bucket (valid→impaired) but never decremented → those funds are encumbered forever, slot never reusable. Fix: add the inverse settlement (release/write-off). *(v16 audit F2; percolator#74, code-confirmed)*
 
-**Honest provenance:** SOL-001 covers two confirmed-exploitable maintainer-fixed bounty wins (ACTIVATE + RETIRE). SOL-002 is a documented public class disclosed by a separate researcher. SOL-003 / SOL-004 / SOL-005 are real Solana patterns surfaced in our bounty 5 disclosure; the maintainer's triage classified F1 as already-fixed in-flight, F2 as engine-side (pending separate disclosure), and F12 as latent. The remaining 15 rules (SOL-006 through SOL-020) are documented Solana hygiene patterns.
+### SOL-023 · Fee/penalty rounds toward the user
+Fee/penalty/debt uses integer `/` (rounds down), so the user underpays and dust rounds to 0 → evasion + leakage. Fix: `u64::div_ceil` what the user **owes** — round against the less-trusted party (fee/penalty UP, payout DOWN). *(v16 audit F3, Low)*
 
-Maintained by [Jelleo](https://jelleo.com). MIT licensed. PRs welcome.
+### SOL-024 · Stale / unchecked oracle price
+A Pyth/Switchboard price used with no staleness (publish-slot age) or confidence-interval check → attacker trades/liquidates at a mispriced value. Fix: `get_price_no_older_than(...)` and reject wide-confidence prices.
+
+### SOL-025 · Sysvar read by raw deserialize
+A sysvar (Clock/Rent) read by **raw-deserializing account data** (`bincode::deserialize::<Clock>`, raw cast) instead of `Clock::get()` / `Sysvar::from_account_info` (which key-check) → attacker passes a look-alike account. Fix: use `Clock::get()` / Anchor `Sysvar<>`; never hand-deserialize a sysvar.
+
+### SOL-026 · Duplicate mutable account (native programs)
+Two accounts that must differ aren't checked → attacker passes one twice, collapsing a delta check. Fix: `require_keys_neq!`. *(Anchor auto-rejects dupe-mutable `Account<>` via err 2040 — but NOT `AccountLoader` (zero-copy, still aliases memory), `UncheckedAccount`, or remaining_accounts.)*
+
+### SOL-027 · Unvalidated remaining_accounts
+`ctx.remaining_accounts` are read/written/invoked without checking each one's owner/key/signer — the list is fully attacker-controlled. Fix: validate every account before trusting it, exactly as a declared account.
+
+### SOL-028 · Missing slippage / min-out bound
+A swap/withdraw/settle derives an output amount with no caller-supplied min-out / max-in → no protection from an adverse price move or sandwich. Fix: take and enforce a caller-supplied bound.
+
+## Provenance
+
+Honest origins (full table in README): SOL-001 = two confirmed maintainer-fixed bounty wins; SOL-002 = a public class from another researcher; SOL-003/004/005 = our bounty-5 patterns; SOL-021/022/023 = our v16 audit (F1 = "Finding C"; F2 = percolator#74; F3 Low); the rest = documented Solana/DeFi hygiene. We never claim credit we didn't earn.
+
+Maintained by [Jelleo](https://jelleo.com). MIT. Full catalog → README.

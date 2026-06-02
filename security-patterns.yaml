@@ -32,7 +32,7 @@ patterns:
     regex: "AccountInfo<['_]?\\s*'?info"
     paths: ["**/*.rs"]
     exclude_paths: ["**/tests/**"]
-    reminder: "Jelleo SOL-006: raw `AccountInfo` (no Signer<>/Account<> type). If this account represents a privileged caller, verify `account.is_signer == true` before mutating state. Prefer Anchor's `Signer<>` typed account for compile-time enforcement. See: github.com/Copenhagen0x/solana-security-guidance#sol-006."
+    reminder: "Jelleo SOL-006: raw `AccountInfo` (no Signer<>/Account<> type). If this account is a privileged CALLER, verify `account.is_signer == true` before mutating state, or use Anchor's `Signer<>`. (A documented `/// CHECK:` account used only as a CPI target / program ID / read-only ref is fine — this is a heuristic flag.) See: github.com/Copenhagen0x/solana-security-guidance#sol-006."
 
   - rule_name: sol_007_raw_data_borrow
     regex: "&\\*\\w+\\.data\\.borrow\\(\\)"
@@ -64,13 +64,13 @@ patterns:
     reminder: "Jelleo SOL-013: hardcoded SPL Token program ID. Use `anchor_spl::token::ID` (or `anchor_spl::token_2022::ID` for Token-2022 accounts) so the typed account ensures the right program is invoked. See: github.com/Copenhagen0x/solana-security-guidance#sol-013."
 
   - rule_name: sol_014_unchecked_arithmetic
-    regex: "(?:u64|i64|u128|i128)\\s*=\\s*\\w+\\s*[+*]\\s*\\w+\\s*[;,)]"
+    regex: "(?:u64|i64|u128|i128)\\s*=\\s*\\w+\\s*[-+*]\\s*\\w+\\s*[;,)]"
     paths: ["**/*.rs"]
     exclude_paths: ["**/tests/**"]
-    reminder: "Jelleo SOL-014: integer arithmetic without checked_*. Debug panics on overflow; release wraps silently — silent wrap is the financial bug. Use `a.checked_add(b).ok_or(ErrorCode::Overflow)?`. See: github.com/Copenhagen0x/solana-security-guidance#sol-014."
+    reminder: "Jelleo SOL-014: integer +/-/* without checked_*. Release builds wrap silently — overflow OR subtraction underflow (the classic lamport drain) — and the wrap is the financial bug. Use `a.checked_add(b)` / `checked_sub(b).ok_or(ErrorCode::Overflow)?`. Heuristic flag — already-checked code can ignore. See: github.com/Copenhagen0x/solana-security-guidance#sol-014."
 
   - rule_name: sol_016_bump_field_read
-    regex: "\\.bump\\s*[;,)}]"
+    regex: "\\.bump\\s*[;,)}\\]]"
     paths: ["**/*.rs"]
     exclude_paths: ["**/tests/**", "**/state*.rs", "**/state/**"]
     reminder: "Jelleo SOL-016: reading a stored `.bump` field. Verify the bump matches `Pubkey::find_program_address(seeds, &program_id).1` (canonical bump) on the FIRST read — subsequent reads of the same bump are OK. Without this, an attacker can pre-create a PDA with a non-canonical bump. See: github.com/Copenhagen0x/solana-security-guidance#sol-016."
@@ -98,3 +98,15 @@ patterns:
     paths: ["**/*.rs"]
     exclude_paths: ["**/tests/**"]
     reminder: "Jelleo SOL-020: SetAuthority CPI. Verify the CURRENT authority matches the expected key BEFORE invoking — without this check, an attacker can hijack ownership of any token account that flows through this handler. See: github.com/Copenhagen0x/solana-security-guidance#sol-020."
+
+  - rule_name: sol_024_oracle_price_unchecked
+    substrings: ["get_price_unchecked"]
+    paths: ["**/*.rs"]
+    exclude_paths: ["**/tests/**", "**/client/**", "**/cli/**", "**/offchain/**", "**/sdk/**"]
+    reminder: "Jelleo SOL-024: `get_price_unchecked` reads a Pyth price with NO staleness or confidence check. Use `get_price_no_older_than(...)` and reject prices whose confidence interval is too wide — a stale or wide-confidence price lets an attacker trade/liquidate at a mispriced value. See: github.com/Copenhagen0x/solana-security-guidance#sol-024."
+
+  - rule_name: sol_025_sysvar_raw_deserialize
+    substrings: ["bincode::deserialize::<Clock", "bincode::deserialize::<Rent"]
+    paths: ["**/*.rs"]
+    exclude_paths: ["**/tests/**", "**/client/**", "**/cli/**", "**/offchain/**", "**/sdk/**"]
+    reminder: "Jelleo SOL-025: a sysvar (Clock/Rent) read by RAW-deserializing account data instead of `Clock::get()` or `Sysvar::from_account_info` (both of which key-check the account internally). The raw path trusts whatever account is passed, so an attacker supplies a look-alike carrying chosen time/rent values. Fix: use `Clock::get()` / Anchor `Sysvar<>`; never hand-deserialize a sysvar account. See: github.com/Copenhagen0x/solana-security-guidance#sol-025."

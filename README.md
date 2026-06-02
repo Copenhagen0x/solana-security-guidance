@@ -1,15 +1,15 @@
 # Solana Security Guidance
 
-> Solana security rules for Anthropic's Claude Code security-guidance plugin. By the team that finds the bugs.
+> The **Solana Security Standard** — `SOL-0XX` rules for Anthropic's Claude Code security-guidance plugin. By the team that finds the bugs.
 
 ![SOL-001 firing on a vulnerable Solana program — Bounty 6 H2 case study](assets/sol-001-demo.png)
 
 [![CI](https://github.com/Copenhagen0x/solana-security-guidance/actions/workflows/validate.yml/badge.svg)](https://github.com/Copenhagen0x/solana-security-guidance/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](CHANGELOG.md)
 [![Bounty wins](https://img.shields.io/badge/bounty_wins-2_confirmed_(SOL--001)-orange)](https://jelleo.com/cycles)
 
-Drop these two files into your Solana project's `.claude/` directory and your IDE will flag Solana-specific bugs while you code — caller-controlled clock values, cross-market state asymmetry, wrapper handlers that drift from engine logic, missing Anchor constraints, and 16 more bug classes drawn from real audits.
+Drop these two files into your Solana project's `.claude/` directory and your IDE will flag Solana-specific bugs while you code — caller-controlled clock values, cross-market state asymmetry, wrapper handlers that drift from engine logic, missing Anchor constraints, and 24 more bug classes drawn from real audits.
 
 ## Install (30 seconds)
 
@@ -32,7 +32,7 @@ Done. Open a Solana program file in Claude Code and the plugin will catch issues
 
 ## What you get
 
-20 rules covering the dominant Solana program bug classes. **SOL-001 covers two confirmed-exploitable bounty wins (the same caller-controlled `now_slot` class fixed in both the ACTIVATE and RETIRE branches of percolator).** The remaining 19 rules are drawn from documented Solana audit patterns — some from our published disclosures (with maintainer triage classifications noted in the Source column), some from public bug-class taxonomy.
+28 rules covering the dominant Solana program bug classes. **SOL-001 covers two confirmed-exploitable bounty wins (the same caller-controlled `now_slot` class fixed in both the ACTIVATE and RETIRE branches of percolator).** The remaining 27 rules are drawn from documented Solana audit patterns — some from our published disclosures (with maintainer triage classifications noted in the Source column), some from public bug-class taxonomy.
 
 | Rule | Catches | Source |
 |---|---|---|
@@ -56,6 +56,14 @@ Done. Open a Solana program file in Claude Code and the plugin will catch issues
 | [SOL-018](claude-security-guidance.md#sol-018--hardcoded-system-program-id) | Hardcoded System Program ID literal | Generic Solana |
 | [SOL-019](claude-security-guidance.md#sol-019--missing-discriminator-check) | Missing discriminator check on deserialize | Generic Solana |
 | [SOL-020](claude-security-guidance.md#sol-020--setauthority-without-verification) | `SetAuthority` without prior verification | Generic Solana |
+| [SOL-021](claude-security-guidance.md#sol-021--terminal-op-gated-on-a-live-only-condition) | Terminal/close op gated on a live-only condition → funds lock | **Jelleo v16 audit F1** — maintainer fixed as "Finding C" |
+| [SOL-022](claude-security-guidance.md#sol-022--write-only-impaired-counter) | Write-only "impaired" counter never decremented → funds encumbered | **Jelleo v16 audit F2** — [percolator#74](https://github.com/aeyakovenko/percolator/issues/74), code-confirmed |
+| [SOL-023](claude-security-guidance.md#sol-023--feepenalty-rounds-toward-the-user) | Fee/penalty rounds toward the user → evasion + leakage | **Jelleo v16 audit F3** (Low) |
+| [SOL-024](claude-security-guidance.md#sol-024--stale--unchecked-oracle-price) | Stale / unchecked Pyth/Switchboard oracle price | Generic Solana DeFi |
+| [SOL-025](claude-security-guidance.md#sol-025--sysvar-read-by-raw-deserialize) | Sysvar read by raw deserialize (not `Clock::get()`) | Generic Solana |
+| [SOL-026](claude-security-guidance.md#sol-026--duplicate-mutable-account-native-programs) | Duplicate mutable account unchecked (native + Anchor `AccountLoader`/`remaining_accounts`) | Generic Solana |
+| [SOL-027](claude-security-guidance.md#sol-027--unvalidated-remaining_accounts) | Unvalidated `remaining_accounts` | Generic Solana |
+| [SOL-028](claude-security-guidance.md#sol-028--missing-slippage--min-out-bound) | Missing slippage / min-out bound | Generic Solana DeFi |
 
 ## Why these rules — honest provenance
 
@@ -65,7 +73,9 @@ We disclose exactly where each rule came from. Some are confirmed-exploitable bo
 - **SOL-002 — public class, not our bounty.** The cross-market `pnl_pos_bound_tot` inflation class was publicly disclosed at [percolator-prog#104](https://github.com/aeyakovenko/percolator-prog/issues/104) by another researcher. Included because the pattern is reproducible across perp-DEX programs.
 - **SOL-003, SOL-004, SOL-005 — patterns from our bounty 5 disclosure.** All three were in our [#78](https://github.com/aeyakovenko/percolator-cli/issues/78) submission (36 findings total). Maintainer triage outcomes: F1 already fixed in `0925ed4` before triage; F2 engine-side (separate disclosure pending at `aeyakovenko/percolator`); F12 latent (reachable when the 14-asset cap is lifted). Real Solana patterns worth flagging in future code, none paid as new bounties.
 
-The remaining 15 rules (SOL-006 through SOL-020) cover documented Solana audit patterns — signer/owner/PDA verification, Anchor constraints, CPI authority, lamport drains, Token Program ID confusion, integer overflow, etc. Standard auditor checklist territory.
+- **SOL-021, SOL-022, SOL-023 — patterns from our percolator v16 engine audit.** F1 (terminal-close deadlock) was fixed by the maintainer as "Finding C". F2 (write-only impaired insurance counter) is disclosed at [percolator#74](https://github.com/aeyakovenko/percolator/issues/74) — code-confirmed, not yet reproduced on-chain. F3 (fee rounding) is Low. Code-analysis patterns, not claimed as paid bounties.
+
+The remaining rules (SOL-006 through SOL-020, plus SOL-024 through SOL-028) cover documented Solana / DeFi audit patterns — signer/owner/PDA verification, Anchor constraints, CPI authority, lamport drains, Token Program ID confusion, integer overflow, oracle staleness, slippage bounds, etc. Standard auditor checklist territory.
 
 All published cycle reports: [jelleo.com/cycles](https://jelleo.com/cycles)
 
@@ -73,8 +83,8 @@ All published cycle reports: [jelleo.com/cycles](https://jelleo.com/cycles)
 
 Anthropic's [security-guidance plugin](https://code.claude.com/docs/en/security-guidance) reviews Claude's code edits at three layers:
 
-1. **On each file edit** — fast pattern match (no model call). Reads `.claude/security-patterns.yaml` for regex/substring rules. **Our file provides 15 deterministic patterns.**
-2. **At the end of each turn** — background model review of the full diff. Reads `.claude/claude-security-guidance.md` for semantic guidance. **Our file provides the Solana threat model + 20-item review checklist.**
+1. **On each file edit** — fast pattern match (no model call). Reads `.claude/security-patterns.yaml` for regex/substring rules. **Our file provides 17 deterministic patterns.**
+2. **At the end of each turn** — background model review of the full diff. Reads `.claude/claude-security-guidance.md` for semantic guidance. **Our file provides the Solana threat model + 28-rule catalog + review checklist.**
 3. **On each commit Claude makes** — deeper agentic review that reads surrounding code. Uses the same guidance file.
 
 Every time a rule fires, the reminder text includes the rule ID (e.g. `Jelleo SOL-001:`) and a link back to this repo so you can see the underlying bounty case study.
