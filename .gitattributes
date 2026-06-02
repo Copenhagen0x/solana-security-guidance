@@ -1,0 +1,11 @@
+# Normalize all text to LF in the repo and on checkout, so the rules.json
+# sync-check (a byte comparison) is stable across Linux/macOS/Windows runners.
+* text=auto eol=lf
+
+# Binary assets must never be line-ending-converted.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary

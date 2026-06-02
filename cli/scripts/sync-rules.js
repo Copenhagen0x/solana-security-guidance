@@ -42,8 +42,11 @@ if (require.main === module) {
   const out = serialize(data);
   // --check: fail (exit 1) if rules.json is stale, without writing (for CI).
   if (process.argv.includes('--check')) {
-    const current = fs.existsSync(dstJson) ? fs.readFileSync(dstJson, 'utf8') : '';
-    if (current !== out) {
+    // Compare line-ending-agnostically: a Windows checkout may have CRLF on disk
+    // while `out` is generated with LF — identical content, different bytes.
+    const norm = (s) => s.replace(/\r\n/g, '\n');
+    const current = fs.existsSync(dstJson) ? norm(fs.readFileSync(dstJson, 'utf8')) : '';
+    if (current !== norm(out)) {
       console.error('rules.json is out of sync with security-patterns.yaml — run `npm run sync`.');
       process.exit(1);
     }
