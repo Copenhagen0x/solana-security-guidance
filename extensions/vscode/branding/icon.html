@@ -1,0 +1,51 @@
+<!doctype html>
+<!-- Source for ../icon.png (the Marketplace icon). Same brand system as
+     Jelleo/branding/pfp.html: #050504 ground, amber #f5b800 grid + reticle
+     brackets, warm glow, cream #f5f3ed heavy mark. Reduced to a "J" monogram so
+     it stays legible down to 16px in the editor sidebar. Self-contained (system
+     font) and filter-free so headless Chrome (software raster) renders it 1:1 —
+     `filter: drop-shadow()` silently drops elements there, so glow uses a
+     radial-gradient layer + text-shadow instead.
+     Render (128x128):
+       chrome --headless --no-sandbox --hide-scrollbars --force-device-scale-factor=1 \
+         --screenshot=icon.png --window-size=128,128 file://.../branding/icon.html -->
+<html><head><meta charset="utf-8">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  width: 128px; height: 128px; position: relative; overflow: hidden;
+  background: #050504;
+  font-family: 'Arial Black', 'Segoe UI', system-ui, sans-serif;
+}
+/* Warm amber glow centered behind the mark (192x192 centered in 128 -> -32). */
+.glow {
+  position: absolute; left: -32px; top: -32px;
+  width: 192px; height: 192px;
+  background: radial-gradient(circle, rgba(245,184,0,0.34) 0%, rgba(245,184,0,0.11) 34%, transparent 64%);
+}
+.grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(245,184,0,0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245,184,0,0.07) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+/* Reticle: amber corner brackets at top-right and bottom-left (brand's asymmetric pair). */
+.b { position: absolute; width: 30px; height: 30px; border: 4px solid #f5b800; }
+.tr { top: 13px; right: 13px; border-left: none; border-bottom: none; }
+.bl { bottom: 13px; left: 13px; border-right: none; border-top: none; }
+.j {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 82px; font-weight: 900; line-height: 1;
+  color: #f5f3ed;
+  text-shadow: 0 0 18px rgba(245,184,0,0.65), 0 0 6px rgba(245,184,0,0.45);
+}
+</style></head>
+<body>
+<div class="glow"></div>
+<div class="grid"></div>
+<div class="b tr"></div>
+<div class="b bl"></div>
+<div class="j">J</div>
+</body></html>
