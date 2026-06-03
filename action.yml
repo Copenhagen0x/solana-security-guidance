@@ -3,7 +3,7 @@ description: 'Scan Solana/Anchor Rust code against the Solana Security Standard 
 author: 'Jelleo'
 branding:
   icon: 'shield'
-  color: 'purple'
+  color: 'yellow'
 
 inputs:
   paths:
