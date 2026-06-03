@@ -1,0 +1,11 @@
+{
+  "type": "pr",
+  "data": {
+    "number": 412,
+    "title": "fix: use checked_sub to prevent lamport underflow in withdraw",
+    "body": "The withdraw handler computed `balance - amount` directly. On a release build this wraps on underflow, letting a withdrawal exceed the balance and drain the vault. Switched to checked_sub(amount).ok_or(Overflow)?. Classic integer underflow.",
+    "html_url": "https://github.com/example/demoswap/pull/412",
+    "merged_at": "2025-01-20T00:00:00Z",
+    "base": { "repo": { "full_name": "example/demoswap" } }
+  }
+}

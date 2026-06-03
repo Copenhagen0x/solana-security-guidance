@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] — 2026-06-03
+
+### Added — disclosure feed ([`disclosures/`](disclosures))
+
+- **A pipeline that helps grow the standard from new disclosures.** [`disclosures/`](disclosures) normalizes a GitHub Security Advisory, an Immunefi report, or a security-fix PR ([`adapters.js`](disclosures/scripts/adapters.js)) into one shape, scores it against per-rule keyword signatures derived from the 28 rules ([`classify.js`](disclosures/scripts/classify.js)), and emits a **candidate** Hacks-Database entry with suggested `SOL-0XX` mappings ([`ingest.js`](disclosures/scripts/ingest.js)).
+- **Human-in-the-loop by design:** it never writes to `hacks/hacks.json` — a cited database only takes verified, reviewed entries. Candidates carry a `_review` block and emit in the exact `hacks.json` shape; a test asserts a fixture-derived candidate passes the real Hacks-DB validator, so a *reviewed* candidate drops straight in.
+- **Self-consistency check (not a blind-accuracy claim):** a test confirms a labeled rule appears among the classifier's ranked suggestions for every catalogued exploit (bar ≥70%; top-1 is 7/8) — an internal check, since the root-cause text and the signatures are both authored here — and that every off-chain / key-compromise incident is guessed not-code-preventable. New `disclosures` CI job (13 tests, no network). Version 1.8.0.
+
 ## [1.7.0] — 2026-06-03
 
 ### Added — content engine ([`content/`](content))
