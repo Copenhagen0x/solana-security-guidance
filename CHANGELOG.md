@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] — 2026-06-02
+
+Marketplace-debut polish — no rule or scanner-logic changes.
+
+- **Branded the VS Code extension** with the Jelleo mark (cream "J" + amber corner-bracket reticle on the dark grid), so the Marketplace listing is on-brand.
+- **GitHub Action badge** recoloured from `purple` to the brand `yellow`/gold (`action.yml` `branding.color`) ahead of listing the Action on the GitHub Marketplace.
+
 ## [1.3.0] — 2026-06-02
 
 Makes the standard **installable everywhere**: the SOL-0XX rules now run in your editor and in any Semgrep pipeline, and the CLI is publish-ready on npm. All three reuse the same source of truth (`security-patterns.yaml`) — no rule logic is duplicated.
@@ -88,6 +95,9 @@ The original v1.0.0 framing was wrong about which findings translated to paid bo
 - MIT license
 - **Note:** the v1.0.0 release's specific bounty attributions for SOL-002/SOL-003/SOL-004/SOL-005 were superseded by the v1.0.1 honest-provenance correction after the maintainer's triage of `percolator-cli#78` clarified disposition. See v1.0.1 entry above.
 
+[1.3.1]: https://github.com/Copenhagen0x/solana-security-guidance/compare/v1.3.0...v1.3.1
+[1.3.0]: https://github.com/Copenhagen0x/solana-security-guidance/compare/v1.2.0...v1.3.0
+[1.2.0]: https://github.com/Copenhagen0x/solana-security-guidance/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/Copenhagen0x/solana-security-guidance/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/Copenhagen0x/solana-security-guidance/releases/tag/v1.0.1
 [1.0.0]: https://github.com/Copenhagen0x/solana-security-guidance/releases/tag/v1.0.0
