@@ -119,6 +119,7 @@ function readme() {
     ['VS Code / Cursor / Windsurf (inline squiggles)', 'the extension', 'install "Solana Security Standard" from the Marketplace'],
     ['CLI / CI', '`npx @jelleo/solana-security-standard`', 'run it anywhere; the GitHub Action gates PRs'],
     ['Semgrep', '`semgrep --config`', 'point at `semgrep/solana-security-standard.yaml`'],
+    ['MCP server (any MCP client)', '`@jelleo/solana-security-mcp`', 'add to your MCP config; serves a scan tool + the rules (see `mcp/`)'],
   ];
   const table = ['| Tool | What it reads | Install |', '| --- | --- | --- |']
     .concat(rows.map((r) => `| ${r[0]} | ${r[1]} | ${r[2]} |`))

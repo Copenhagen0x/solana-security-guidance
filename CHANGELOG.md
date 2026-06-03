@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] — 2026-06-03
+
+### Added — MCP server ([`mcp/`](mcp))
+
+- **`@jelleo/solana-security-mcp`** — a zero-dependency [Model Context Protocol](https://modelcontextprotocol.io) server (stdio JSON-RPC) that brings SOL-0XX to any MCP client (Cline, Copilot, Cursor, Claude, Windsurf) with one config entry. Exposes `scan_solana_code` (run the fast patterns over a Rust snippet, advisory findings) and `list_solana_security_rules` (the full 28-rule guidance). Vendors the reviewed scanner core + guidance, so nothing is fetched at runtime; 100% local.
+- Tested with protocol-level unit tests **and** a real stdio subprocess end-to-end test; a CI job runs them on Linux + Windows. Added to the install matrix.
+
 ## [1.4.0] — 2026-06-03
 
 ### Added — AI coding-agent installers ([`integrations/`](integrations))
