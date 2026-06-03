@@ -1,0 +1,12 @@
+{
+  "type": "ghsa",
+  "data": {
+    "ghsa_id": "GHSA-demo-oracle-0000",
+    "summary": "ExampleLend reads a Pyth oracle price with no staleness or confidence check",
+    "description": "The liquidation handler in ExampleLend calls get_price_unchecked on a Pyth price account and uses the returned value directly to value collateral. With no staleness (publish-slot age) check and no confidence-interval guard, an attacker can manipulate the oracle-reported price within a single transaction and liquidate positions at a mispriced value, draining the lending pool.",
+    "references": [{ "url": "https://github.com/example/examplelend/security/advisories/GHSA-demo-oracle-0000" }],
+    "html_url": "https://github.com/example/examplelend/security/advisories/GHSA-demo-oracle-0000",
+    "published_at": "2025-03-14T00:00:00Z",
+    "vulnerabilities": [{ "package": { "ecosystem": "other", "name": "ExampleLend" } }]
+  }
+}

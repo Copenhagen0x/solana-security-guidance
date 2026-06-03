@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/Copenhagen0x/solana-security-guidance/actions/workflows/validate.yml/badge.svg)](https://github.com/Copenhagen0x/solana-security-guidance/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.7.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.8.0-blue.svg)](CHANGELOG.md)
 [![Bounty wins](https://img.shields.io/badge/bounty_wins-2_confirmed_(SOL--001)-orange)](https://jelleo.com/cycles)
 
 Drop these two files into your Solana project's `.claude/` directory and your IDE will flag Solana-specific bugs while you code — caller-controlled clock values, cross-market state asymmetry, wrapper handlers that drift from engine logic, missing Anchor constraints, and 24 more bug classes drawn from real audits.
@@ -126,6 +126,15 @@ Browse the [database →](hacks/README.md).
 it is machine-checkable or review-only, the real exploits in that class (cross-linked to the Hacks
 Database), and a code example where one exists. One page per rule — all generated from the standard +
 patterns + hacks + examples, so nothing drifts.
+
+## Grow it — the [`disclosures/`](disclosures/) feed
+
+The standard is a living one. [`disclosures/`](disclosures/) ingests a new Solana disclosure — a GitHub
+Security Advisory, an Immunefi report, or a security-fix PR — and **proposes a candidate** Hacks-Database
+entry with suggested SOL-0XX mappings for a human to verify. It never auto-writes (a cited DB only takes
+reviewed entries). As an internal sanity check, the keyword classifier surfaces a labeled rule among its
+ranked suggestions for every exploit already catalogued — self-consistency on our own root-cause text,
+not a blind-accuracy or top-1 claim.
 
 ## What you get
 

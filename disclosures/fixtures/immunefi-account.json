@@ -1,0 +1,11 @@
+{
+  "type": "immunefi",
+  "data": {
+    "project": "SampleVault",
+    "title": "SampleVault trusts an attacker-supplied account without an owner check",
+    "description": "The deposit instruction deserializes a config account passed by the caller without verifying account owner == program_id. An attacker supplies a fake account with the same layout from a different program (account confusion / type cosplay), causing the vault to credit deposits it never received.",
+    "url": "https://immunefi.com/bug-bounty/samplevault/",
+    "date": "2024-11-02",
+    "amount_usd": 250000
+  }
+}
