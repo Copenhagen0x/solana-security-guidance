@@ -1,0 +1,53 @@
+{
+  "name": "solana-security-standard",
+  "displayName": "Solana Security Standard",
+  "description": "Flag Solana/Anchor security bugs (SOL-0XX) inline as you code — by Jelleo.",
+  "version": "1.0.0",
+  "publisher": "jelleo",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Linters"
+  ],
+  "keywords": [
+    "solana",
+    "anchor",
+    "security",
+    "rust",
+    "audit",
+    "sast"
+  ],
+  "activationEvents": [
+    "onLanguage:rust"
+  ],
+  "main": "./src/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Solana Security Standard",
+      "properties": {
+        "solanaSecurityStandard.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show inline SOL-0XX security diagnostics in Rust files."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "sync": "node scripts/sync-engine.js",
+    "pretest": "node scripts/sync-engine.js",
+    "test": "node --test",
+    "vscode:prepublish": "node scripts/sync-engine.js && node --test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Copenhagen0x/solana-security-guidance.git",
+    "directory": "extensions/vscode"
+  },
+  "homepage": "https://github.com/Copenhagen0x/solana-security-guidance",
+  "bugs": {
+    "url": "https://github.com/Copenhagen0x/solana-security-guidance/issues"
+  }
+}

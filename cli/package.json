@@ -1,6 +1,9 @@
 {
   "name": "@jelleo/solana-security-standard",
-  "version": "0.1.0",
+  "version": "1.0.0",
+  "publishConfig": {
+    "access": "public"
+  },
   "description": "Scan Solana/Anchor Rust code against the Solana Security Standard (SOL-0XX) — by Jelleo.",
   "bin": {
     "solana-security-standard": "bin.js",
@@ -15,8 +18,10 @@
   ],
   "scripts": {
     "sync": "node scripts/sync-rules.js",
+    "sync:semgrep": "node scripts/sync-semgrep.js",
     "test": "node --test",
-    "prepack": "node scripts/sync-rules.js"
+    "prepack": "node scripts/sync-rules.js",
+    "prepublishOnly": "node scripts/sync-rules.js --check && node scripts/sync-semgrep.js --check && node --test"
   },
   "engines": {
     "node": ">=18"

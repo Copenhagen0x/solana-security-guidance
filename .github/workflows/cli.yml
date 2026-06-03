@@ -6,12 +6,16 @@ on:
     paths:
       - 'cli/**'
       - 'security-patterns.yaml'
+      - 'semgrep/**'
+      - 'extensions/**'
       - 'action.yml'
       - '.github/workflows/cli.yml'
   pull_request:
     paths:
       - 'cli/**'
       - 'security-patterns.yaml'
+      - 'semgrep/**'
+      - 'extensions/**'
       - 'action.yml'
       - '.github/workflows/cli.yml'
 
@@ -37,7 +41,46 @@ jobs:
       - run: npm ci
       - name: rules.json is in sync with security-patterns.yaml
         run: node scripts/sync-rules.js --check
+      - name: semgrep ruleset is in sync with security-patterns.yaml
+        run: node scripts/sync-semgrep.js --check
       - name: unit tests
         run: node --test
       - name: smoke — self-scan the vulnerable examples (report only)
         run: node bin.js scan ../examples --no-fail
+
+  semgrep:
+    name: semgrep ruleset (validate in RE2)
+    runs-on: ubuntu-latest
+    container:
+      # Pinned: `latest` + `--strict` would turn a future Semgrep behaviour change
+      # into spurious CI red. Bump deliberately.
+      image: semgrep/semgrep:1.163.0
+    steps:
+      - uses: actions/checkout@v4
+      - name: ruleset compiles in Semgrep's RE2 engine
+        # --validate exits non-zero on any unloadable rule (e.g. a regex RE2 rejects
+        # as "too large"); --strict treats rule-level warnings as errors too.
+        run: semgrep --validate --config semgrep/solana-security-standard.yaml --strict --metrics off
+      - name: rules fire on the vulnerable examples (sanity, report-only)
+        run: semgrep scan --config semgrep/solana-security-standard.yaml --metrics off --no-git-ignore examples || true
+
+  extension:
+    name: vscode extension (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    defaults:
+      run:
+        working-directory: extensions/vscode
+        shell: bash   # the && chain below must behave the same on the Windows runner
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      # The extension vendors the reviewed scanner core from ../../cli at build time
+      # (engine/ is gitignored), then runs its pure diagnostics tests. No deps to install.
+      - name: vendor the scanner engine + run tests
+        run: node scripts/sync-engine.js && node --test

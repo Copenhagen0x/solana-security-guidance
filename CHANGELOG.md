@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] — 2026-06-02
+
+Makes the standard **installable everywhere**: the SOL-0XX rules now run in your editor and in any Semgrep pipeline, and the CLI is publish-ready on npm. All three reuse the same source of truth (`security-patterns.yaml`) — no rule logic is duplicated.
+
+### Added — VS Code extension ([`extensions/vscode/`](extensions/vscode))
+
+- **Inline SOL-0XX squiggles as you type**, in any `.rs` file — works in **VS Code, Cursor, and Windsurf**. A finding is a `WARNING` with the rule id and a link to the rule.
+- Runs the **same scanner core** as the CLI, vendored into the extension at build time (`scripts/sync-engine.js`) so the `.vsix` is self-contained. Finding→diagnostic mapping is a pure, unit-tested module (`src/diagnostics.js`) with no `vscode` import; the editor wiring (`src/extension.js`) is fail-closed — a scan error can never break the editor.
+- 100% local — no network calls, no telemetry. Off-chain dirs are excluded exactly as the scanner does.
+
+### Added — Semgrep ruleset ([`semgrep/`](semgrep))
+
+- **`solana-security-standard.yaml`** — all 17 deterministic SOL-0XX patterns as Semgrep `pattern-regex` rules (`languages: [rust]`), usable via `semgrep --config` from a checkout or straight from a GitHub raw URL.
+- Generated from `security-patterns.yaml` by `cli/scripts/sync-semgrep.js`; CI fails if the committed file drifts and runs `semgrep --validate` so a rule Semgrep's RE2 engine can't compile is caught on every change.
+- **One documented divergence (SOL-011):** the scanner's depth-2 paren-balanced regex is rejected by RE2 as *"too large,"* so the Semgrep rule uses an RE2-safe delimiter-bounded window (recorded in that rule's `metadata.note`). It flags the same real `#[account(close = …)]` attributes, including long multi-line ones — verified against live Semgrep.
+
+### Added — npm publish-readiness
+
+- `@jelleo/solana-security-standard` is publish-ready (`publishConfig.access: public`, `prepublishOnly` gate that re-checks both generated artifacts and runs the test suite). `npx @jelleo/solana-security-standard` works once published.
+
+## [1.2.0] — 2026-06-02
+
+### Added — installable surface (CLI + GitHub Action)
+
+- **Zero-dependency scanner CLI** (`npx @jelleo/solana-security-standard scan`) — matches the SOL-0XX fast patterns against full file content (so multi-line constructs are caught), with human / JSON / SARIF output and a non-zero exit on findings so it gates any CI. `rules.json` is pre-compiled from `security-patterns.yaml` so the runtime needs no YAML parser.
+- **GitHub Action** (`Copenhagen0x/solana-security-guidance@v1`) — runs the same patterns as a PR check, uploads SARIF for inline code-scanning annotations, and ships the adoption badge.
+- **Hardening** (adversarial review before shipping): ReDoS-prone `[^)]*` quantifiers were bounded (whole-file scans went from ~70–86 s to single-digit ms on 1 MB inputs), and Action inputs are passed via `env:` with a `--` sentinel so an untrusted `paths` value can't inject scanner flags.
+
 ## [1.1.0] — 2026-06-02
 
 Rebranded as the **Solana Security Standard** — `SOL-0XX` is now positioned as a stable, citable bug-class taxonomy (cite it the way you'd cite a CWE). Adds 8 rules (SOL-021 through SOL-028) and corrects several rule definitions that an adversarial review found technically wrong before they shipped.
