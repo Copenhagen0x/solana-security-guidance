@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#050504; --win:#0d0d0b; --bar:#171714; --rule:rgba(255,255,255,0.07);
+    --ink:#dcdcd5; --ink-2:#9a9a92; --ink-3:#6a6a62; --amber:#f5b800;
+    --kw:#b694ff; --type:#f5b800; --fn:#7ec7ff; --str:#8fd98f; --num:#f0a868;
+    --com:#5e6a59; --mono:'JetBrains Mono',ui-monospace,monospace; --sans:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1600px;height:1000px}
+  body{
+    background:
+      radial-gradient(1200px 600px at 50% -10%, rgba(245,184,0,0.06), transparent 60%),
+      linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px) 0 0/44px 44px,
+      linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px) 0 0/44px 44px,
+      var(--bg);
+    font-family:var(--sans); color:var(--ink);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:34px;
+  }
+  /* ---- editor window ---- */
+  .win{
+    width:1380px; background:var(--win); border:1px solid var(--rule); border-radius:16px;
+    overflow:hidden; box-shadow:0 40px 90px rgba(0,0,0,0.55), 0 10px 30px rgba(245,184,0,0.05);
+  }
+  .bar{height:52px; background:var(--bar); border-bottom:1px solid var(--rule);
+       display:flex; align-items:center; padding:0 22px; position:relative}
+  .dots{display:flex; gap:9px}
+  .dot{width:13px;height:13px;border-radius:50%}
+  .dot.r{background:#ff5f57}.dot.y{background:#febc2e}.dot.g{background:#28c840}
+  .bar .title{position:absolute; left:0; right:0; text-align:center; font-family:var(--mono);
+              font-size:13px; color:var(--ink-2); letter-spacing:0.02em}
+  .crumb{font-family:var(--mono); font-size:13px; color:var(--ink-3); padding:14px 26px 4px;
+         letter-spacing:0.04em}
+  /* ---- code ---- */
+  .code{font-family:var(--mono); font-size:16px; line-height:30px; padding:8px 26px 22px}
+  .row{display:flex; white-space:pre}
+  .row.hl{background:rgba(255,86,86,0.09); box-shadow:inset 3px 0 0 #ff5f57; border-radius:2px}
+  .ln{width:42px; color:#44443e; text-align:right; padding-right:20px; user-select:none}
+  .row.hl .ln{color:#ff8a84}
+  .mk{color:#ff5f57; width:18px}
+  .kw{color:var(--kw)} .ty{color:var(--type)} .fn{color:var(--fn)} .nu{color:var(--num)}
+  .co{color:var(--com); font-style:italic} .st{color:var(--str)} .pl{color:var(--ink)}
+  .mut{color:var(--ink-2)}
+  /* ---- advisory ---- */
+  .adv{margin:6px 26px 26px; background:rgba(245,184,0,0.055); border-left:3px solid var(--amber);
+       border-radius:0 8px 8px 0; padding:20px 24px}
+  .adv-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px}
+  .adv-id{font-family:var(--mono); font-size:14px; color:var(--amber); font-weight:700; letter-spacing:0.02em}
+  .adv-id .warn{margin-right:9px}
+  .adv-tag{font-family:var(--mono); font-size:11px; color:var(--ink-3); letter-spacing:0.18em}
+  .adv-body{font-size:14.5px; line-height:1.62; color:var(--ink-2); max-width:118ch}
+  .adv-body .c{font-family:var(--mono); font-size:0.92em; background:rgba(255,255,255,0.06);
+               color:var(--ink); padding:1px 6px; border-radius:4px}
+  .adv-body .h{font-family:var(--mono); font-size:0.92em; background:rgba(245,184,0,0.12);
+               color:var(--amber); padding:1px 6px; border-radius:4px}
+  .adv-link{margin-top:12px; font-family:var(--mono); font-size:13px; color:var(--amber)}
+  /* ---- footer (single clean row) ---- */
+  .foot{display:flex; align-items:center; gap:14px; font-family:var(--mono); font-size:14px;
+        letter-spacing:0.16em; color:var(--ink-3); white-space:nowrap; text-transform:uppercase}
+  .foot .b{color:var(--ink-2); font-weight:700}
+  .foot .a{color:var(--amber)}
+  .foot .sep{color:#33332e}
+</style>
+</head>
+<body>
+  <div class="win">
+    <div class="bar">
+      <div class="dots"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
+      <div class="title">vulnerable.rs · claude code</div>
+    </div>
+    <div class="crumb">src / lib / vulnerable.rs</div>
+    <div class="code">
+      <div class="row"><span class="ln">17</span><span class="kw">use</span><span class="pl"> anchor_lang::prelude::*;</span></div>
+      <div class="row"><span class="ln">18</span><span></span></div>
+      <div class="row"><span class="ln">19</span><span class="kw">pub fn </span><span class="fn">activate</span><span class="pl">(</span></div>
+      <div class="row"><span class="ln">20</span><span class="pl">    ctx: </span><span class="ty">Context</span><span class="pl">&lt;</span><span class="ty">ActivateAsset</span><span class="pl">&gt;,</span></div>
+      <div class="row"><span class="ln">21</span><span class="pl">    asset_id: </span><span class="ty">u32</span><span class="pl">,</span></div>
+      <div class="row hl"><span class="ln">22</span><span class="mk">▶</span><span class="pl">   now_slot: </span><span class="ty">u64</span><span class="pl">,</span><span class="co">            // ← attacker-controlled</span></div>
+      <div class="row"><span class="ln">23</span><span class="pl">) -&gt; </span><span class="ty">Result</span><span class="pl">&lt;()&gt; {</span></div>
+      <div class="row"><span class="ln">24</span><span class="pl">    </span><span class="kw">let mut</span><span class="pl"> market = ctx.accounts.market.</span><span class="fn">try_borrow_mut_data</span><span class="pl">()?;</span></div>
+      <div class="row"><span class="ln">25</span><span class="co">    // caller-supplied `now_slot` written into trusted state</span></div>
+      <div class="row"><span class="ln">26</span><span class="pl">    market[asset_id </span><span class="kw">as</span><span class="pl"> usize..]</span></div>
+      <div class="row"><span class="ln">27</span><span class="pl">        .</span><span class="fn">copy_from_slice</span><span class="pl">(&amp;now_slot.</span><span class="fn">to_le_bytes</span><span class="pl">());</span></div>
+      <div class="row"><span class="ln">28</span><span class="ty">    Ok</span><span class="pl">(())</span></div>
+      <div class="row"><span class="ln">29</span><span class="pl">}</span></div>
+    </div>
+    <div class="adv">
+      <div class="adv-head">
+        <div class="adv-id"><span class="warn">⚠</span>Jelleo SOL-001 · unauthenticated now_slot</div>
+        <div class="adv-tag">CLAUDE-CODE · PER-EDIT CHECK</div>
+      </div>
+      <div class="adv-body">
+        Handler accepts <span class="c">now_slot</span> from instruction data. Authenticate against <span class="c">Clock::get()?.slot</span> before persisting — caller-controlled clocks enable permanent DoS of permissionless cranks. Two confirmed-exploitable bounty wins in this class: <span class="h">percolator-prog#107</span> (ACTIVATE, fixed <span class="c">6512fa1</span>) and <span class="h">percolator-cli#78</span> F33 (RETIRE, fixed <span class="c">3fd9b1d</span>).
+      </div>
+      <div class="adv-link">→ github.com/Copenhagen0x/solana-security-guidance#sol-001</div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span class="b">JELLEO SOLANA SECURITY STANDARD</span>
+    <span class="sep">·</span><span class="a">v1.8.1</span>
+    <span class="sep">·</span><span>28 RULES</span>
+    <span class="sep">·</span><span>2 BOUNTY WINS (SOL-001)</span>
+    <span class="sep">·</span><span class="a">JELLEO.COM</span>
+  </div>
+</body>
+</html>
