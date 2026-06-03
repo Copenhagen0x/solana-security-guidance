@@ -5,6 +5,11 @@
   "version": "1.0.0",
   "publisher": "jelleo",
   "license": "MIT",
+  "icon": "icon.png",
+  "galleryBanner": {
+    "color": "#050504",
+    "theme": "dark"
+  },
   "engines": {
     "vscode": "^1.75.0"
   },
