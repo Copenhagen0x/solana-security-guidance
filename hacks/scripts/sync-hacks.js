@@ -43,6 +43,13 @@ function formatMoney(n) {
   return '$' + n;
 }
 
+// GitHub heading slug for "SOL-0XX · Title": lowercase, drop punctuation in place (keep _ and -),
+// then map EACH whitespace char to one hyphen (no collapsing) so "a / b" -> "a--b" — matches the
+// live md anchors. The single source of truth for rule anchors; content/ imports this.
+function ruleAnchor(rule, title) {
+  return `${rule.toLowerCase()}--${title.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s/g, '-')}`;
+}
+
 // Validate the dataset against valid rule ids. Returns an array of error strings (empty = clean).
 function validate(data, validRuleIds) {
   const errors = [];
@@ -119,10 +126,7 @@ function renderReadme(data, ruleTitles) {
   const coveredRules = Object.keys(ruleToHacks).sort();
 
   const GH = 'https://github.com/Copenhagen0x/solana-security-guidance/blob/main/claude-security-guidance.md';
-  const slug = (rule, title) =>
-    // GitHub heading slug: lowercase, drop punctuation in place (keep _ and -), then map EACH
-    // whitespace char to one hyphen (no collapsing) so "a / b" -> "a--b", matching the live anchors.
-    `${GH}#${rule.toLowerCase()}--${title.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s/g, '-')}`;
+  const slug = (rule, title) => `${GH}#${ruleAnchor(rule, title)}`;
 
   const L = [];
   L.push('# The Solana Hacks Database');
@@ -225,4 +229,4 @@ function main() {
 
 if (require.main === module) main();
 
-module.exports = { validate, renderReadme, loadRuleTitles, formatMoney, VALID_CATEGORIES };
+module.exports = { validate, renderReadme, loadRuleTitles, formatMoney, ruleAnchor, VALID_CATEGORIES };
