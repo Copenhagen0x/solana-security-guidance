@@ -69,6 +69,22 @@ npx @jelleo/solana-security-standard scan ./programs
 
 Human, JSON, or SARIF output; exits non-zero on findings (so it gates any CI). Zero dependencies. Details in [`cli/`](cli/).
 
+## Run it in your editor — VS Code / Cursor / Windsurf
+
+The [VS Code extension](extensions/vscode) shows SOL-0XX findings as inline warning squiggles as you
+type, in any `.rs` file. Same engine as the CLI, 100% local (no telemetry). Works in VS Code, Cursor,
+and Windsurf. Details in [`extensions/vscode/`](extensions/vscode/).
+
+## Run it with Semgrep
+
+Already have a Semgrep pipeline? Point it at the [ported ruleset](semgrep):
+
+```bash
+semgrep --config https://raw.githubusercontent.com/Copenhagen0x/solana-security-guidance/main/semgrep/solana-security-standard.yaml ./programs
+```
+
+The same SOL-0XX rules as `pattern-regex` rules. Details in [`semgrep/`](semgrep/).
+
 ## What you get
 
 28 rules covering the dominant Solana program bug classes. **SOL-001 covers two confirmed-exploitable bounty wins (the same caller-controlled `now_slot` class fixed in both the ACTIVATE and RETIRE branches of percolator).** The remaining 27 rules are drawn from documented Solana audit patterns — some from our published disclosures (with maintainer triage classifications noted in the Source column), some from public bug-class taxonomy.
