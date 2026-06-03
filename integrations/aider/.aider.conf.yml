@@ -1,0 +1,12 @@
+# Solana Security Standard for Aider.
+# Loads the SOL-0XX conventions into every session so Aider writes and reviews
+# Solana/Anchor code against the rules.
+read: CONVENTIONS.md
+
+# Optional: also run the real scanner as a Rust lint gate after edits. OFF by
+# default - the scanner is an advisory heuristic (a match means "look here", not
+# a confirmed bug), so as a hard gate it can prompt fixes on correct code.
+# Uncomment to enable. `-r .` makes the off-chain excludes work on the appended
+# file path; `@1` pins to major 1 (gets 1.x updates, not a 2.0 jump).
+# lint-cmd:
+#   - "rust: npx --yes @jelleo/solana-security-standard@1 scan -r ."

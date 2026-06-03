@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/Copenhagen0x/solana-security-guidance/actions/workflows/validate.yml/badge.svg)](https://github.com/Copenhagen0x/solana-security-guidance/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.3.1-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)](CHANGELOG.md)
 [![Bounty wins](https://img.shields.io/badge/bounty_wins-2_confirmed_(SOL--001)-orange)](https://jelleo.com/cycles)
 
 Drop these two files into your Solana project's `.claude/` directory and your IDE will flag Solana-specific bugs while you code — caller-controlled clock values, cross-market state asymmetry, wrapper handlers that drift from engine logic, missing Anchor constraints, and 24 more bug classes drawn from real audits.
@@ -84,6 +84,22 @@ semgrep --config https://raw.githubusercontent.com/Copenhagen0x/solana-security-
 ```
 
 The same SOL-0XX rules as `pattern-regex` rules. Details in [`semgrep/`](semgrep/).
+
+## Use it in your AI coding agent — Codex · Copilot · Cursor · Windsurf · Cline · Aider
+
+Most AI coding tools read a rules/instructions file. [`integrations/`](integrations/) ships the SOL-0XX
+standard in each tool's native format — all generated from the one source — so your assistant writes
+**and reviews** Solana/Anchor code against the rules. Copy the file for your tool (full matrix in
+[`integrations/README.md`](integrations/README.md)):
+
+| Tool | Copy into your repo |
+| --- | --- |
+| Codex / any `AGENTS.md` agent | `integrations/codex/AGENTS.md` |
+| GitHub Copilot | `integrations/copilot/.github/copilot-instructions.md` |
+| Cursor | `integrations/cursor/.cursor/` |
+| Windsurf | `integrations/windsurf/.windsurf/` |
+| Cline | `integrations/cline/.clinerules` |
+| Aider | `integrations/aider/` (with an optional scanner lint command) |
 
 ## What you get
 

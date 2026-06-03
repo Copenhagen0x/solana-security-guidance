@@ -7,6 +7,8 @@ on:
       - 'cli/**'
       - 'security-patterns.yaml'
       - 'semgrep/**'
+      - 'integrations/**'
+      - 'claude-security-guidance.md'
       - 'extensions/**'
       - 'action.yml'
       - '.github/workflows/cli.yml'
@@ -15,6 +17,8 @@ on:
       - 'cli/**'
       - 'security-patterns.yaml'
       - 'semgrep/**'
+      - 'integrations/**'
+      - 'claude-security-guidance.md'
       - 'extensions/**'
       - 'action.yml'
       - '.github/workflows/cli.yml'
@@ -43,6 +47,8 @@ jobs:
         run: node scripts/sync-rules.js --check
       - name: semgrep ruleset is in sync with security-patterns.yaml
         run: node scripts/sync-semgrep.js --check
+      - name: AI-tool integrations are in sync with the guidance
+        run: node scripts/sync-integrations.js --check
       - name: unit tests
         run: node --test
       - name: smoke — self-scan the vulnerable examples (report only)

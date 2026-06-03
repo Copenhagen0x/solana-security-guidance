@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] — 2026-06-03
+
+### Added — AI coding-agent installers ([`integrations/`](integrations))
+
+- The SOL-0XX standard now drops into **Codex, GitHub Copilot, Cursor, Windsurf, Cline, and Aider** as each tool's native rules/instructions file, so the assistant writes **and reviews** Solana/Anchor code against the rules. All generated from the one source (`claude-security-guidance.md`) by `cli/scripts/sync-integrations.js` — no guidance is hand-duplicated. Install matrix in [`integrations/README.md`](integrations/README.md).
+- Per-tool wrappers handle each tool's quirks: Cursor `.mdc` frontmatter (`alwaysApply`), **Windsurf split into two files** under its ~6 KB per-file cap (so SOL-024–028 aren't silently dropped), and an Aider `CONVENTIONS.md` plus an **opt-in** scanner `lint-cmd` (off by default since the scanner is an advisory heuristic; when enabled it pins the version and passes `-r .` so off-chain path excludes work).
+- **Honest coverage:** the AI-instruction files carry all **28 documented** rules; the machine-checkable surfaces (CLI, Action, Semgrep, extension) enforce the **17** with deterministic patterns. CI gains a `sync-integrations --check` gate (with orphan detection); the generator anchors its source slice to a unique line so a stray mention can't corrupt output.
+
 ## [1.3.1] — 2026-06-02
 
 Marketplace-debut polish — no rule or scanner-logic changes.
