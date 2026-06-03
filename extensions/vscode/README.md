@@ -1,26 +1,21 @@
-# Solana Security Standard — VS Code extension
+# Solana Security Standard
 
-Flags **Solana / Anchor security bugs (SOL-0XX) inline as you code** — caller-controlled `now_slot`, missing signer/owner checks, unchecked arithmetic, `init_if_needed` reinit, raw sysvar deserialize, and more. By [Jelleo](https://jelleo.com), the team that finds the bugs.
-
-Works in **VS Code, Cursor, and Windsurf**. Same engine as the [CLI and GitHub Action](https://github.com/Copenhagen0x/solana-security-guidance).
+Inline SOL-0XX security checks for Solana and Anchor Rust, right as you type. Works in VS Code, Cursor, and Windsurf.
 
 ## What it does
 
-Open any `.rs` file and the extension shows a warning squiggle wherever a SOL-0XX pattern fires, with the rule ID and a link to the full rule. It's a **fast, advisory tripwire** — a finding means "look here," not "definitely a bug." Off-chain code (`client/`, `cli/`, `offchain/`, `sdk/`, `tests/`) is excluded where the patterns are harmless there.
+Open any `.rs` file and the extension shows a warning wherever a SOL-0XX pattern matches, with the rule ID and a link to the rule. It is a fast, advisory check: a match means "look here", not a confirmed issue. Off-chain folders (client, cli, offchain, sdk, tests) are skipped.
 
-No configuration needed. Toggle with the `solanaSecurityStandard.enable` setting.
+No setup needed. Toggle it with the `solanaSecurityStandard.enable` setting.
 
 ## How it fits
 
-This is the per-edit layer of the **[Solana Security Standard](https://github.com/Copenhagen0x/solana-security-guidance)**:
+This is the editor layer of the Solana Security Standard. The same rule set also runs as a CLI (`npx @jelleo/solana-security-standard`), a GitHub Action, a Semgrep ruleset, and a Claude Code plugin.
 
-- **In your editor** — this extension (live squiggles).
-- **In Claude Code** — the security-guidance plugin (semantic review).
-- **In CI** — the [GitHub Action](https://github.com/Copenhagen0x/solana-security-guidance) (gates PRs + badge) and the `npx @jelleo/solana-security-standard` CLI.
-- **A full audit** — [jelleo.com](https://jelleo.com).
+Source code and the full rule list: https://github.com/Copenhagen0x/solana-security-guidance
 
 ## Privacy
 
-100% local. Your code is scanned on your machine and never leaves it — no network calls, no telemetry.
+100% local. Your code is scanned on your machine and never leaves it. No network calls, no telemetry.
 
-MIT · [Jelleo](https://jelleo.com)
+MIT licensed. By Jelleo.

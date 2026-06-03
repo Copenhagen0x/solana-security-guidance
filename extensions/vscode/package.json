@@ -1,7 +1,7 @@
 {
   "name": "solana-security-standard",
   "displayName": "Solana Security Standard",
-  "description": "Flag Solana/Anchor security bugs (SOL-0XX) inline as you code — by Jelleo.",
+  "description": "Inline SOL-0XX security checks for Solana and Anchor Rust.",
   "version": "1.0.0",
   "publisher": "jelleo",
   "license": "MIT",
