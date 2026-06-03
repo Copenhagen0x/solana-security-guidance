@@ -33,7 +33,11 @@ function globToRegExp(glob) {
       re += c;
     }
   }
-  return new RegExp('^' + re + '$');
+  // Case-INSENSITIVE: a `Tests/` dir must still match `**/tests/**` and a `Lib.RS` file must still
+  // match `**/*.rs`. Path globs describe dir/file *names*, which users case differently; matching
+  // case-sensitively let `Tests/` bypass the test exclude (scanned as on-chain) and `Lib.RS` bypass
+  // the include (silently unscanned). The patterns here are ASCII, so the `i` flag is sufficient.
+  return new RegExp('^' + re + '$', 'i');
 }
 
 function compiled(glob) {

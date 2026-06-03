@@ -39,3 +39,16 @@ test('matchesAny', () => {
   assert.ok(matchesAny('a/tests/x.rs', ['**/foo/**', '**/tests/**']));
   assert.ok(!matchesAny('a/src/x.rs', ['**/foo/**', '**/tests/**']));
 });
+
+test('matching is case-insensitive (dir + file names vary in case)', () => {
+  // include: an uppercase extension still matches (else `Lib.RS` silently never scans)
+  assert.ok(matchesGlob('src/Lib.RS', '**/*.rs'));
+  assert.ok(matchesGlob('PROGRAM.Rs', '**/*.rs'));
+  // excludes: case-variant dir segments still match (a `Tests/` dir IS a test dir)
+  assert.ok(matchesGlob('a/Tests/b.rs', '**/tests/**'));
+  assert.ok(matchesGlob('TESTS/b.rs', '**/tests/**'));
+  assert.ok(matchesGlob('app/SDK/x.rs', '**/sdk/**'));
+  assert.ok(matchesGlob('src/State.rs', '**/state*.rs'));
+  // ...but a segment that only CONTAINS the name must still not match (case-insensitive, not substring)
+  assert.ok(!matchesGlob('a/MyTests/b.rs', '**/tests/**'), 'MyTests/ is not a tests/ segment');
+});

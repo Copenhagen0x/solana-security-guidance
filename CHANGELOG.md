@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.1] — 2026-06-03
+
+### Fixed — security hardening (adversarial review of the overnight work)
+
+- **Case-insensitive path matching ([`cli/src/glob.js`](cli/src/glob.js)).** The off-chain/test exclude globs (`**/tests/**`, `**/client/**`, …) and the `**/*.rs` include matched case-sensitively, so a `Tests/` directory was scanned as on-chain (false positives) and a `Lib.RS` file was silently never scanned. Matching is now case-insensitive across all three engine copies (CLI, MCP, VS Code extension), each with a lock-in test.
+- **MCP server ([`mcp/`](mcp)).** JSON-RPC batches are bounded at 100 items (a huge batch can no longer block the event loop); an all-notification over-cap batch correctly gets no reply (JSON-RPC 2.0 §6); `isTestPath` is case-insensitive so the test-path advisory note fires for mixed-case paths too.
+- **Hacks-Database validator ([`hacks/scripts/sync-hacks.js`](hacks/scripts/sync-hacks.js)).** Free-text fields that render verbatim into the public README now reject `<`, `>`, `|`, `](`, newlines, and bare URLs, so a bad entry can't inject HTML, a spoof link, a broken table, or an autolink (documented in [`hacks/SCHEMA.md`](hacks/SCHEMA.md)).
+- Reviewed to 0 Critical/High/Medium by code-reviewer + paranoid-goober + threat-modeler (3 rounds to convergence — the threat-modeler found 2 Mediums the other two missed, plus a third glob copy in the extension). Version 1.8.1.
+
 ## [1.8.0] — 2026-06-03
 
 ### Added — disclosure feed ([`disclosures/`](disclosures))

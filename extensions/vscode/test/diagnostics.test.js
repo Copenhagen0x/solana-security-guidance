@@ -51,6 +51,15 @@ test('exclude_paths: a file under tests/ yields nothing; under src/ it fires', (
   assert.ok(computeDiagnostics(text, inWs('src/x.rs'), root).length >= 1);
 });
 
+test('exclude + include match case-insensitively (mixed-case dirs/extensions)', () => {
+  const text = 'pub fn a(now_slot: u64){}';
+  // a mixed-case Tests/ dir is still excluded (before the glob fix it was scanned as on-chain):
+  assert.equal(computeDiagnostics(text, inWs('src/Tests/x.rs'), root).length, 0);
+  assert.equal(computeDiagnostics(text, inWs('TESTS/x.rs'), root).length, 0);
+  // a mixed-case `.RS` extension still scans (before the fix it was silently skipped):
+  assert.ok(computeDiagnostics(text, inWs('Programs/Foo/Lib.RS'), root).length >= 1);
+});
+
 test('relPosix: workspace-relative, posix slashes, basename fallback outside ws', () => {
   assert.equal(relPosix(inWs('src/lib.rs'), root), 'src/lib.rs');
   const elsewhere = path.resolve(path.sep === '\\' ? 'C:\\other\\lib.rs' : '/other/lib.rs');

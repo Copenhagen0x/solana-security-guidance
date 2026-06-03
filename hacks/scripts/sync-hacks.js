@@ -79,6 +79,9 @@ function validate(data, validRuleIds) {
     seenIds.add(h.id);
     for (const k of ['name', 'protocol', 'root_cause', 'rule_link']) {
       if (typeof h[k] !== 'string' || !h[k].trim()) errors.push(`${id}: "${k}" must be a non-empty string`);
+      // These render verbatim into the public README markdown — reject raw HTML / link / table
+      // injection chars so a bad entry can't smuggle a <script>, a ](evil) link, or a broken | cell.
+      else if (/[<>|\r\n]|\]\(|https?:\/\//.test(h[k])) errors.push(`${id}: "${k}" must not contain < > | newlines, "](", or a bare URL — it renders verbatim into the README`);
     }
     if (typeof h.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(h.date || '')) {
       errors.push(`${id}: date must be YYYY-MM-DD`);
