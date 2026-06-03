@@ -108,13 +108,27 @@ test('scan_solana_code normalizes odd filenames so a scan is never silently a no
 
 test('normalizeName yields a glob-matchable lowercase-.rs relative path', () => {
   assert.equal(tools.normalizeName('lib.rs'), 'lib.rs');
-  assert.equal(tools.normalizeName('Lib.RS'), 'Lib.rs'); // lowercase the ext (the **/*.rs glob is case-sensitive), NOT Lib.RS.rs
+  assert.equal(tools.normalizeName('Lib.RS'), 'Lib.RS'); // case PRESERVED — glob.js matches **/*.rs case-insensitively
   assert.equal(tools.normalizeName('code.txt'), 'code.txt.rs'); // append so the scan fires
   assert.equal(tools.normalizeName('untitled'), 'untitled.rs');
-  assert.equal(tools.normalizeName('/Users/x/src/lib.rs'), 'Users/x/src/lib.rs'); // leading slash stripped
+  assert.equal(tools.normalizeName('/Users/x/src/lib.rs'), 'Users/x/src/lib.rs'); // leading slash stripped, case preserved
   assert.equal(tools.normalizeName('C:/x/lib.rs'), 'x/lib.rs'); // drive + slash stripped
   assert.equal(tools.normalizeName('..'), 'input.rs'); // all-dots -> sane default
   assert.equal(tools.normalizeName(''), 'input.rs');
+});
+
+test('mixed-case paths match case-insensitively — excludes fire AND on-chain still scans', () => {
+  const code = 'pub fn a(now_slot: u64){}'; // SOL-001, excluded on test paths
+  // normalizeName preserves the caller's case; the case-insensitive glob (glob.js) does the matching:
+  assert.equal(tools.normalizeName('Tests/x.rs'), 'Tests/x.rs');
+  assert.equal(tools.normalizeName('Lib.RS'), 'Lib.RS');
+  // mixed-case TEST dirs are excluded (the original bug — would have been scanned as on-chain):
+  for (const f of ['Tests/x.rs', 'TESTS/x.rs', 'src/Tests/mod.rs']) {
+    assert.match(tools.scanCode({ code, filename: f }), /No SOL-0XX findings/, `${f} must be excluded as a test path`);
+  }
+  // and mixed-case ON-CHAIN paths/extensions still SCAN (no false-negative from over-eager excludes):
+  assert.match(tools.scanCode({ code, filename: 'Programs/Foo/src/Lib.RS' }), /SOL-001/, 'Lib.RS must still scan');
+  assert.match(tools.scanCode({ code, filename: 'SDKManager.rs' }), /SOL-001/, 'a name containing "sdk" (not a path segment) must still scan');
 });
 
 test('a notification-shaped message (no id) never gets a reply, for any method', () => {
@@ -122,6 +136,24 @@ test('a notification-shaped message (no id) never gets a reply, for any method',
     const r = srv.respond({ jsonrpc: '2.0', method, params: { name: 'scan_solana_code', arguments: { code: '' } } });
     assert.equal(r, undefined, `no reply for notification ${method}`);
   }
+});
+
+// --- batch cap (added after threat-model review) ---
+
+test('respondBatch caps a huge batch so it cannot block the event loop', () => {
+  const N = srv.MAX_BATCH;
+  assert.ok(N >= 1 && N <= 200, `MAX_BATCH must stay bounded (got ${N}) — the rate-DoS residual is only acceptable while the per-line cap is small`);
+  const big = Array.from({ length: N + 150 }, (_, i) => ({ jsonrpc: '2.0', id: i, method: 'ping' }));
+  const replies = srv.respondBatch(big);
+  assert.equal(replies.length, N + 1, `capped to exactly ${N} replies + 1 overflow error`); // catches a MAX_BATCH change, not just an increase
+  assert.equal(replies.filter((r) => r.error && r.error.code === -32600).length, 1, 'one batch-too-large error');
+  // an all-notification oversized batch gets NO reply (JSON-RPC 2.0 §6) — not a spurious error
+  const allNotif = srv.respondBatch(Array.from({ length: N + 1 }, () => ({ jsonrpc: '2.0', method: 'notifications/x' })));
+  assert.equal(allNotif.length, 0, 'all-notification batch (even oversized) gets no response');
+  // a small batch is unaffected; notifications still dropped
+  const small = srv.respondBatch([{ jsonrpc: '2.0', id: 1, method: 'ping' }, { jsonrpc: '2.0', method: 'notifications/x' }]);
+  assert.equal(small.length, 1);
+  assert.equal(small[0].id, 1);
 });
 
 // --- end-to-end stdio integration (real subprocess) ---

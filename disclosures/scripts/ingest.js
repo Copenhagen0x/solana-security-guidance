@@ -66,12 +66,16 @@ function buildCandidate(d) {
       classifier_suggestions: suggestions.map((s) => ({ rule: s.rule, score: s.score, hits: s.hits })),
       code_preventable_guess: cp,
       notes:
-        'Candidate only — verify the facts, confirm/curate the sol_rules, fill the TODOs, and check ' +
-        'every source resolves before adding to hacks/hacks.json. The classifier is a heuristic.',
+        'Candidate only — verify the facts, confirm/curate the sol_rules, fill the TODOs, ensure the ' +
+        'id is unique (protocol+month can collide), and check every source resolves before adding to ' +
+        'hacks/hacks.json. The classifier is a heuristic; sync-hacks validate() is the final gate.',
     },
   };
 }
 
+// Developer tool, NOT a network service: it reads a disclosure-JSON path from argv (or stdin). argv
+// is trusted (shell access is already a prerequisite) and the only output is a human-reviewed
+// candidate that is never written to hacks.json — do not wire this to untrusted input.
 function readInput() {
   const file = process.argv[2];
   if (file) return fs.readFileSync(file, 'utf8');

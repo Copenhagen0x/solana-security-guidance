@@ -24,17 +24,19 @@ const ADVISORY =
 function normalizeName(filename) {
   let f = String(filename == null ? '' : filename).trim().replace(/\\/g, '/').replace(/^[A-Za-z]:/, '').replace(/^\/+/, '');
   if (!f || /^\.+$/.test(f)) f = 'input.rs'; // empty or all-dots (".", "..") -> a sane default
-  // The `**/*.rs` include is case-sensitive, so a `.RS`/`.Rs` would silently NOT scan.
-  // Lowercase an existing rs suffix (clean display) or add `.rs` so the scan always fires.
-  if (/\.rs$/i.test(f)) f = f.replace(/\.[Rr][Ss]$/, '.rs');
-  else f += '.rs';
+  // Glob matching is case-INSENSITIVE (see engine/glob.js), so `Lib.RS` (include) and `Tests/x.rs`
+  // (exclude) are handled by the matcher - we preserve the caller's path + case here (so the displayed
+  // finding path matches what they passed) and only ensure a `.rs` suffix so an odd name still scans.
+  if (!/\.rs$/i.test(f)) f += '.rs';
   return f;
 }
 
 // True for a test path (the exclude most on-chain rules share) - so a clean result on a
 // test file is explained, not silently read as reassurance.
 function isTestPath(f) {
-  return /(^|\/)tests?\//.test(f);
+  // Case-insensitive: normalizeName preserves the caller's case and the glob excludes case-insensitively,
+  // so a `Tests/` path is excluded - the advisory note must recognize it too (else it's silently dropped).
+  return /(^|\/)tests?\//i.test(f);
 }
 
 // scan_solana_code: run the SOL-0XX fast patterns over a Rust snippet.

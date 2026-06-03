@@ -88,6 +88,21 @@ function respond(msg) {
   }
 }
 
+// Process a JSON-RPC batch array, CAPPED so one line can't block the synchronous event loop or
+// balloon the response (consistent with the 200-finding cap in tools.js). Per-line work is bounded;
+// the *rate* of lines is not (a client could send many max-size batch lines) - acceptable here
+// because the transport is a LOCAL stdio pipe the client owns, not a network service. Excess items
+// are dropped, acknowledged with one batch-too-large error ONLY IF some item expected a reply - an
+// all-notification batch gets no response at all, per JSON-RPC 2.0 section 6.
+const MAX_BATCH = 100;
+function respondBatch(arr) {
+  const replies = arr.slice(0, MAX_BATCH).map(respond).filter((r) => r !== undefined);
+  if (arr.length > MAX_BATCH && replies.length) {
+    replies.push({ jsonrpc: '2.0', id: null, error: { code: -32600, message: `batch too large: ${arr.length} items (max ${MAX_BATCH})` } });
+  }
+  return replies;
+}
+
 function handleLine(line) {
   const t = line.trim();
   if (!t) return;
@@ -95,8 +110,8 @@ function handleLine(line) {
   try { msg = JSON.parse(t); } catch { return; } // ignore non-JSON noise
   if (Array.isArray(msg)) {
     // JSON-RPC batch (allowed by the 2024-11-05 revision): reply with an array of the
-    // non-notification responses, or stay silent if the batch was all notifications.
-    const replies = msg.map(respond).filter((r) => r !== undefined);
+    // non-notification responses (bounded), or stay silent if it was all notifications.
+    const replies = respondBatch(msg);
     if (replies.length) send(replies);
     return;
   }
@@ -109,4 +124,4 @@ if (require.main === module) {
   rl.on('line', handleLine);
 }
 
-module.exports = { respond, callTool, TOOL_DEFS, SERVER_INFO, PROTOCOL_VERSION };
+module.exports = { respond, respondBatch, MAX_BATCH, callTool, TOOL_DEFS, SERVER_INFO, PROTOCOL_VERSION };
