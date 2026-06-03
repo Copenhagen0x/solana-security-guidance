@@ -1,0 +1,178 @@
+{
+  "version": "1.0.0",
+  "description": "The Solana Hacks Database — real, disclosed Solana program exploits mapped to the Solana Security Standard (SOL-0XX) rule class each one falls under. Source-of-truth for hacks/README.md (run scripts/sync-hacks.js). Facts are cited; mappings are honest — see SCHEMA.md. We never claim a rule 'would have caught' an incident a code rule cannot prevent (stolen keys, off-chain wallets): those carry code_preventable=false and an empty sol_rules.",
+  "hacks": [
+    {
+      "id": "solend-updatereserveconfig-2021-08",
+      "name": "Solend UpdateReserveConfig authority bypass",
+      "protocol": "Solend",
+      "date": "2021-08-19",
+      "loss_usd": 16000,
+      "category": "missing-authority",
+      "code_preventable": true,
+      "sol_rules": ["SOL-006", "SOL-007"],
+      "root_cause": "The UpdateReserveConfig instruction did not verify that the caller owned the lending market it operated on — the attacker created their own lending-market account and passed it in, then lowered the liquidation threshold and inflated the liquidation bonus to make nearly all positions liquidatable (≈$2M put at risk, so liquidators — potentially the attacker — could profit). It was contained with only ≈$16K realized, but the class — a privileged handler that fails to verify the caller owns the account it mutates — is among the most common Solana bugs.",
+      "rule_link": "SOL-006 (a privileged handler that does not verify the signer/authority) and SOL-007 (an account trusted without checking owner == program_id — here a lending market the attacker created and passed as their own) both flag accepting an attacker-controlled config account.",
+      "sources": [
+        "https://www.helius.dev/blog/solana-hacks"
+      ]
+    },
+    {
+      "id": "wormhole-2022-02",
+      "name": "Wormhole bridge guardian-signature forgery",
+      "protocol": "Wormhole",
+      "date": "2022-02-02",
+      "loss_usd": 326000000,
+      "category": "account-validation",
+      "code_preventable": true,
+      "sol_rules": ["SOL-025", "SOL-007"],
+      "root_cause": "The Solana bridge's verify_signatures used the deprecated load_instruction_at instead of load_instruction_at_checked, so it never verified that the supplied instructions sysvar was the real Sysvar1nstructions account. The attacker passed a look-alike account containing a fabricated Secp256k1 verification result, forged the guardian signature set, and minted 120,000 wETH with no backing — the second-largest DeFi exploit at the time.",
+      "rule_link": "SOL-025 (sysvar read by raw/unchecked deserialize instead of a key-checking accessor) is exactly this bug; SOL-007 (owner/account not verified) is the same class of trusting an attacker-supplied account.",
+      "sources": [
+        "https://www.halborn.com/blog/post/explained-the-wormhole-hack-february-2022",
+        "https://www.certik.com/blog/wormhole-bridge-exploit-incident-analysis"
+      ]
+    },
+    {
+      "id": "cashio-2022-03",
+      "name": "Cashio infinite-mint via unvalidated collateral mint",
+      "protocol": "Cashio",
+      "date": "2022-03-23",
+      "loss_usd": 52800000,
+      "category": "account-validation",
+      "code_preventable": true,
+      "sol_rules": ["SOL-015", "SOL-007"],
+      "root_cause": "Collateral validation checked that the token type matched the saber_swap.arrow account but never validated the mint field inside that arrow account. The attacker supplied a fake arrow account, deposited worthless collateral, and minted over 2 billion unbacked CASH, collapsing the stablecoin to zero.",
+      "rule_link": "SOL-015 (an Account cross-reference with no has_one / constraint tying related accounts together) and SOL-007 (owner/field not verified) catch the missing link in the collateral account chain.",
+      "sources": [
+        "https://www.halborn.com/blog/post/explained-the-cashio-hack-march-2022",
+        "https://www.coindesk.com/tech/2022/03/23/stablecoin-cashio-suffers-infinite-glitch-exploit-tvl-drops-by-28m"
+      ]
+    },
+    {
+      "id": "crema-finance-2022-07",
+      "name": "Crema Finance fake tick-account fee drain",
+      "protocol": "Crema Finance",
+      "date": "2022-07-02",
+      "loss_usd": 8800000,
+      "category": "account-validation",
+      "code_preventable": true,
+      "sol_rules": ["SOL-007", "SOL-017"],
+      "root_cause": "The CLMM read pool tick data from a tick account whose owner was not verified — the attacker created a fake tick account and wrote the pool's initialized tick address into it to pass a weak identity check. Fee math then trusted the fabricated tick data, and the attacker claimed inflated fees, draining the pools (≈69,423 SOL + 6.5M USDC) using Solend flash loans.",
+      "rule_link": "SOL-007 (AccountInfo used without owner == program_id) and SOL-017 (raw account data trusted without typed deserialize + validation) flag trusting an attacker-controlled tick account.",
+      "sources": [
+        "https://www.halborn.com/blog/post/explained-the-crema-finance-hack-july-2022",
+        "https://rekt.news/crema-finance-rekt"
+      ]
+    },
+    {
+      "id": "nirvana-finance-2022-07",
+      "name": "Nirvana Finance bonding-curve price manipulation",
+      "protocol": "Nirvana Finance",
+      "date": "2022-07-28",
+      "loss_usd": 3500000,
+      "category": "oracle-manipulation",
+      "code_preventable": true,
+      "sol_rules": ["SOL-024", "SOL-028"],
+      "root_cause": "A $10M USDC flash loan was used to mint ANA and push the protocol's bonding-curve price far above its real value within one transaction; the attacker then redeemed the inflated ANA for ≈$3.5M, with no time-weighting or manipulation-resistance on the price input.",
+      "rule_link": "SOL-024 (a price used with no staleness/confidence/manipulation check) and SOL-028 (no slippage / min-out bound on a value-deriving swap) cover a single-transaction price that can be moved by the caller.",
+      "sources": [
+        "https://www.coindesk.com/tech/2022/07/28/solana-defi-protocol-nirvana-drained-of-liquidity-after-flash-loan-exploit",
+        "https://www.theblock.co/post/159975/solana-stablecoin-nirvana-sinks-90-amid-3-5-million-flash-loan-exploit"
+      ]
+    },
+    {
+      "id": "mango-markets-2022-10",
+      "name": "Mango Markets oracle manipulation",
+      "protocol": "Mango Markets",
+      "date": "2022-10-11",
+      "loss_usd": 116000000,
+      "category": "oracle-manipulation",
+      "code_preventable": true,
+      "sol_rules": ["SOL-024"],
+      "root_cause": "The attacker opened a large MNGO perpetual position, then spent a few million dollars buying MNGO spot across thin markets to pump the oracle-reported price ~2,300% in minutes. The inflated mark let them borrow against the position and drain ≈$116M from the protocol before the price collapsed.",
+      "rule_link": "SOL-024 (a Pyth/Switchboard price consumed with no manipulation-resistance — confidence interval, thin-market/deviation guard) is the exact class: a price feed trusted as if it could not be moved by the caller.",
+      "sources": [
+        "https://blockworks.com/news/mango-markets-mangled-by-oracle-manipulation-for-112m",
+        "https://www.coindesk.com/markets/2022/10/12/how-market-manipulation-led-to-a-100m-exploit-on-solana-defi-exchange-mango"
+      ]
+    },
+    {
+      "id": "cypher-protocol-2023-08",
+      "name": "Cypher Protocol isolated-pool margin miscount",
+      "protocol": "Cypher Protocol",
+      "date": "2023-08-07",
+      "loss_usd": 1035203,
+      "category": "accounting",
+      "code_preventable": true,
+      "sol_rules": ["SOL-004"],
+      "root_cause": "When a sub-account switched to an isolated state, the master account failed to track that change, and a margin check before borrowing did not account for it — combined with oracle feeds not yet being active, this let a user borrow far beyond their real collateral. ≈38,530 SOL + $123,184 USDC ($1.04M) were taken.",
+      "rule_link": "SOL-004 (risk/margin math that drops a spec-mandated term, allowing under-collateralized positions) maps to a margin check that ignores the isolated-state accounting term.",
+      "sources": [
+        "https://www.halborn.com/blog/post/explained-the-cypher-protocol-hack-august-2023",
+        "https://www.coindesk.com/business/2023/08/07/solana-based-cypher-protocol-experiences-exploit-freezes-smart-contract"
+      ]
+    },
+    {
+      "id": "loopscale-2025-04",
+      "name": "Loopscale RateX collateral price manipulation",
+      "protocol": "Loopscale",
+      "date": "2025-04-26",
+      "loss_usd": 5800000,
+      "category": "oracle-manipulation",
+      "code_preventable": true,
+      "sol_rules": ["SOL-024", "SOL-028"],
+      "root_cause": "Loopscale priced RateX PT collateral from a single time-point on-chain price feed (a liquidity pool) with no time-weighting or multi-source aggregation. A flash-loan trade depressed the reported PT price just before loan origination, so the protocol accepted manipulated values and issued under-collateralized loans, draining ≈5.7M USDC + 1,200 SOL.",
+      "rule_link": "SOL-024 (single-source price with no manipulation-resistance) and SOL-028 (no bound protecting against an adverse same-transaction price move) cover instantaneous-price collateral valuation.",
+      "sources": [
+        "https://www.halborn.com/blog/post/explained-the-loopscale-hack-april-2025",
+        "https://www.theblock.co/post/352083/solana-defi-protocol-loopscale-hit-with-5-8-million-exploit-two-weeks-after-launch"
+      ]
+    },
+    {
+      "id": "slope-wallet-2022-08",
+      "name": "Slope mobile-wallet seed-phrase leak",
+      "protocol": "Slope",
+      "date": "2022-08-03",
+      "loss_usd": 8000000,
+      "category": "off-chain-wallet",
+      "code_preventable": false,
+      "sol_rules": [],
+      "root_cause": "Slope's mobile wallet transmitted users' seed phrases in plaintext to a centralized logging server, where they were exposed. Thousands of wallets were drained. This was an off-chain client/operational failure, not a flaw in any on-chain program.",
+      "rule_link": "Out of scope for the Solana Security Standard: no on-chain code rule can prevent a wallet client from leaking the user's seed phrase. Listed for honesty about what code review does and does not cover.",
+      "sources": [
+        "https://www.helius.dev/blog/solana-hacks"
+      ]
+    },
+    {
+      "id": "raydium-2022-12",
+      "name": "Raydium pool-owner key compromise",
+      "protocol": "Raydium",
+      "date": "2022-12-16",
+      "loss_usd": 4400000,
+      "category": "key-compromise",
+      "code_preventable": false,
+      "sol_rules": [],
+      "root_cause": "An attacker obtained the pool-owner authority's private key (a compromised admin key, not a contract bug) and called legitimate privileged admin functions such as withdrawPNL to extract fees and funds from liquidity pools.",
+      "rule_link": "Out of scope: the admin functions worked as written; the failure was a stolen private key. No SOL-0XX code rule prevents a leaked key — mitigations are operational (multisig, timelocks, key hygiene).",
+      "sources": [
+        "https://www.helius.dev/blog/solana-hacks"
+      ]
+    },
+    {
+      "id": "pumpfun-2024-05",
+      "name": "Pump.fun insider privileged-authority abuse",
+      "protocol": "Pump.fun",
+      "date": "2024-05-16",
+      "loss_usd": 1900000,
+      "category": "key-compromise",
+      "code_preventable": false,
+      "sol_rules": [],
+      "root_cause": "A former employee retained access to a privileged withdrawal authority and combined it with flash loans to manipulate bonding-curve liquidity and extract ≈$1.9M. The root cause was insider access to a privileged key/authority, not a missing on-chain check.",
+      "rule_link": "Out of scope: an insider holding a privileged authority is an access-control/operational failure, not a code-rule gap. Listed for honesty about scope boundaries.",
+      "sources": [
+        "https://www.helius.dev/blog/solana-hacks"
+      ]
+    }
+  ]
+}
