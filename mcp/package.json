@@ -1,0 +1,46 @@
+{
+  "name": "@jelleo/solana-security-mcp",
+  "version": "1.0.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "description": "MCP server for the Solana Security Standard (SOL-0XX): scan Solana/Anchor Rust and serve the rules to any MCP client (Cline, Copilot, Cursor, Claude, Windsurf).",
+  "bin": {
+    "solana-security-mcp": "server.js"
+  },
+  "type": "commonjs",
+  "main": "server.js",
+  "files": [
+    "server.js",
+    "src/",
+    "engine/",
+    "README.md"
+  ],
+  "scripts": {
+    "sync": "node scripts/sync-engine.js",
+    "pretest": "node scripts/sync-engine.js",
+    "test": "node --test",
+    "prepack": "node scripts/sync-engine.js",
+    "prepublishOnly": "node scripts/sync-engine.js --check && node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "solana",
+    "anchor",
+    "security",
+    "mcp",
+    "model-context-protocol",
+    "sol-0xx",
+    "static-analysis"
+  ],
+  "author": "Jelleo (https://jelleo.com)",
+  "license": "MIT",
+  "homepage": "https://github.com/Copenhagen0x/solana-security-guidance",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Copenhagen0x/solana-security-guidance.git",
+    "directory": "mcp"
+  }
+}

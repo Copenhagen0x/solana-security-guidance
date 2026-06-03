@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/Copenhagen0x/solana-security-guidance/actions/workflows/validate.yml/badge.svg)](https://github.com/Copenhagen0x/solana-security-guidance/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)](CHANGELOG.md)
 [![Bounty wins](https://img.shields.io/badge/bounty_wins-2_confirmed_(SOL--001)-orange)](https://jelleo.com/cycles)
 
 Drop these two files into your Solana project's `.claude/` directory and your IDE will flag Solana-specific bugs while you code — caller-controlled clock values, cross-market state asymmetry, wrapper handlers that drift from engine logic, missing Anchor constraints, and 24 more bug classes drawn from real audits.
@@ -100,6 +100,17 @@ standard in each tool's native format — all generated from the one source — 
 | Windsurf | `integrations/windsurf/.windsurf/` |
 | Cline | `integrations/cline/.clinerules` |
 | Aider | `integrations/aider/` (with an optional scanner lint command) |
+
+## Use it via MCP — any MCP client
+
+Prefer the [Model Context Protocol](mcp/)? The [MCP server](mcp/) gives any MCP client (Cline, Copilot,
+Cursor, Claude, Windsurf) a `scan_solana_code` tool plus the full rule set — no file to copy:
+
+```json
+{ "mcpServers": { "solana-security-standard": { "command": "npx", "args": ["-y", "@jelleo/solana-security-mcp"] } } }
+```
+
+100% local, same scanner as the CLI. Details in [`mcp/`](mcp/).
 
 ## What you get
 

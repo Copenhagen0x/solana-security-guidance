@@ -14,5 +14,6 @@ Every file here is generated from the one source of truth (`claude-security-guid
 | VS Code / Cursor / Windsurf (inline squiggles) | the extension | install "Solana Security Standard" from the Marketplace |
 | CLI / CI | `npx @jelleo/solana-security-standard` | run it anywhere; the GitHub Action gates PRs |
 | Semgrep | `semgrep --config` | point at `semgrep/solana-security-standard.yaml` |
+| MCP server (any MCP client) | `@jelleo/solana-security-mcp` | add to your MCP config; serves a scan tool + the rules (see `mcp/`) |
 
 **Coverage.** The AI-instruction files (Codex, Copilot, Cursor, Windsurf, Cline, Aider) carry all **28 documented SOL-0XX rules** as guidance for the assistant. The machine-checkable surfaces (CLI, GitHub Action, Semgrep, editor extension) enforce the **17 rules that have deterministic patterns**; the other 11 are semantic rules an AI or human reviewer applies. All are generated from the same source - no rule text is duplicated by hand. Full catalog and per-rule detail: https://github.com/Copenhagen0x/solana-security-guidance .

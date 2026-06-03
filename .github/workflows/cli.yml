@@ -10,6 +10,7 @@ on:
       - 'integrations/**'
       - 'claude-security-guidance.md'
       - 'extensions/**'
+      - 'mcp/**'
       - 'action.yml'
       - '.github/workflows/cli.yml'
   pull_request:
@@ -20,6 +21,7 @@ on:
       - 'integrations/**'
       - 'claude-security-guidance.md'
       - 'extensions/**'
+      - 'mcp/**'
       - 'action.yml'
       - '.github/workflows/cli.yml'
 
@@ -89,4 +91,25 @@ jobs:
       # The extension vendors the reviewed scanner core from ../../cli at build time
       # (engine/ is gitignored), then runs its pure diagnostics tests. No deps to install.
       - name: vendor the scanner engine + run tests
+        run: node scripts/sync-engine.js && node --test
+
+  mcp:
+    name: mcp server (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    defaults:
+      run:
+        working-directory: mcp
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      # Vendors the reviewed scanner core + guidance from ../cli + the repo root, then
+      # runs the protocol + tool + stdio end-to-end tests. No deps to install.
+      - name: vendor the engine + run tests
         run: node scripts/sync-engine.js && node --test
