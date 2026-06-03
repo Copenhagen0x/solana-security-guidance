@@ -11,6 +11,7 @@ on:
       - 'claude-security-guidance.md'
       - 'extensions/**'
       - 'mcp/**'
+      - 'hacks/**'
       - 'action.yml'
       - '.github/workflows/cli.yml'
   pull_request:
@@ -22,6 +23,7 @@ on:
       - 'claude-security-guidance.md'
       - 'extensions/**'
       - 'mcp/**'
+      - 'hacks/**'
       - 'action.yml'
       - '.github/workflows/cli.yml'
 
@@ -113,3 +115,22 @@ jobs:
       # runs the protocol + tool + stdio end-to-end tests. No deps to install.
       - name: vendor the engine + run tests
         run: node scripts/sync-engine.js && node --test
+
+  hacks:
+    name: hacks database
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: hacks
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      # hacks.json is the source of truth; README.md is generated. Validate the data
+      # (schema + every SOL-0XX id exists in the guidance) and that README is in sync.
+      - name: validate hacks.json + README is in sync
+        run: node scripts/sync-hacks.js --check
+      - name: unit tests
+        run: node --test

@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] — 2026-06-03
+
+### Added — Solana Hacks Database ([`hacks/`](hacks))
+
+- **A cited database of real Solana exploits mapped to SOL-0XX.** [`hacks/hacks.json`](hacks/hacks.json) records disclosed incidents (Wormhole, Mango Markets, Cashio, Crema, Nirvana, Cypher, Loopscale, and the early Solend authority bug) with date, loss, root cause, sources, and the rule class each falls under — compiled into [`hacks/README.md`](hacks/README.md) by `hacks/scripts/sync-hacks.js` (zero-dependency, with a `--check` CI gate).
+- **Honest by construction:** every `sol_rules` id is cross-checked against `claude-security-guidance.md` (a typo or non-existent rule fails CI), the rule-anchor slugs are generated to match GitHub exactly, and incidents no code rule can prevent (Slope's seed-phrase leak, Raydium's key compromise, the Pump.fun insider) carry `code_preventable: false` with an empty mapping — we never claim a rule catches what it cannot.
+- New `hacks` CI job (in `cli.yml`) validates the dataset and that the generated README is in sync; a `node --test` suite covers schema, rule cross-references, and the honesty invariant.
+
 ## [1.5.0] — 2026-06-03
 
 ### Added — MCP server ([`mcp/`](mcp))
