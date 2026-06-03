@@ -12,6 +12,8 @@ on:
       - 'extensions/**'
       - 'mcp/**'
       - 'hacks/**'
+      - 'content/**'
+      - 'examples/**'
       - 'action.yml'
       - '.github/workflows/cli.yml'
   pull_request:
@@ -24,6 +26,8 @@ on:
       - 'extensions/**'
       - 'mcp/**'
       - 'hacks/**'
+      - 'content/**'
+      - 'examples/**'
       - 'action.yml'
       - '.github/workflows/cli.yml'
 
@@ -132,5 +136,24 @@ jobs:
       # (schema + every SOL-0XX id exists in the guidance) and that README is in sync.
       - name: validate hacks.json + README is in sync
         run: node scripts/sync-hacks.js --check
+      - name: unit tests
+        run: node --test
+
+  content:
+    name: rule content
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: content
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      # Per-rule pages are generated from the guidance + patterns + hacks + examples.
+      # Validate they are in sync (no stale page, no orphan), then run the unit tests.
+      - name: content pages are in sync
+        run: node scripts/sync-content.js --check
       - name: unit tests
         run: node --test

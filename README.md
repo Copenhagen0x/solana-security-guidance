@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/Copenhagen0x/solana-security-guidance/actions/workflows/validate.yml/badge.svg)](https://github.com/Copenhagen0x/solana-security-guidance/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.6.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.7.0-blue.svg)](CHANGELOG.md)
 [![Bounty wins](https://img.shields.io/badge/bounty_wins-2_confirmed_(SOL--001)-orange)](https://jelleo.com/cycles)
 
 Drop these two files into your Solana project's `.claude/` directory and your IDE will flag Solana-specific bugs while you code — caller-controlled clock values, cross-market state asymmetry, wrapper handlers that drift from engine logic, missing Anchor constraints, and 24 more bug classes drawn from real audits.
@@ -119,6 +119,13 @@ Wormhole, Mango Markets, Cashio, Crema, Nirvana, Cypher, Loopscale, and more (**
 losses). Every entry is cited, and incidents no code rule can prevent (stolen keys, off-chain wallets)
 are flagged as such rather than misattributed — the same honesty the rest of this repo holds itself to.
 Browse the [database →](hacks/README.md).
+
+## Every rule, explained — [`content/`](content/)
+
+[`content/`](content/) is a standalone explainer for **all 28 rules**: what each catches, the fix, whether
+it is machine-checkable or review-only, the real exploits in that class (cross-linked to the Hacks
+Database), and a code example where one exists. One page per rule — all generated from the standard +
+patterns + hacks + examples, so nothing drifts.
 
 ## What you get
 
