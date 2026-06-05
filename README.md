@@ -122,7 +122,7 @@ Browse the [database →](hacks/README.md).
 
 ## Every rule, explained — [`content/`](content/)
 
-[`content/`](content/) is a standalone explainer for **all 28 rules**: what each catches, the fix, whether
+[`content/`](content/) is a standalone explainer for **all 31 rules**: what each catches, the fix, whether
 it is machine-checkable or review-only, the real exploits in that class (cross-linked to the Hacks
 Database), and a code example where one exists. One page per rule — all generated from the standard +
 patterns + hacks + examples, so nothing drifts.
@@ -138,7 +138,7 @@ not a blind-accuracy or top-1 claim.
 
 ## What you get
 
-28 rules covering the dominant Solana program bug classes. **SOL-001 covers two confirmed-exploitable bounty wins (the same caller-controlled `now_slot` class fixed in both the ACTIVATE and RETIRE branches of percolator).** The remaining 27 rules are drawn from documented Solana audit patterns — some from our published disclosures (with maintainer triage classifications noted in the Source column), some from public bug-class taxonomy.
+31 rules: **28 on-chain** Solana program bug classes, plus **3 integrator / client-side rules (SOL-029–031)** for the TypeScript/web3.js that builds and sends transactions (bots, keepers, integrators). **SOL-001 covers two confirmed-exploitable bounty wins (the same caller-controlled `now_slot` class fixed in both the ACTIVATE and RETIRE branches of percolator).** Most of the rest are drawn from documented Solana audit patterns — some from our published disclosures (with maintainer triage classifications noted in the Source column), some from public bug-class taxonomy; the integrator trio came from a live buyback-worker report.
 
 | Rule | Catches | Source |
 |---|---|---|
@@ -170,6 +170,9 @@ not a blind-accuracy or top-1 claim.
 | [SOL-026](claude-security-guidance.md#sol-026--duplicate-mutable-account-native-programs) | Duplicate mutable account unchecked (native + Anchor `AccountLoader`/`remaining_accounts`) | Generic Solana |
 | [SOL-027](claude-security-guidance.md#sol-027--unvalidated-remaining_accounts) | Unvalidated `remaining_accounts` | Generic Solana |
 | [SOL-028](claude-security-guidance.md#sol-028--missing-slippage--min-out-bound) | Missing slippage / min-out bound | Generic Solana DeFi |
+| [SOL-029](claude-security-guidance.md#sol-029--preflight-simulation-disabled) | Preflight simulation disabled (`skipPreflight: true`) on a mainnet send | **Integrator** — live buyback-worker report (TS/web3.js) |
+| [SOL-030](claude-security-guidance.md#sol-030--static-priority-fee) | Hardcoded priority fee — no congestion awareness | **Integrator** — live buyback-worker report (TS/web3.js) |
+| [SOL-031](claude-security-guidance.md#sol-031--stale-jupiter-quote) | Jupiter quote consumed without `contextSlot` freshness | **Integrator** — live buyback-worker report (TS/web3.js) |
 
 ## Why these rules — honest provenance
 
@@ -189,8 +192,8 @@ All published cycle reports: [jelleo.com/cycles](https://jelleo.com/cycles)
 
 Anthropic's [security-guidance plugin](https://code.claude.com/docs/en/security-guidance) reviews Claude's code edits at three layers:
 
-1. **On each file edit** — fast pattern match (no model call). Reads `.claude/security-patterns.yaml` for regex/substring rules. **Our file provides 17 deterministic patterns.**
-2. **At the end of each turn** — background model review of the full diff. Reads `.claude/claude-security-guidance.md` for semantic guidance. **Our file provides the Solana threat model + 28-rule catalog + review checklist.**
+1. **On each file edit** — fast pattern match (no model call). Reads `.claude/security-patterns.yaml` for regex/substring rules. **Our file provides 20 deterministic patterns.**
+2. **At the end of each turn** — background model review of the full diff. Reads `.claude/claude-security-guidance.md` for semantic guidance. **Our file provides the Solana threat model + 31-rule catalog + review checklist.**
 3. **On each commit Claude makes** — deeper agentic review that reads surrounding code. Uses the same guidance file.
 
 Every time a rule fires, the reminder text includes the rule ID (e.g. `Jelleo SOL-001:`) and a link back to this repo so you can see the underlying bounty case study.

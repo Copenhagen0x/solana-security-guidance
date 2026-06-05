@@ -1,6 +1,6 @@
 'use strict';
 // Solana Security Standard — VS Code extension entrypoint.
-// Thin wiring around the pure ./diagnostics module: scan open Rust documents and
+// Thin wiring around the pure ./diagnostics module: scan open Rust + TypeScript/JS documents and
 // surface SOL-0XX findings as inline warnings. Works in VS Code, Cursor, Windsurf.
 
 const vscode = require('vscode');
@@ -8,6 +8,12 @@ const { computeDiagnostics } = require('./diagnostics');
 
 let collection;
 const timers = new Map();
+
+// Languages the scanner has rules for: on-chain Rust + the integrator layer
+// (transaction-sending TypeScript/JavaScript). Per-file rule selection is the
+// scanner's job — every rule carries its own `paths` — so a .ts file only ever
+// gets the integrator rules (SOL-029+) and a .rs file only the on-chain rules.
+const SCANNED_LANGS = new Set(['rust', 'typescript', 'javascript', 'typescriptreact', 'javascriptreact']);
 
 function workspaceRootFor(doc) {
   const f = vscode.workspace.getWorkspaceFolder(doc.uri);
@@ -20,7 +26,7 @@ function enabled() {
 
 function refresh(doc) {
   if (!collection || !doc) return;
-  if (doc.languageId !== 'rust' || doc.uri.scheme !== 'file' || !enabled()) {
+  if (!SCANNED_LANGS.has(doc.languageId) || doc.uri.scheme !== 'file' || !enabled()) {
     collection.delete(doc.uri);
     return;
   }

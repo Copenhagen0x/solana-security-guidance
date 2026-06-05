@@ -47,12 +47,14 @@ function coreBody() {
 }
 
 const INTRO =
-  'When you write, edit, or review Solana / Anchor (Rust) code in this project, apply the ' +
-  'Solana Security Standard (SOL-0XX) below. Solana programs are stateless: treat every caller ' +
+  'When you write, edit, or review Solana code in this project — on-chain Anchor/Rust programs AND ' +
+  'the TypeScript/JavaScript that builds and sends transactions (bots, keepers, integrators) — apply ' +
+  'the Solana Security Standard (SOL-0XX) below. Solana programs are stateless: treat every caller ' +
   'as hostile until cryptographically proven otherwise. For each rule, flag the pattern, fix it ' +
-  'as described, and cite the SOL-0XX id in your explanation. Off-chain code ' +
-  '(client / cli / offchain / sdk / tests) is generally exempt. Full catalog: ' +
-  REPO + ' . Audits: jelleo.com .\n';
+  'as described, and cite the SOL-0XX id in your explanation. Off-chain code (client / cli / offchain ' +
+  '/ sdk / tests) is generally exempt from the on-chain (Rust) rules, EXCEPT the integrator rules ' +
+  'SOL-029..031, which apply specifically to that transaction-sending TypeScript/JavaScript. Full ' +
+  'catalog: ' + REPO + ' . Audits: jelleo.com .\n';
 
 // id -> full file content. Each wraps the shared body with the tool's convention.
 const TOOLS = {
@@ -132,8 +134,8 @@ function readme() {
     'review Solana/Anchor code against the SOL-0XX rules.\n\n' +
     table + '\n\n' +
     '**Coverage.** The AI-instruction files (Codex, Copilot, Cursor, Windsurf, Cline, Aider) carry ' +
-    'all **28 documented SOL-0XX rules** as guidance for the assistant. The machine-checkable ' +
-    'surfaces (CLI, GitHub Action, Semgrep, editor extension) enforce the **17 rules that have ' +
+    'all **31 documented SOL-0XX rules** as guidance for the assistant. The machine-checkable ' +
+    'surfaces (CLI, GitHub Action, Semgrep, editor extension) enforce the **20 rules that have ' +
     'deterministic patterns**; the other 11 are semantic rules an AI or human reviewer applies. ' +
     'All are generated from the same source - no rule text is duplicated by hand. ' +
     'Full catalog and per-rule detail: ' + REPO + ' .\n'

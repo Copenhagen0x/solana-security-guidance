@@ -31,9 +31,9 @@ test('scan_solana_code rejects a missing/invalid code arg', () => {
   assert.throws(() => tools.scanCode({ code: 42 }), /requires a "code" string/);
 });
 
-test('list_solana_security_rules returns the full guidance (all 28 rules + threat model)', () => {
+test('list_solana_security_rules returns the full guidance (all 31 rules + threat model)', () => {
   const g = tools.listRules();
-  for (let i = 1; i <= 28; i++) assert.ok(g.includes('SOL-0' + String(i).padStart(2, '0')), 'missing SOL-0' + i);
+  for (let i = 1; i <= 31; i++) assert.ok(g.includes('SOL-0' + String(i).padStart(2, '0')), 'missing SOL-0' + i);
   assert.match(g, /Threat model/);
 });
 

@@ -35,7 +35,7 @@ function formatMoney(n) {
 // link to the same claude-security-guidance.md headings). Single source of truth.
 const { ruleAnchor } = require('../../hacks/scripts/sync-hacks');
 
-// Parse the 28 rules out of the "## Rules" section: each is "### SOL-0XX · Title\n<body>".
+// Parse the rules out of the "## Rules" section: each is "### SOL-0XX · Title\n<body>".
 function parseRules(md) {
   const afterRules = md.split(/^## Rules\s*$/m)[1];
   if (!afterRules) throw new Error('could not find "## Rules" section');
@@ -128,7 +128,7 @@ function renderIndex(rules, ctx) {
   const withPattern = rules.filter((r) => ctx.patternIds.has(r.id)).length;
   const withHack = rules.filter((r) => (ctx.hacksByRule[r.id] || []).length).length;
   const L = [];
-  L.push('# Rule content — all 28 SOL-0XX explainers');
+  L.push(`# Rule content — all ${rules.length} SOL-0XX explainers`);
   L.push('');
   L.push('> One page per rule: what it catches, the fix, whether it is machine-checkable, the real exploits in that class, and a code example where one exists. Generated from the standard + patterns + the [Hacks Database](../hacks/) + examples by [`scripts/sync-content.js`](./scripts/sync-content.js) — do not hand-edit.');
   L.push('');
@@ -166,8 +166,10 @@ function build() {
 function main() {
   const check = process.argv.includes('--check');
   const { rules, files } = build();
-  if (rules.length !== 28) {
-    console.error(`content: expected 28 rules, parsed ${rules.length}`);
+  // Tripwire — BUMP this number when you add/remove a rule. The --check diff catches
+  // stale pages; this catches a guidance parse that silently lost or gained a rule.
+  if (rules.length !== 31) {
+    console.error(`content: expected 31 rules, parsed ${rules.length}`);
     process.exit(1);
   }
   if (check) {

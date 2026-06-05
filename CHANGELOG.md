@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] — 2026-06-05
+
+### Added — integrator / client-side rules (SOL-029–031)
+
+- **The standard's first client-side layer: three rules for the TypeScript/web3.js that builds and sends transactions** (bots, keepers, integrators), complementing the 28 on-chain (Rust) rules.
+  - **SOL-029 — preflight simulation disabled.** Flags `skipPreflight: true` on a mainnet send — a blind send eats reverts/fees and can desync a live bot. Fix: keep preflight on, or `simulateTransaction()` + assert `err === null` first.
+  - **SOL-030 — static priority fee.** Flags a hardcoded `microLamports` compute-unit price — underpays in congestion (tx never lands) or overpays when idle. Fix: derive from `getRecentPrioritizationFees()` and clamp.
+  - **SOL-031 — stale Jupiter quote.** Flags a Jupiter quote consumed without a `contextSlot` freshness check → worse fill + MEV/sandwich exposure. Fix: refetch/reject when `contextSlot` lags the current slot.
+- **Engine: the Semgrep generator is now per-rule language-aware.** A new optional `languages` field in [`security-patterns.yaml`](security-patterns.yaml) (absent ⇒ `rust`, the on-chain default) sets `languages` in the generated Semgrep ruleset; the zero-dependency scanner already keys off per-rule `paths`. Integrator rules scan `**/*.{ts,tsx,js,mjs,cjs}`; on-chain rules still `**/*.rs`. The 28 existing rules regenerate byte-identical.
+- **The VS Code extension now activates on TypeScript/JavaScript too** (was Rust-only), so the integrator rules surface inline; per-file rule selection still comes from each rule's `paths`. Extension `1.0.0 → 1.1.0`.
+- **20 of 31 rules now carry a deterministic pattern** (was 17 of 28). All surfaces — CLI, GitHub Action, Semgrep, VS Code, MCP, the AI-agent rules files, and the content explainer pages — regenerate from the two sources of truth. Provenance: a live integrator (Solana buyback worker) who ran the ruleset and surfaced the three client-side bugs.
+- Reviewed to 0 Critical/High/Medium by code-reviewer + paranoid-goober + threat-modeler (all three, to convergence — they caught the `__tests__`/`.jsx` coverage gaps, the `microLamports: 0` false positive, and three stale-count CI tests, all fixed and re-verified). Version 1.9.0.
+
 ## [1.8.1] — 2026-06-03
 
 ### Fixed — security hardening (adversarial review of the overnight work)

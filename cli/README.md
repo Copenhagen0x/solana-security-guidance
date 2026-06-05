@@ -39,7 +39,7 @@ solana-security-standard scan . --no-fail             # report without failing C
 
 ## What it flags
 
-The 17 deterministic SOL-0XX patterns (caller-controlled `now_slot`, missing signer/owner checks, unchecked arithmetic, `init_if_needed` reinit, raw sysvar deserialize, and more). These are **fast, advisory tripwires** — a finding means "look here," not "definitely a bug." Off-chain code (`client/`, `cli/`, `offchain/`, `sdk/`, `tests/`) is excluded where the patterns are harmless there. The full semantic review lives in the [Claude Code plugin](https://github.com/Copenhagen0x/solana-security-guidance) and in a [Jelleo audit](https://jelleo.com).
+The 20 deterministic SOL-0XX patterns — 17 on-chain Rust checks (caller-controlled `now_slot`, missing signer/owner checks, unchecked arithmetic, `init_if_needed` reinit, raw sysvar deserialize, and more) plus 3 integrator checks for the transaction-sending TypeScript/JS (preflight disabled, static priority fee, stale Jupiter quote). These are **fast, advisory tripwires** — a finding means "look here," not "definitely a bug." The on-chain patterns skip off-chain code (`client/`, `cli/`, `offchain/`, `sdk/`, `tests/`) where they're harmless; the integrator patterns target the TS/JS that builds and sends transactions. The full semantic review lives in the [Claude Code plugin](https://github.com/Copenhagen0x/solana-security-guidance) and in a [Jelleo audit](https://jelleo.com).
 
 ## Rules source of truth
 

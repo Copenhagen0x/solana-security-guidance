@@ -19,6 +19,21 @@ const rules = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'rules.json'
 const doc = yaml.load(fs.readFileSync(yamlPath, 'utf8'), { schema: yaml.CORE_SCHEMA });
 const byId = new Map(doc.rules.map((r) => [r.metadata['sol-id'], r]));
 
+// Source-of-truth languages per rule (absent => rust, the on-chain default). The
+// generated Semgrep `languages` must equal this — proving the mapping, not just
+// "always rust" (integrator rules SOL-029+ are typescript/javascript).
+const srcPatterns = yaml.load(
+  fs.readFileSync(path.join(repoRoot, 'security-patterns.yaml'), 'utf8'),
+  { schema: yaml.CORE_SCHEMA },
+).patterns;
+const srcLangById = new Map(
+  srcPatterns.map((p) => [
+    gen.solId(p.rule_name),
+    Array.isArray(p.languages) && p.languages.length ? p.languages : ['rust'],
+  ]),
+);
+const VALID_LANGS = new Set(['rust', 'typescript', 'javascript']);
+
 test('committed ruleset is in sync with security-patterns.yaml (else run npm run sync:semgrep)', () => {
   const norm = (s) => s.replace(/\r\n/g, '\n');
   const expected = gen.serialize(gen.build());
@@ -41,7 +56,9 @@ test('every rule is schema-valid for Semgrep', () => {
     assert.ok(typeof r.id === 'string' && r.id.startsWith('solana-security-standard.'), `bad id ${r.id}`);
     assert.ok(!seen.has(r.id), `duplicate id ${r.id}`);
     seen.add(r.id);
-    assert.deepEqual(r.languages, ['rust'], `${r.id} languages`);
+    assert.ok(Array.isArray(r.languages) && r.languages.length >= 1, `${r.id} languages must be non-empty`);
+    assert.ok(r.languages.every((l) => VALID_LANGS.has(l)), `${r.id} languages ${JSON.stringify(r.languages)} not all valid`);
+    assert.deepEqual(r.languages, srcLangById.get(r.metadata['sol-id']), `${r.id} languages must match source (default rust)`);
     assert.ok(SEV.has(r.severity), `${r.id} severity ${r.severity}`);
     assert.ok(typeof r.message === 'string' && r.message.length > 0, `${r.id} message`);
     assert.ok(Array.isArray(r.patterns) && r.patterns.length === 1, `${r.id} patterns`);

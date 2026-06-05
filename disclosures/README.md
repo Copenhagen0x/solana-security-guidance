@@ -24,7 +24,7 @@ The candidate is emitted in the exact `hacks.json` shape (plus a `_review` block
 ## How it works
 
 - [`scripts/adapters.js`](scripts/adapters.js) — normalize each feed (GHSA advisory JSON, Immunefi report, security PR) into one `Disclosure` shape.
-- [`scripts/classify.js`](scripts/classify.js) — score the disclosure text against per-rule keyword signatures derived from the 28 rules; return ranked `SOL-0XX` suggestions plus a code-preventable / off-chain guess.
+- [`scripts/classify.js`](scripts/classify.js) — score the disclosure text against per-rule keyword signatures derived from the rules; return ranked `SOL-0XX` suggestions plus a code-preventable / off-chain guess.
 - [`scripts/ingest.js`](scripts/ingest.js) — adapter → classifier → a candidate entry.
 
 A self-consistency check guards against signature rot: a test classifies every catalogued exploit's root cause and confirms a labeled rule appears **among the ranked suggestions** for **≥70%** of them (today 8/8; top-1 is only 7/8), and that every off-chain / key-compromise incident is guessed not-code-preventable. This is an internal consistency check — the root-cause text and the keyword signatures are both authored in this repo — **not** a measure of blind accuracy on unseen disclosures.

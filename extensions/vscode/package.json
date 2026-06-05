@@ -1,8 +1,8 @@
 {
   "name": "solana-security-standard",
   "displayName": "Solana Security Standard",
-  "description": "Inline SOL-0XX security checks for Solana and Anchor Rust.",
-  "version": "1.0.0",
+  "description": "Inline SOL-0XX security checks for Solana/Anchor Rust and transaction-sending TypeScript/JavaScript.",
+  "version": "1.1.0",
   "publisher": "jelleo",
   "license": "MIT",
   "icon": "icon.png",
@@ -25,7 +25,11 @@
     "sast"
   ],
   "activationEvents": [
-    "onLanguage:rust"
+    "onLanguage:rust",
+    "onLanguage:typescript",
+    "onLanguage:typescriptreact",
+    "onLanguage:javascript",
+    "onLanguage:javascriptreact"
   ],
   "main": "./src/extension.js",
   "contributes": {
@@ -35,7 +39,7 @@
         "solanaSecurityStandard.enable": {
           "type": "boolean",
           "default": true,
-          "description": "Show inline SOL-0XX security diagnostics in Rust files."
+          "description": "Show inline SOL-0XX security diagnostics in Rust and TypeScript/JavaScript files."
         }
       }
     }

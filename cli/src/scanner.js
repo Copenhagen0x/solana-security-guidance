@@ -3,7 +3,8 @@
 //
 // Reads the deterministic per-edit rules (the same security-patterns.yaml the
 // Claude Code plugin uses, pre-compiled to rules.json) and flags matches in
-// Rust source. Zero runtime dependencies — it powers the CLI, the GitHub
+// Rust (on-chain) and TypeScript/JavaScript (integrator) source. Zero runtime
+// dependencies — it powers the CLI, the GitHub
 // Action, and (via the same module) the editor extensions.
 //
 // Matching is done against the FULL FILE CONTENT, not line-by-line, so a
