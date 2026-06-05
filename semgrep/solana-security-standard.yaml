@@ -352,3 +352,96 @@ rules:
       references:
         - https://github.com/Copenhagen0x/solana-security-guidance#sol-025
       license: MIT
+  - id: solana-security-standard.sol-029-skip-preflight
+    languages:
+      - typescript
+      - javascript
+    severity: WARNING
+    message: 'Jelleo SOL-029: transaction sent with preflight simulation disabled (`skipPreflight: true`). A blind send eats reverts and fees and can desync a live bot/keeper. Either drop `skipPreflight`, or call `simulateTransaction()` and assert `err === null` (inspecting logs/compute units) BEFORE sending to mainnet. See: github.com/Copenhagen0x/solana-security-guidance#sol-029.'
+    patterns:
+      - pattern-regex: skipPreflight\s*:\s*true|\.skipPreflight\s*=\s*true
+    paths:
+      exclude:
+        - '**/tests/**'
+        - '**/test/**'
+        - '**/__tests__/**'
+        - '**/__mocks__/**'
+        - '**/mocks/**'
+        - '**/*.test.*'
+        - '**/*.spec.*'
+        - '**/node_modules/**'
+        - '**/dist/**'
+        - '**/build/**'
+    metadata:
+      sol-id: SOL-029
+      category: security
+      confidence: LOW
+      technology:
+        - solana
+        - typescript
+        - javascript
+      references:
+        - https://github.com/Copenhagen0x/solana-security-guidance#sol-029
+      license: MIT
+  - id: solana-security-standard.sol-030-static-priority-fee
+    languages:
+      - typescript
+      - javascript
+    severity: WARNING
+    message: 'Jelleo SOL-030: hardcoded priority fee (`microLamports: <constant>`). A static compute-unit price underpays during congestion (the tx never lands) or overpays when the network is idle. Derive it from `getRecentPrioritizationFees()` (or a fee oracle) and clamp to a sane max. (`microLamports: 0` — the intentional no-priority-fee opt-out — does not fire.) See: github.com/Copenhagen0x/solana-security-guidance#sol-030.'
+    patterns:
+      - pattern-regex: microLamports\s*:\s*(?:0[xX][0-9a-fA-F]+|[1-9][0-9_]*)
+    paths:
+      exclude:
+        - '**/tests/**'
+        - '**/test/**'
+        - '**/__tests__/**'
+        - '**/__mocks__/**'
+        - '**/mocks/**'
+        - '**/*.test.*'
+        - '**/*.spec.*'
+        - '**/node_modules/**'
+        - '**/dist/**'
+        - '**/build/**'
+    metadata:
+      sol-id: SOL-030
+      category: security
+      confidence: LOW
+      technology:
+        - solana
+        - typescript
+        - javascript
+      references:
+        - https://github.com/Copenhagen0x/solana-security-guidance#sol-030
+      license: MIT
+  - id: solana-security-standard.sol-031-jupiter-quote-freshness
+    languages:
+      - typescript
+      - javascript
+    severity: WARNING
+    message: 'Jelleo SOL-031: Jupiter quote consumed without a `contextSlot` freshness check. Quotes go stale within a few slots; executing an old route means a worse fill and MEV/sandwich exposure. Capture `quoteResponse.contextSlot` and refetch (or reject) if it lags the current slot before you swap. Heuristic flag — fires on Jupiter quote usage (any `api.jup.ag` host or the `@jup-ag/api` client); ignore if you already gate on `contextSlot`. See: github.com/Copenhagen0x/solana-security-guidance#sol-031.'
+    patterns:
+      - pattern-regex: (?:api\.jup\.ag|createJupiterApiClient)
+    paths:
+      exclude:
+        - '**/tests/**'
+        - '**/test/**'
+        - '**/__tests__/**'
+        - '**/__mocks__/**'
+        - '**/mocks/**'
+        - '**/*.test.*'
+        - '**/*.spec.*'
+        - '**/node_modules/**'
+        - '**/dist/**'
+        - '**/build/**'
+    metadata:
+      sol-id: SOL-031
+      category: security
+      confidence: LOW
+      technology:
+        - solana
+        - typescript
+        - javascript
+      references:
+        - https://github.com/Copenhagen0x/solana-security-guidance#sol-031
+      license: MIT

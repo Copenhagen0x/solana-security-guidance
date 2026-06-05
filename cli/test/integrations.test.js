@@ -14,7 +14,7 @@ const gen = require('../scripts/sync-integrations');
 const repoRoot = path.join(__dirname, '..', '..');
 const intDir = path.join(repoRoot, 'integrations');
 const norm = (s) => s.replace(/\r\n/g, '\n');
-const EXPECTED_IDS = Array.from({ length: 28 }, (_, i) => 'SOL-0' + String(i + 1).padStart(2, '0'));
+const EXPECTED_IDS = Array.from({ length: 31 }, (_, i) => 'SOL-0' + String(i + 1).padStart(2, '0'));
 const read = (rel) => fs.readFileSync(path.join(intDir, rel), 'utf8');
 
 function walk(dir, base, acc = []) {
@@ -77,9 +77,9 @@ test('install matrix lists every tool', () => {
   }
 });
 
-test('README is honest about coverage: 28 documented vs 17 machine-checkable', () => {
+test('README is honest about coverage: 31 documented vs 20 machine-checkable', () => {
   const r = read('README.md');
-  assert.match(r, /28 documented SOL-0XX rules/);
-  assert.match(r, /17 rules that have/);
+  assert.match(r, /31 documented SOL-0XX rules/);
+  assert.match(r, /20 rules that have/);
   assert.match(r, /generated from the one source of truth/i);
 });

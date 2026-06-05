@@ -2,11 +2,11 @@
 
 ## Solana Security Standard (SOL-0XX)
 
-When you write, edit, or review Solana / Anchor (Rust) code in this project, apply the Solana Security Standard (SOL-0XX) below. Solana programs are stateless: treat every caller as hostile until cryptographically proven otherwise. For each rule, flag the pattern, fix it as described, and cite the SOL-0XX id in your explanation. Off-chain code (client / cli / offchain / sdk / tests) is generally exempt. Full catalog: https://github.com/Copenhagen0x/solana-security-guidance . Audits: jelleo.com .
+When you write, edit, or review Solana code in this project — on-chain Anchor/Rust programs AND the TypeScript/JavaScript that builds and sends transactions (bots, keepers, integrators) — apply the Solana Security Standard (SOL-0XX) below. Solana programs are stateless: treat every caller as hostile until cryptographically proven otherwise. For each rule, flag the pattern, fix it as described, and cite the SOL-0XX id in your explanation. Off-chain code (client / cli / offchain / sdk / tests) is generally exempt from the on-chain (Rust) rules, EXCEPT the integrator rules SOL-029..031, which apply specifically to that transaction-sending TypeScript/JavaScript. Full catalog: https://github.com/Copenhagen0x/solana-security-guidance . Audits: jelleo.com .
 
 ## Threat model
 
-Solana programs are stateless — assume every caller is hostile until cryptographically proven otherwise. Dominant classes: trust-boundary breaks (instruction data → trusted state), authority confusion (wrong signer/PDA/owner), state integrity (cross-account/market leaks), time & lifecycle (caller clock, terminal guards that never clear), oracle trust (stale/unchecked prices), Anchor gaps (missing constraints, unsafe `init_if_needed`, skipped bump).
+Solana programs are stateless — assume every caller is hostile until cryptographically proven otherwise. Dominant classes: trust-boundary breaks (instruction data → trusted state), authority confusion (wrong signer/PDA/owner), state integrity (cross-account/market leaks), time & lifecycle (caller clock, terminal guards that never clear), oracle trust (stale/unchecked prices), Anchor gaps (missing constraints, unsafe `init_if_needed`, skipped bump). **Integrator layer (SOL-029..031):** the off-chain TS/JS that builds and sends transactions (bots, keepers, workers, integrators) has its own footguns — disabled preflight, static priority fees, stale routes — flagged on `.ts`/`.js`, not `.rs`.
 
 ## Review checklist — critical priorities
 
@@ -97,6 +97,15 @@ Two accounts that must differ aren't checked → attacker passes one twice, coll
 
 ### SOL-028 · Missing slippage / min-out bound
 A swap/withdraw/settle derives an output amount with no caller-supplied min-out / max-in → no protection from an adverse price move or sandwich. Fix: take and enforce a caller-supplied bound.
+
+### SOL-029 · Preflight simulation disabled
+Client sends a transaction with `skipPreflight: true` (or never `simulateTransaction`s) → reverts are paid for, not caught, and a live bot/keeper desyncs. Fix: keep preflight on, or `simulateTransaction` and assert `err === null` before the mainnet send. *(integrator layer — TS/JS)*
+
+### SOL-030 · Static priority fee
+Hardcoded `microLamports` compute-unit price → underpays in congestion (tx never lands) or overpays when idle. Fix: derive from `getRecentPrioritizationFees()` / a fee oracle and clamp to a max. *(integrator layer — TS/JS)*
+
+### SOL-031 · Stale Jupiter quote
+A Jupiter quote is swapped without checking `quoteResponse.contextSlot` freshness → an old route means a worse fill and sandwich/MEV exposure. Fix: reject/refetch when `contextSlot` lags the current slot before executing. *(integrator layer — TS/JS)*
 
 ## Provenance
 

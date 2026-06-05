@@ -81,9 +81,22 @@ function build() {
     if (!rx) continue; // skip rules with neither regex nor substrings
     const id = solId(p.rule_name);
     const slug = p.rule_name.replace(/_/g, '-'); // sol_001_unauth_now_slot -> sol-001-unauth-now-slot
+    // Per-rule languages: absent => rust (the on-chain default). Integrator rules
+    // (SOL-029+) set [typescript, javascript] so Semgrep scans the right files —
+    // `pattern-regex` still does the matching, but `languages` is what restricts
+    // the file set, so a rust-only default would silently never run on TS.
+    const langs = Array.isArray(p.languages) && p.languages.length ? p.languages.slice() : ['rust'];
+    // Reject unsupported languages at GENERATION time (not just in CI tests): a stray
+    // `generic` would make Semgrep scan every file type, turning a scoped advisory rule
+    // into a universal one. Keep in lockstep with VALID_LANGS in the ruleset test.
+    for (const l of langs) {
+      if (!['rust', 'typescript', 'javascript'].includes(l)) {
+        throw new Error(`sync-semgrep: rule ${p.rule_name} has unsupported language "${l}" (allowed: rust, typescript, javascript)`);
+      }
+    }
     const rule = {
       id: `solana-security-standard.${slug}`,
-      languages: ['rust'],
+      languages: langs,
       severity: 'WARNING',
       message: p.reminder || `${id} — Solana Security Standard`,
       patterns: [{ 'pattern-regex': rx }],
@@ -98,7 +111,7 @@ function build() {
       'sol-id': id,
       category: 'security',
       confidence: 'LOW', // advisory tripwire: a hit means "look here", not "definitely a bug"
-      technology: ['solana', 'anchor'],
+      technology: langs.includes('rust') ? ['solana', 'anchor'] : ['solana'].concat(langs),
       references: [`${REPO}#${id.toLowerCase()}`],
       license: 'MIT',
     };

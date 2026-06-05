@@ -14,8 +14,8 @@ const mdText = fs.readFileSync(path.join(REPO_ROOT, 'claude-security-guidance.md
 const ruleTitles = sync.loadRuleTitles(mdText);
 const validRuleIds = Object.keys(ruleTitles);
 
-test('guidance.md parses to the full 28-rule set', () => {
-  assert.strictEqual(validRuleIds.length, 28, `expected 28 rules, parsed ${validRuleIds.length}`);
+test('guidance.md parses to the full 31-rule set', () => {
+  assert.strictEqual(validRuleIds.length, 31, `expected 31 rules, parsed ${validRuleIds.length}`);
   assert.ok(ruleTitles['SOL-001'] && ruleTitles['SOL-024'] && ruleTitles['SOL-028']);
 });
 

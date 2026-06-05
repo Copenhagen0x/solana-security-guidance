@@ -1,8 +1,8 @@
-# Rule content — all 28 SOL-0XX explainers
+# Rule content — all 31 SOL-0XX explainers
 
 > One page per rule: what it catches, the fix, whether it is machine-checkable, the real exploits in that class, and a code example where one exists. Generated from the standard + patterns + the [Hacks Database](../hacks/) + examples by [`scripts/sync-content.js`](./scripts/sync-content.js) — do not hand-edit.
 
-**17 of 28** rules are machine-checkable (deterministic pattern); the rest are review-only. **8** map to a catalogued real-world exploit.
+**20 of 31** rules are machine-checkable (deterministic pattern); the rest are review-only. **8** map to a catalogued real-world exploit.
 
 | Rule | Title | Enforcement | Real exploits | Example |
 | --- | --- | --- | --- | --- |
@@ -34,5 +34,8 @@
 | [SOL-026](./rules/SOL-026.md) | Duplicate mutable account (native programs) | review | — | — |
 | [SOL-027](./rules/SOL-027.md) | Unvalidated remaining_accounts | review | — | — |
 | [SOL-028](./rules/SOL-028.md) | Missing slippage / min-out bound | review | Loopscale, Nirvana Finance | — |
+| [SOL-029](./rules/SOL-029.md) | Preflight simulation disabled | pattern | — | — |
+| [SOL-030](./rules/SOL-030.md) | Static priority fee | pattern | — | — |
+| [SOL-031](./rules/SOL-031.md) | Stale Jupiter quote | pattern | — | — |
 
 Maintained by [Jelleo](https://jelleo.com). MIT.
