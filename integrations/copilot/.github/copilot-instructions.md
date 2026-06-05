@@ -4,22 +4,22 @@ When you write, edit, or review Solana code in this project — on-chain Anchor/
 
 ## Threat model
 
-Solana programs are stateless — assume every caller is hostile until cryptographically proven otherwise. Dominant classes: trust-boundary breaks (instruction data → trusted state), authority confusion (wrong signer/PDA/owner), state integrity (cross-account/market leaks), time & lifecycle (caller clock, terminal guards that never clear), oracle trust (stale/unchecked prices), Anchor gaps (missing constraints, unsafe `init_if_needed`, skipped bump). **Integrator layer (SOL-029..031):** the off-chain TS/JS that builds and sends transactions (bots, keepers, workers, integrators) has its own footguns — disabled preflight, static priority fees, stale routes — flagged on `.ts`/`.js`, not `.rs`.
+Solana programs are stateless — assume every caller is hostile until cryptographically proven otherwise. Dominant classes: trust-boundary breaks (instruction data → trusted state), authority confusion (wrong signer/PDA/owner), state integrity (cross-account/market leaks), time & lifecycle (caller clock, terminal guards that never clear), oracle trust (stale/unchecked prices), Anchor gaps (missing constraints, unsafe `init_if_needed`, skipped bump). Integrator layer (SOL-029-031): off-chain TS/JS that builds and sends txs (preflight, priority fees, stale routes), flagged on `.ts`/`.js`.
 
 ## Review checklist — critical priorities
 
-Caller `now_slot`/clock authenticated via `Clock::get()` (SOL-001); wrappers delegate to the engine (SOL-003); risk math includes every spec term (SOL-004); terminal/close paths not gated on live-only conditions (SOL-021); fees round against the user (SOL-023); oracle prices checked for staleness+confidence (SOL-024); Anchor cross-refs carry constraints (SOL-015); privileged handlers verify signer (SOL-006) + owner (SOL-007); `checked_*` arithmetic (SOL-014); discriminator checked on deserialize (SOL-019).
+Caller clock auth (SOL-001); wrapper delegation (SOL-003); complete risk math (SOL-004); terminal not live-gated (SOL-021); fees round vs user (SOL-023); oracle staleness+confidence (SOL-024); Anchor constraints (SOL-015); signer+owner (SOL-006/007); `checked_*` math (SOL-014); discriminator on deserialize (SOL-019).
 
 ## Rules
 
 ### SOL-001 · Unauthenticated now_slot
-Caller-controlled clock into market/asset state (pass `u64::MAX`, real cranks then reject as stale → permanent DoS). Fix: `authenticated_slot_or_fallback(now_slot, Clock::get()?.slot)`. *(two confirmed wins: percolator-prog#107, -cli#78 F33)*
+Caller-controlled clock into state (pass `u64::MAX`, real cranks then reject as stale → permanent DoS). Fix: `authenticated_slot_or_fallback(now_slot, Clock::get()?.slot)`. *(2 confirmed wins: prog#107, cli#78 F33)*
 
 ### SOL-002 · Cross-market state asymmetry
-Counter written by one market and read by another with no per-market scoping → permissionless cross-market inflation drains a shared pool. Fix: gate every write by per-market authorization. *(public class, percolator-prog#104)*
+Counter written by one market and read by another with no per-market scoping → permissionless cross-market inflation drains a shared pool. Fix: gate every write by per-market authorization. *(public class)*
 
 ### SOL-003 · Wrapper re-implements engine
-Wrapper handler redoes engine logic (close/settle/accrue), drifts, skips side-effects. Fix: delegate to the engine; the wrapper only marshals accounts.
+Wrapper redoes engine logic (close/settle/accrue), drifts, skips side-effects. Fix: delegate to the engine; the wrapper only marshals accounts.
 
 ### SOL-004 · Penalty/health terms omitted
 Risk/margin math drops a spec-mandated term → under-collateralized positions allowed. Fix: include every term the spec lists.
@@ -34,13 +34,13 @@ Privileged handler mutates state without verifying the signer. Fix: Anchor `Sign
 `AccountInfo` deserialized without `owner == program_id` → attacker passes a same-layout account from another program. Fix: check owner first.
 
 ### SOL-008 · Unverified PDA
-PDA used without `find_program_address` validation → attacker passes any account and claims it's the PDA. Fix: derive and compare.
+PDA used without `find_program_address` validation → attacker passes any account as the PDA. Fix: derive and compare.
 
 ### SOL-009 · CPI without authority check
-`invoke_signed` runs without verifying the caller's authority (signing with a PDA ≠ authorization). Fix: check authority before the CPI.
+`invoke_signed` without verifying the caller's authority (signing with a PDA ≠ authorization). Fix: check authority before the CPI.
 
 ### SOL-010 · Reinit attack
-`init_if_needed` on accounts holding value/authority → a second call re-initializes, dropping balances. Fix: plain `init` + explicit existence guard.
+`init_if_needed` on accounts holding value/authority → a 2nd call reinits, dropping balances. Fix: plain `init` + explicit existence guard.
 
 ### SOL-011 · Lamport drain via close
 `close =` on an account not fully drained, or a close that doesn't zero data (residual reads). Fix: drain + zero + controlled destination.
@@ -70,43 +70,43 @@ Data buffer cast to a struct with no deserialize-then-validate (`&*account.data.
 Deserialize without the 8-byte Anchor discriminator (`try_deserialize_unchecked`) → wrong-type account of matching length accepted. Fix: `try_deserialize`.
 
 ### SOL-020 · SetAuthority without verification
-`SetAuthority` invoked without checking the current authority matches the expected key → ownership hijack. Fix: verify current authority first.
+`SetAuthority` without checking the current authority matches the expected key → ownership hijack. Fix: verify current authority first.
 
 ### SOL-021 · Terminal op gated on a live-only condition
-A close/resolve path reuses a guard (`status==Fresh`, `expiry>now`) that can't hold once the program's status is **terminal** → the call reverts forever, funds lock. Fix: a terminal release that ignores freshness/expiry. *(v16 audit F1; maintainer fixed as "Finding C")*
+A close/resolve reuses a guard (`status==Fresh`, `expiry>now`) that can't hold once status is **terminal** → reverts forever, funds lock. Fix: a terminal release that ignores freshness/expiry. *(v16 audit F1)*
 
 ### SOL-022 · Write-only "impaired" counter
-A counter incremented when state migrates to a degraded bucket (valid→impaired) but never decremented → those funds are encumbered forever, slot never reusable. Fix: add the inverse settlement (release/write-off). *(v16 audit F2; percolator#74, code-confirmed)*
+A counter bumped when state degrades (valid→impaired), never decremented → funds encumbered forever, slot never reusable. Fix: add the inverse settlement. *(v16 audit F2)*
 
 ### SOL-023 · Fee/penalty rounds toward the user
-Fee/penalty/debt uses integer `/` (rounds down), so the user underpays and dust rounds to 0 → evasion + leakage. Fix: `u64::div_ceil` what the user **owes** — round against the less-trusted party (fee/penalty UP, payout DOWN). *(v16 audit F3, Low)*
+Fee/penalty uses integer `/` (rounds down) → user underpays, dust → 0 (evasion + leakage). Fix: `u64::div_ceil` what the user **owes**; round against the less-trusted party (fee UP, payout DOWN). *(v16 audit F3, Low)*
 
 ### SOL-024 · Stale / unchecked oracle price
-A Pyth/Switchboard price used with no staleness (publish-slot age) or confidence-interval check → attacker trades/liquidates at a mispriced value. Fix: `get_price_no_older_than(...)` and reject wide-confidence prices.
+A Pyth/Switchboard price with no staleness (publish-slot age) or confidence check → attacker trades/liquidates at a mispriced value. Fix: `get_price_no_older_than(...)`; reject wide-confidence.
 
 ### SOL-025 · Sysvar read by raw deserialize
-A sysvar (Clock/Rent) read by **raw-deserializing account data** (`bincode::deserialize::<Clock>`, raw cast) instead of `Clock::get()` / `Sysvar::from_account_info` (which key-check) → attacker passes a look-alike account. Fix: use `Clock::get()` / Anchor `Sysvar<>`; never hand-deserialize a sysvar.
+A sysvar (Clock/Rent) read by **raw-deserializing** account data (`bincode::deserialize::<Clock>`) instead of `Clock::get()` / `Sysvar::from_account_info` (which key-check) → attacker passes a look-alike. Fix: `Clock::get()` / Anchor `Sysvar<>`; never hand-deserialize a sysvar.
 
 ### SOL-026 · Duplicate mutable account (native programs)
-Two accounts that must differ aren't checked → attacker passes one twice, collapsing a delta check. Fix: `require_keys_neq!`. *(Anchor auto-rejects dupe-mutable `Account<>` via err 2040 — but NOT `AccountLoader` (zero-copy, still aliases memory), `UncheckedAccount`, or remaining_accounts.)*
+Two accounts that must differ aren't checked → attacker passes one twice, collapsing a delta check. Fix: `require_keys_neq!`. *(Anchor rejects dupe-mutable `Account<>` (err 2040); NOT `AccountLoader`/`UncheckedAccount`/remaining_accounts.)*
 
 ### SOL-027 · Unvalidated remaining_accounts
-`ctx.remaining_accounts` are read/written/invoked without checking each one's owner/key/signer — the list is fully attacker-controlled. Fix: validate every account before trusting it, exactly as a declared account.
+`ctx.remaining_accounts` read/written/invoked without checking each one's owner/key/signer — fully attacker-controlled. Fix: validate every account like a declared one.
 
 ### SOL-028 · Missing slippage / min-out bound
-A swap/withdraw/settle derives an output amount with no caller-supplied min-out / max-in → no protection from an adverse price move or sandwich. Fix: take and enforce a caller-supplied bound.
+A swap/withdraw/settle derives an output with no caller min-out/max-in → no protection from an adverse move or sandwich. Fix: take + enforce a caller bound.
 
 ### SOL-029 · Preflight simulation disabled
-Client sends a transaction with `skipPreflight: true` (or never `simulateTransaction`s) → reverts are paid for, not caught, and a live bot/keeper desyncs. Fix: keep preflight on, or `simulateTransaction` and assert `err === null` before the mainnet send. *(integrator layer — TS/JS)*
+`skipPreflight: true` (or no `simulateTransaction`) before a mainnet send → reverts are paid, not caught; a live bot desyncs. Fix: keep preflight on, or simulate and assert `err === null` first.
 
 ### SOL-030 · Static priority fee
-Hardcoded `microLamports` compute-unit price → underpays in congestion (tx never lands) or overpays when idle. Fix: derive from `getRecentPrioritizationFees()` / a fee oracle and clamp to a max. *(integrator layer — TS/JS)*
+Hardcoded `microLamports` priority fee → underpays in congestion (tx never lands) or overpays when idle. Fix: derive from `getRecentPrioritizationFees()` and clamp.
 
 ### SOL-031 · Stale Jupiter quote
-A Jupiter quote is swapped without checking `quoteResponse.contextSlot` freshness → an old route means a worse fill and sandwich/MEV exposure. Fix: reject/refetch when `contextSlot` lags the current slot before executing. *(integrator layer — TS/JS)*
+Jupiter quote swapped without a `quoteResponse.contextSlot` freshness check → stale route = worse fill + sandwich/MEV. Fix: refetch/reject when `contextSlot` lags the current slot.
 
 ## Provenance
 
-Honest origins (full table in README): SOL-001 = two confirmed maintainer-fixed bounty wins; SOL-002 = a public class from another researcher; SOL-003/004/005 = our bounty-5 patterns; SOL-021/022/023 = our v16 audit (F1 = "Finding C"; F2 = percolator#74; F3 Low); the rest = documented Solana/DeFi hygiene. We never claim credit we didn't earn.
+Honest origins (full table in README): SOL-001 = 2 confirmed bounty wins; SOL-002 = a public class (another researcher); SOL-003/004/005 = our bounty-5 patterns; SOL-021/022/023 = our v16 audit; SOL-029-031 = a live integrator report; the rest = documented Solana/DeFi hygiene. We never claim credit we didn't earn.
 
-Maintained by [Jelleo](https://jelleo.com). MIT. Full catalog → README.
+Maintained by [Jelleo](https://jelleo.com). MIT.
