@@ -1,6 +1,6 @@
 # Solana Security Standard
 
-> The **Solana Security Standard** — `SOL-0XX` rules for Anthropic's Claude Code security-guidance plugin. By the team that finds the bugs.
+> The **Solana Security Standard** — `SOL-0XX` rules distilled from $514M of real exploits, firing as you code in every AI tool (Claude Code, Codex, Cursor, Windsurf…), your editor, and CI. By the auditors who find them.
 
 ![SOL-001 firing on a vulnerable Solana program — Bounty 6 H2 case study](assets/sol-001-demo.png)
 
@@ -9,9 +9,11 @@
 [![Version](https://img.shields.io/badge/version-1.10.0-blue.svg)](CHANGELOG.md)
 [![Bounty wins](https://img.shields.io/badge/bounty_wins-2_confirmed_(SOL--001)-orange)](https://jelleo.com/cycles)
 
-Drop these two files into your Solana project's `.claude/` directory and your IDE will flag Solana-specific bugs while you code — caller-controlled clock values, cross-market state asymmetry, wrapper handlers that drift from engine logic, missing Anchor constraints, and 24 more bug classes drawn from real audits.
+The same SOL-0XX rules flag Solana-specific bugs while you code — caller-controlled clock values, cross-market state asymmetry, wrapper handlers that drift from engine logic, missing Anchor constraints, and **31 bug classes in all**, drawn from real audits.
 
-## Install in Claude Code (30 seconds)
+**Works in:** Claude Code · Codex · Copilot · Cursor · Windsurf · Cline · Aider · any MCP client · the VS Code extension (Open VSX) · the CLI · Semgrep · GitHub Actions. Pick your surface below.
+
+## Use it in Claude Code (30 seconds)
 
 ```bash
 mkdir -p .claude && \
@@ -37,7 +39,7 @@ Done. Open a Solana program file in Claude Code and the plugin will catch issues
 For CI or supply-chain-sensitive setups, **pin to a release tag and verify the download** against the published `CHECKSUMS.txt` instead of pulling `main`:
 
 ```bash
-TAG=v1.9.1
+TAG=v1.10.0
 BASE="https://raw.githubusercontent.com/Copenhagen0x/solana-security-standard/$TAG"
 tmp=$(mktemp -d) && cd "$tmp" && mkdir -p semgrep
 curl -fsSL "$BASE/CHECKSUMS.txt"                          -o CHECKSUMS.txt
@@ -50,7 +52,7 @@ mkdir -p "$OLDPWD/.claude" && cp claude-security-guidance.md security-patterns.y
 # the verified semgrep ruleset stays in $tmp/semgrep/ — point `semgrep --config` at it or copy where you need it
 ```
 
-Pinning to a tag freezes you to a known release (a tampered `main` can't reach you); the checksum confirms nothing was altered in transit. (Hashes are over the LF bytes GitHub serves — verify the *downloaded* files, not a CRLF local checkout.) Tags from `v1.9.1` on are SSH-signed — verify origin with `git verify-tag v1.9.1` (key + steps in [`SECURITY.md`](SECURITY.md)). *(Checksums and the in-repo allowed-signers can't defend against a full account compromise that rewrites both — the signed tag, verified out of band, is the origin check for that.)*
+Pinning to a tag freezes you to a known release (a tampered `main` can't reach you); the checksum confirms nothing was altered in transit. (Hashes are over the LF bytes GitHub serves — verify the *downloaded* files, not a CRLF local checkout.) Tags from `v1.9.1` on are SSH-signed — verify origin with `git verify-tag v1.10.0` (key + steps in [`SECURITY.md`](SECURITY.md)). *(Checksums and the in-repo allowed-signers can't defend against a full account compromise that rewrites both — the signed tag, verified out of band, is the origin check for that.)*
 
 ## Run it in CI — GitHub Action
 
@@ -94,8 +96,10 @@ Human, JSON, or SARIF output; exits non-zero on findings (so it gates any CI). Z
 ## Run it in your editor — VS Code / Cursor / Windsurf
 
 The [VS Code extension](extensions/vscode) shows SOL-0XX findings as inline warning squiggles as you
-type, in any `.rs` file. Same engine as the CLI, 100% local (no telemetry). Works in VS Code, Cursor,
-and Windsurf. Details in [`extensions/vscode/`](extensions/vscode/).
+type, in Rust **and TypeScript/JS** files. Same engine as the CLI, 100% local (no telemetry). Install it
+from **[Open VSX](https://open-vsx.org/extension/jelleo/solana-security-standard)** — works in Cursor,
+Windsurf, and VSCodium; on stock VS Code, sideload the `.vsix` from [`extensions/vscode/`](extensions/vscode/)
+(the Microsoft Marketplace listing is pending publisher verification). Details in [`extensions/vscode/`](extensions/vscode/).
 
 ## Run it with Semgrep
 
@@ -137,7 +141,7 @@ Cursor, Claude, Windsurf) a `scan_solana_code` tool plus the full rule set — n
 ## Learn from real exploits — the Solana Hacks Database
 
 [`hacks/`](hacks/) maps real, disclosed Solana exploits to the SOL-0XX rule class each one falls under —
-Wormhole, Mango Markets, Cashio, Crema, Nirvana, Cypher, Loopscale, and more (**$500M+** in documented
+Wormhole, Mango Markets, Cashio, Crema, Nirvana, Cypher, Loopscale, and more (**$514M+** in documented
 losses). Every entry is cited, and incidents no code rule can prevent (stolen keys, off-chain wallets)
 are flagged as such rather than misattributed — the same honesty the rest of this repo holds itself to.
 Browse the [database →](hacks/README.md).
@@ -212,7 +216,7 @@ All published cycle reports: [jelleo.com/cycles](https://jelleo.com/cycles)
 
 ## How it works
 
-Anthropic's [security-guidance plugin](https://code.claude.com/docs/en/security-guidance) reviews Claude's code edits at three layers:
+The standard is two source files — a YAML of deterministic patterns and a Markdown threat-model + rule catalog — plus a self-contained scanner. **Every surface runs the same rules:** the CLI, GitHub Action, editor extension, MCP server, and Semgrep apply them directly. In **Claude Code** specifically, Anthropic's [security-guidance plugin](https://code.claude.com/docs/en/security-guidance) reads the two files and reviews edits at three layers:
 
 1. **On each file edit** — fast pattern match (no model call). Reads `.claude/security-patterns.yaml` for regex/substring rules. **Our file provides 20 deterministic patterns.**
 2. **At the end of each turn** — background model review of the full diff. Reads `.claude/claude-security-guidance.md` for semantic guidance. **Our file provides the Solana threat model + 31-rule catalog + review checklist.**
@@ -222,7 +226,7 @@ Every time a rule fires, the reminder text includes the rule ID (e.g. `Jelleo SO
 
 ## Examples
 
-The [`examples/`](examples/) directory contains 5 paired vulnerable/fixed Solana snippets — one per headline rule. Useful for understanding the bug class before reading the rule definition.
+The [`examples/`](examples/) directory contains **22 paired vulnerable/fixed snippets — one for every machine-checkable rule** (Rust on-chain; TypeScript for the integrator rules). They're self-tested: the scanner must fire on each `vulnerable` file and clear on each `fixed` one, so they can't drift from the rules. Useful for understanding a bug class before reading the rule definition.
 
 ## Contributing
 
@@ -238,7 +242,7 @@ Open an issue first if you're proposing a new rule category. Keep rules focused:
 This repo follows [Semantic Versioning](https://semver.org/). Pin a tagged release rather than `main`:
 
 ```bash
-curl -sL https://raw.githubusercontent.com/Copenhagen0x/solana-security-standard/v1.9.1/claude-security-guidance.md \
+curl -sL https://raw.githubusercontent.com/Copenhagen0x/solana-security-standard/v1.10.0/claude-security-guidance.md \
      -o .claude/claude-security-guidance.md
 ```
 
