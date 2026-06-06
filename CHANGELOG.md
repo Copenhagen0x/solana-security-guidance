@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0] — 2026-06-06
+
+### Added — per-rule metadata, hardened exclusions, self-testing examples
+
+- **Per-rule metadata layer ([`rules-meta.json`](rules-meta.json)).** Every SOL-0XX rule now carries a value **tier** (high | low), a baseline **severity** (high | medium | low), a **reachability anchor** (the first call-site a reporter cites to confirm exploitability), and numbered **"do NOT flag when…" exclusions**. Surfaced in `cli/rules.json`, the Semgrep `metadata`, and the per-rule content pages. New `--min-tier <high|low>` opt-in noise floor + a [`SEVERITY.md`](SEVERITY.md) calibration rubric. **Advisory only** — the scanner still fires (fail-open); Semgrep `severity` stays `WARNING` and SARIF `level` stays `warning`, so existing gating is unchanged.
+- **Hardened exclusions.** Each exclusion is a specific, verifiable condition that vulnerable code cannot satisfy — audited (3-reviewer, to convergence) so a reviewer can't cite one to wave through a real bug. Covers `has_one`-vs-signature, canonical PDA bumps, source-vs-shipped-binary divergence (`#[cfg]` / `cfg!`), oracle vendor-awareness, fail-closed gates, and off-chain-consumer trust boundaries.
+- **Self-testing examples.** Every machine-checkable rule (20) ships a paired `vulnerable` / `fixed` example under [`examples/`](examples/) (Rust on-chain; TypeScript for SOL-029/030/031), wired to a real-scanner self-test (`cli/test/examples.test.js`): each `vulnerable` must fire its rule (anti-rot guard), each `fixed` is scanner-clean or a documented exclusion-cleared example.
+
+### Changed — detection + robustness (deep-audit hardening)
+
+- **Detection.** SOL-007 now catches the dominant Anchor idiom `&*ctx.accounts.x.data.borrow()` (was matching only bare single-identifier receivers); SOL-017 now catches qualified `mem::transmute` calls.
+- **Scanner robustness.** Dense files no longer crash the scanner; an over-large scan is **fail-safe** — an incomplete scan exits non-zero and is flagged in every output (`scanComplete: false` in JSON, `scannerTruncated` in SARIF, a text banner), so a finding-flood can never silently pass a gate (`SSS_MAX_FINDINGS` tunes the cap). Overlapping/nested scan paths are de-duplicated.
+- **Accuracy + hygiene.** Corrected the Wormhole and Loopscale figures/classifications in the hacks database; the VSCode extension declares an `untrustedWorkspaces` capability and cleans up its debounce timers.
+
+### Notes
+
+Fully backward-compatible: default scan output, exit semantics for normal scans, Semgrep `severity`, and SARIF `level` are unchanged. All new fields are additive.
+
 ## [1.9.1] — 2026-06-06
 
 ### Changed — repo renamed + supply-chain hardening
