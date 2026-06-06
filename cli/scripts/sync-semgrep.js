@@ -125,6 +125,9 @@ function build() {
     // change the rule's WARNING severity that consumers gate on).
     if (m.tier) rule.metadata['sss-tier'] = m.tier;
     if (m.severity) rule.metadata['sss-severity'] = m.severity;
+    // Numbered "do NOT flag when…" exclusions (advisory guidance a reviewer cites
+    // when dismissing a finding; Semgrep still fires — fail-open, no auto-suppression).
+    if (Array.isArray(m.exclusions) && m.exclusions.length) rule.metadata['sss-exclusions'] = m.exclusions.slice();
     const ov = SEMGREP_OVERRIDES[p.rule_name];
     if (ov) rule.metadata.note = ov.note; // record why this rule's regex diverges from the scanner
     rules.push(rule);

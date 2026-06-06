@@ -26,6 +26,10 @@ rules:
       license: MIT
       sss-tier: high
       sss-severity: high
+      sss-exclusions:
+        - the caller-supplied slot/timestamp is authenticated against Clock::get()?.slot (e.g. clamped/rejected) before any use
+        - the value is provably discarded — never written to an account, emitted in an event, or used in a later gate (a positive 'not persisted' proof, not merely 'this handler does not seem to use it')
+        - the handler is gated to an admin that must SIGN AND is bound by an explicit constraint to a hardcoded / program-stored admin key (constraint = signer.key() == config.admin, or has_one = admin WHERE admin is declared Signer<>) — a bare Signer<> with no such binding is a user-supplied key the caller self-assigns and is NOT sufficient, nor is a key-equality/has_one check on a non-signer account — AND the value is never re-read by a permissionless crank or downstream instruction
   - id: solana-security-standard.sol-002-cross-market-counter
     languages:
       - rust
@@ -48,6 +52,9 @@ rules:
       license: MIT
       sss-tier: high
       sss-severity: high
+      sss-exclusions:
+        - every write to the counter is gated by the market's authority proven via a SIGNATURE — a Signer<> on that authority, a PDA-signed CPI WHERE the signing PDA is derived from seeds sourced from the market account's own on-chain state (its key or a field loaded from it — NOT a caller-supplied market id from instruction data) that bind it to THIS specific market, or has_one/constraint WHERE the bound authority account is itself declared Signer<>; a has_one (or key-equality) on a NON-signing account only checks the key (not consent), and a global/unscoped authority PDA that can sign for ANY market, are NOT sufficient
+        - the counter is strictly per-market (not a shared aggregate) and has no cross-market read path
   - id: solana-security-standard.sol-005-realloc-no-guard
     languages:
       - rust
@@ -70,6 +77,10 @@ rules:
       license: MIT
       sss-tier: high
       sss-severity: medium
+      sss-exclusions:
+        - account.owner == program_id is checked before the realloc
+        - the new size is bounded by a validated cap AND rent-exemption is re-funded after the resize
+        - the account is newly allocated in THIS instruction AND its size is verified == 0 before the realloc (size==0 is mandatory, not optional; additionally any lamports were transferred by the program, not pre-funded by an attacker), so no attacker-supplied prior state or size can exist
   - id: solana-security-standard.sol-006-raw-account-info
     languages:
       - rust
@@ -92,6 +103,10 @@ rules:
       license: MIT
       sss-tier: high
       sss-severity: high
+      sss-exclusions:
+        - the AccountInfo is a documented `/// CHECK:` used only as a CPI target, program id, or read-only/sysvar ref — not a privileged caller whose signature matters
+        - account.is_signer is asserted (or the field is a Signer<>/Account<>) before any state mutation
+        - the account is never used to authorize a state change or fund movement — on-chain OR by an off-chain consumer of its emitted/logged key
   - id: solana-security-standard.sol-007-raw-data-borrow
     languages:
       - rust
@@ -114,6 +129,10 @@ rules:
       license: MIT
       sss-tier: high
       sss-severity: high
+      sss-exclusions:
+        - account.owner == program_id (or the expected program) is checked before deserializing
+        - the account is an Anchor `Account<'info, T>` (Anchor enforces the owner) rather than a raw AccountInfo
+        - the bytes are read only for display/logging and are never persisted, emitted in an event, or trusted for any authorization or fund decision — on-chain OR by an off-chain consumer of the emitted data
   - id: solana-security-standard.sol-009-invoke-signed
     languages:
       - rust
@@ -136,6 +155,8 @@ rules:
       license: MIT
       sss-tier: high
       sss-severity: high
+      sss-exclusions:
+        - the caller's authority for THIS SPECIFIC privileged operation is verified (Signer + has_one/constraint binding the caller to the target resource) BEFORE the invoke_signed — a 'trusted target program' or any unrelated upstream Signer check is NOT sufficient
   - id: solana-security-standard.sol-010-init-if-needed
     languages:
       - rust
@@ -158,6 +179,9 @@ rules:
       license: MIT
       sss-tier: high
       sss-severity: high
+      sss-exclusions:
+        - the account holds no lamports, token balances, authority keys, OR access-gating state that a second initialization could reset — access-gating state includes (non-exhaustively) a timestamp / nonce / status used as a lock, AND any field that controls subsequent PDA derivation, account creation, or role assignment
+        - an explicit already-initialized guard rejects a second initialization
   - id: solana-security-standard.sol-011-close-attr
     languages:
       - rust
@@ -180,6 +204,9 @@ rules:
       license: MIT
       sss-tier: high
       sss-severity: high
+      sss-exclusions:
+        - the account is fully drained (lamports AND any token balances) before close and its data is zeroed, AND it holds no delegated authority over other on-chain resources (mints, PDAs, vaults) that must be explicitly revoked before close
+        - the close destination is program-controlled or a signer-validated key, not an attacker-supplied account
       note: 'RE2-safe port: the scanner''s depth-2 paren-balanced regex is rejected by Semgrep as "too large" (RE2 expands the nested {0,N} repetitions). This delimiter-bounded window flags `close =` within a 400-char #[account( ... ) region. It stops the window at ; { } and # — none appear inside an attribute, and stopping at # means the NEAREST #[account( wins so the finding lands on the right attribute even when two are adjacent. It favors recall over the scanner''s exact paren-balancing; both flag the same real #[account(close = ...)] attributes incl. long multi-line ones. Known limit: a raw-string literal (r#"..."#) inside a constraint before close= would stop the window early — a theoretical Semgrep-only miss; the scanner still catches it.'
   - id: solana-security-standard.sol-013-hardcoded-token-program
     languages:
@@ -200,6 +227,9 @@ rules:
       license: MIT
       sss-tier: high
       sss-severity: high
+      sss-exclusions:
+        - the typed anchor_spl::token::ID / token_2022::ID is used via a typed Program<> account, not a raw literal
+        - 'the literal lives only in a test/const and is NEVER reached on any runtime branch for a program id used in a CPI — including behind a #[cfg(feature = ...)] / #[cfg(not(test))] block that ships in ANY production build (verify the call site AND the build''s enabled features, not just the declaration; only #[cfg(test)] truly excludes it)'
   - id: solana-security-standard.sol-014-unchecked-arithmetic
     languages:
       - rust
@@ -222,6 +252,10 @@ rules:
       license: MIT
       sss-tier: high
       sss-severity: high
+      sss-exclusions:
+        - the operation already uses checked_/try_/saturating_ math with explicit error handling for the financial case
+        - both operands are compile-time-bounded constants that cannot overflow/underflow
+        - the value is non-financial AND does not feed any downstream financial calculation (proven by tracing every use-site, not a 'this field looks non-financial' claim), AND the operands are bounded so the maximum possible result cannot exceed the type's max (proven by an explicit checked bound or a type-level guarantee, not an unverified 'validated range')
   - id: solana-security-standard.sol-016-bump-field-read
     languages:
       - rust
@@ -246,6 +280,9 @@ rules:
       license: MIT
       sss-tier: high
       sss-severity: high
+      sss-exclusions:
+        - the bump is validated against the canonical find_program_address bump on first read, or an Anchor `bump` constraint enforces it
+        - the PDA (and its bump) is created in the same instruction using the canonical bump obtained from find_program_address (NOT a caller-supplied bump passed to create_program_address, which accepts any valid off-curve bump and re-introduces the non-canonical-bump bug)
   - id: solana-security-standard.sol-017-unsafe-transmute
     languages:
       - rust
@@ -268,6 +305,9 @@ rules:
       license: MIT
       sss-tier: high
       sss-severity: high
+      sss-exclusions:
+        - a typed deserialize with length + discriminator validation precedes any field use
+        - the cast is over a freshly-created, program-owned, length-checked buffer with a verified layout
   - id: solana-security-standard.sol-018-hardcoded-system-program
     languages:
       - rust
@@ -290,6 +330,9 @@ rules:
       license: MIT
       sss-tier: low
       sss-severity: low
+      sss-exclusions:
+        - the program-id comparison uses the imported system_program::ID type-safely, not a raw string literal
+        - 'the literal appears only in a #[cfg(test)] module or a const that is never reached on a runtime program-id verification — a #[cfg(feature = ...)] block that ships in a production build does NOT qualify'
   - id: solana-security-standard.sol-019-try-deserialize-unchecked
     languages:
       - rust
@@ -312,6 +355,9 @@ rules:
       license: MIT
       sss-tier: high
       sss-severity: high
+      sss-exclusions:
+        - try_deserialize (with the discriminator check) is used, or the 8-byte discriminator is verified manually before the unchecked deserialize
+        - the SAME account being deserialized is declared as an Anchor `Account<'info, T>` field (which enforces the discriminator) — not merely that some other account in the same handler is Anchor-typed
   - id: solana-security-standard.sol-020-set-authority
     languages:
       - rust
@@ -334,6 +380,9 @@ rules:
       license: MIT
       sss-tier: high
       sss-severity: high
+      sss-exclusions:
+        - the current authority is verified to equal the expected key before the SetAuthority CPI
+        - an Anchor `constraint = <signer>.key() == <resource>.authority` on a Signer<> (or has_one WHERE the bound authority field is itself declared Signer<>) binds the SIGNING caller to the CURRENT authority of the resource being changed — a bare Signer<> not bound to the stored authority key, OR a has_one/constraint on a NON-signing authority account (key matches but the holder never consents), is NOT sufficient
   - id: solana-security-standard.sol-024-oracle-price-unchecked
     languages:
       - rust
@@ -360,6 +409,9 @@ rules:
       license: MIT
       sss-tier: high
       sss-severity: high
+      sss-exclusions:
+        - get_price_no_older_than (staleness, with a max-age bound that reflects the protocol's real staleness tolerance — u64::MAX or an unreasonably large age is NOT sufficient) AND a confidence-interval bound are both enforced before use
+        - the price feeds a non-economic / display-only path that cannot trigger a trade, liquidation, or any other economic action — neither on-chain NOR via an off-chain consumer (e.g. a keeper reading emitted price events to trigger liquidations, rebalancing, or collateral updates)
   - id: solana-security-standard.sol-025-sysvar-raw-deserialize
     languages:
       - rust
@@ -386,6 +438,9 @@ rules:
       license: MIT
       sss-tier: high
       sss-severity: high
+      sss-exclusions:
+        - Clock::get() / Rent::get() or an Anchor Sysvar<> is used (the account key is checked internally)
+        - the sysvar account key is explicitly verified against the canonical sysvar id before the raw deserialize
   - id: solana-security-standard.sol-029-skip-preflight
     languages:
       - typescript
@@ -419,6 +474,9 @@ rules:
       license: MIT
       sss-tier: high
       sss-severity: medium
+      sss-exclusions:
+        - preflight stays on, or simulateTransaction is called and err === null is asserted before the mainnet send
+        - 'skipPreflight: true is on a devnet/test/throwaway path, not a value-moving mainnet send — AND the gate selecting it FAILS CLOSED (defaults to preflight ON for mainnet): an env check like `CLUSTER !== ''mainnet-beta''` that yields skipPreflight when the var is unset does NOT qualify; require an explicit non-mainnet allowlist'
   - id: solana-security-standard.sol-030-static-priority-fee
     languages:
       - typescript
@@ -452,6 +510,9 @@ rules:
       license: MIT
       sss-tier: low
       sss-severity: low
+      sss-exclusions:
+        - the priority fee is derived from getRecentPrioritizationFees() / a fee oracle and clamped to a sane max
+        - 'microLamports: 0 (the intentional no-priority opt-out) or a documented test/config default'
   - id: solana-security-standard.sol-031-jupiter-quote-freshness
     languages:
       - typescript
@@ -485,3 +546,6 @@ rules:
       license: MIT
       sss-tier: high
       sss-severity: medium
+      sss-exclusions:
+        - quoteResponse.contextSlot is captured and the route is refetched/rejected when it lags the current slot
+        - the quote is consumed within the same slot as the fetch (an undefined 'freshness window' is not sufficient — prefer ex1's explicit contextSlot check) AND a slippage bound protects the fill

@@ -1,36 +1,256 @@
 {
-  "_doc": "Solana Security Standard (SOL-0XX) per-rule metadata — by Jelleo. HAND-AUTHORED source (like hacks/hacks.json); one entry per rule, keyed by SOL id. Merged into cli/rules.json (sync-rules.js -> scanner), semgrep metadata (sync-semgrep.js), and content/rules/*.md (sync-content.js). NOT raw-fetched by consumers (not in CHECKSUMS.txt). ADVISORY ONLY: never changes whether a rule fires, nor Semgrep `severity` / SARIF `level` (both stay WARNING). tier: high|low (submission-floor for --min-tier; LOW=hygiene/defense-in-depth/operational). Tier is a NOISE FLOOR, not a claim of un-exploitability — `--min-tier high` is for cutting alert fatigue, never the only scan for an audit; calibrate real impact via severity + SEVERITY.md. severity: high|medium|low (BASELINE impact IF a true positive; calibrate per SEVERITY.md, preconditions x access, take the lower). reachability: the first reachable call-site the reporter cites to confirm exploitability. exclusions: numbered 'do NOT flag when…' clauses (cite by number when suppressing).",
+  "_doc": "Solana Security Standard (SOL-0XX) per-rule metadata — by Jelleo. HAND-AUTHORED source (like hacks/hacks.json); one entry per rule, keyed by SOL id. Merged into cli/rules.json (sync-rules.js -> scanner), semgrep metadata (sync-semgrep.js), and content/rules/*.md (sync-content.js). NOT raw-fetched by consumers (not in CHECKSUMS.txt). ADVISORY ONLY: never changes whether a rule fires, nor Semgrep `severity` / SARIF `level` (both stay WARNING). tier: high|low (submission-floor for --min-tier; LOW=hygiene/defense-in-depth/operational). Tier is a NOISE FLOOR, not a claim of un-exploitability — `--min-tier high` is for cutting alert fatigue, never the only scan for an audit; calibrate real impact via severity + SEVERITY.md. severity: high|medium|low (BASELINE impact IF a true positive; calibrate per SEVERITY.md, preconditions x access, take the lower). reachability: the first reachable call-site the reporter cites to confirm exploitability. exclusions: numbered 'do NOT flag when…' clauses — each names a SPECIFIC safe construct (never a vague 'looks fine'); the scanner still fires (fail-open), exclusions are guidance a reviewer cites by number when dismissing a finding.",
   "rules": {
-    "SOL-001": { "tier": "high", "severity": "high", "reachability": "the instruction handler that accepts now_slot (or any caller-supplied slot/timestamp) from instruction data" },
-    "SOL-002": { "tier": "high", "severity": "high", "reachability": "the write site that updates the shared/cross-market counter from a single market's context" },
-    "SOL-003": { "tier": "low", "severity": "medium", "reachability": "the wrapper function that re-implements engine logic instead of delegating to the engine" },
-    "SOL-004": { "tier": "high", "severity": "high", "reachability": "the risk/margin/health computation that omits a spec-mandated term" },
-    "SOL-005": { "tier": "high", "severity": "medium", "reachability": "the realloc() call site, and whether owner / size-bound / rent-exemption are checked first" },
-    "SOL-006": { "tier": "high", "severity": "high", "reachability": "the privileged handler that mutates state without a Signer<> / is_signer check on the caller" },
-    "SOL-007": { "tier": "high", "severity": "high", "reachability": "the AccountInfo deserialize whose owner is never compared to program_id" },
-    "SOL-008": { "tier": "high", "severity": "high", "reachability": "the use of a PDA account that is never re-derived and compared via find_program_address" },
-    "SOL-009": { "tier": "high", "severity": "high", "reachability": "the invoke_signed call and the missing upstream caller-authority check" },
-    "SOL-010": { "tier": "high", "severity": "high", "reachability": "the init_if_needed account that holds value or authority (re-init drops it)" },
-    "SOL-011": { "tier": "high", "severity": "high", "reachability": "the close= account that isn't fully drained/zeroed before close, or whose lamports go to an attacker-chosen destination" },
-    "SOL-012": { "tier": "high", "severity": "medium", "reachability": "the funded account used without a rent-exempt assertion" },
-    "SOL-013": { "tier": "high", "severity": "high", "reachability": "the hardcoded token-program id and the token account it is used to invoke" },
-    "SOL-014": { "tier": "high", "severity": "high", "reachability": "the +/-/* on a balance/counter (attacker-influenced) without checked_*" },
-    "SOL-015": { "tier": "high", "severity": "high", "reachability": "the Account<'info, T> that cross-references another account with no has_one / constraint binding" },
-    "SOL-016": { "tier": "high", "severity": "high", "reachability": "the first read of the stored .bump without a canonical-bump (find_program_address) compare" },
-    "SOL-017": { "tier": "high", "severity": "high", "reachability": "the raw data-buffer cast (&*account.data.borrow() / transmute) used without deserialize-then-validate" },
-    "SOL-018": { "tier": "low", "severity": "low", "reachability": "the 32-ones System Program literal used instead of system_program::ID" },
-    "SOL-019": { "tier": "high", "severity": "high", "reachability": "the try_deserialize_unchecked (or manual deserialize) that skips the 8-byte discriminator" },
-    "SOL-020": { "tier": "high", "severity": "high", "reachability": "the SetAuthority CPI without a current-authority verification" },
-    "SOL-021": { "tier": "high", "severity": "high", "reachability": "the close/resolve op guarded by a freshness/expiry condition that cannot hold once status is terminal" },
-    "SOL-022": { "tier": "low", "severity": "medium", "reachability": "the counter incremented when state degrades with no decrement / settlement path" },
-    "SOL-023": { "tier": "low", "severity": "low", "reachability": "the fee/penalty integer division that rounds in the user's favor" },
-    "SOL-024": { "tier": "high", "severity": "high", "reachability": "the oracle price read without a staleness (publish-slot age) or confidence check" },
-    "SOL-025": { "tier": "high", "severity": "high", "reachability": "the bincode::deserialize of a Clock/Rent sysvar instead of Clock::get() / Sysvar<>" },
-    "SOL-026": { "tier": "high", "severity": "high", "reachability": "the two accounts that must differ but are never checked with require_keys_neq! (non-Anchor-Account paths)" },
-    "SOL-027": { "tier": "high", "severity": "high", "reachability": "the ctx.remaining_accounts element read/written/invoked without owner/key/signer validation" },
-    "SOL-028": { "tier": "high", "severity": "high", "reachability": "the swap/withdraw/settle output derived with no caller min-out / max-in bound" },
-    "SOL-029": { "tier": "high", "severity": "medium", "reachability": "the send path with skipPreflight: true (or no simulateTransaction before a mainnet send)" },
-    "SOL-030": { "tier": "low", "severity": "low", "reachability": "the hardcoded microLamports priority-fee constant" },
-    "SOL-031": { "tier": "high", "severity": "medium", "reachability": "the Jupiter quote consumed (swap built) without a quoteResponse.contextSlot freshness check" }
+    "SOL-001": {
+      "tier": "high", "severity": "high",
+      "reachability": "the instruction handler that accepts now_slot (or any caller-supplied slot/timestamp) from instruction data",
+      "exclusions": [
+        "the caller-supplied slot/timestamp is authenticated against Clock::get()?.slot (e.g. clamped/rejected) before any use",
+        "the value is provably discarded — never written to an account, emitted in an event, or used in a later gate (a positive 'not persisted' proof, not merely 'this handler does not seem to use it')",
+        "the handler is gated to an admin that must SIGN AND is bound by an explicit constraint to a hardcoded / program-stored admin key (constraint = signer.key() == config.admin, or has_one = admin WHERE admin is declared Signer<>) — a bare Signer<> with no such binding is a user-supplied key the caller self-assigns and is NOT sufficient, nor is a key-equality/has_one check on a non-signer account — AND the value is never re-read by a permissionless crank or downstream instruction"
+      ]
+    },
+    "SOL-002": {
+      "tier": "high", "severity": "high",
+      "reachability": "the write site that updates the shared/cross-market counter from a single market's context",
+      "exclusions": [
+        "every write to the counter is gated by the market's authority proven via a SIGNATURE — a Signer<> on that authority, a PDA-signed CPI WHERE the signing PDA is derived from seeds sourced from the market account's own on-chain state (its key or a field loaded from it — NOT a caller-supplied market id from instruction data) that bind it to THIS specific market, or has_one/constraint WHERE the bound authority account is itself declared Signer<>; a has_one (or key-equality) on a NON-signing account only checks the key (not consent), and a global/unscoped authority PDA that can sign for ANY market, are NOT sufficient",
+        "the counter is strictly per-market (not a shared aggregate) and has no cross-market read path"
+      ]
+    },
+    "SOL-003": {
+      "tier": "low", "severity": "medium",
+      "reachability": "the wrapper function that re-implements engine logic instead of delegating to the engine",
+      "exclusions": [
+        "the wrapper delegates to the engine (CPI or shared module) and only marshals accounts",
+        "the duplicated logic is generated from / shares the engine's exact code path AND is covered by a differential test that proves wrapper(x) == engine(x) over the relevant input range (a single happy-path smoke test is NOT sufficient)"
+      ]
+    },
+    "SOL-004": {
+      "tier": "high", "severity": "high",
+      "reachability": "the risk/margin/health computation that omits a spec-mandated term",
+      "exclusions": [
+        "every spec-mandated term is present (cross-checked against the protocol spec, with the specific spec clause cited by section/line — NOT a self-attested 'I checked')",
+        "the omitted term is documented in the protocol spec as zero or inapplicable for this instrument, with the spec clause cited — NOT an unverified 'by construction' assumption (that is the under-collateralization trap)"
+      ]
+    },
+    "SOL-005": {
+      "tier": "high", "severity": "medium",
+      "reachability": "the realloc() call site, and whether owner / size-bound / rent-exemption are checked first",
+      "exclusions": [
+        "account.owner == program_id is checked before the realloc",
+        "the new size is bounded by a validated cap AND rent-exemption is re-funded after the resize",
+        "the account is newly allocated in THIS instruction AND its size is verified == 0 before the realloc (size==0 is mandatory, not optional; additionally any lamports were transferred by the program, not pre-funded by an attacker), so no attacker-supplied prior state or size can exist"
+      ]
+    },
+    "SOL-006": {
+      "tier": "high", "severity": "high",
+      "reachability": "the privileged handler that mutates state without a Signer<> / is_signer check on the caller",
+      "exclusions": [
+        "the AccountInfo is a documented `/// CHECK:` used only as a CPI target, program id, or read-only/sysvar ref — not a privileged caller whose signature matters",
+        "account.is_signer is asserted (or the field is a Signer<>/Account<>) before any state mutation",
+        "the account is never used to authorize a state change or fund movement — on-chain OR by an off-chain consumer of its emitted/logged key"
+      ]
+    },
+    "SOL-007": {
+      "tier": "high", "severity": "high",
+      "reachability": "the AccountInfo deserialize whose owner is never compared to program_id",
+      "exclusions": [
+        "account.owner == program_id (or the expected program) is checked before deserializing",
+        "the account is an Anchor `Account<'info, T>` (Anchor enforces the owner) rather than a raw AccountInfo",
+        "the bytes are read only for display/logging and are never persisted, emitted in an event, or trusted for any authorization or fund decision — on-chain OR by an off-chain consumer of the emitted data"
+      ]
+    },
+    "SOL-008": {
+      "tier": "high", "severity": "high",
+      "reachability": "the use of a PDA account that is never re-derived and compared via find_program_address",
+      "exclusions": [
+        "the address is re-derived via find_program_address and compared, or Anchor seeds = [...] + a canonical `bump` constraint enforce it (a `bump = <stored_field>` counts ONLY if that stored bump itself passed SOL-016 canonical-bump validation; has_one alone does NOT verify canonical PDA derivation and is not sufficient by itself; and if an Anchor `seeds::program = <id>` is used, that <id> must be a hardcoded/trusted program id, NOT an attacker-supplied or runtime-mutable value — including a field loaded from ANY account (even a typed Account<>) unless that field is a compile-time constant or was set by a verified admin and cannot be changed by non-admin callers)"
+      ]
+    },
+    "SOL-009": {
+      "tier": "high", "severity": "high",
+      "reachability": "the invoke_signed call and the missing upstream caller-authority check",
+      "exclusions": [
+        "the caller's authority for THIS SPECIFIC privileged operation is verified (Signer + has_one/constraint binding the caller to the target resource) BEFORE the invoke_signed — a 'trusted target program' or any unrelated upstream Signer check is NOT sufficient"
+      ]
+    },
+    "SOL-010": {
+      "tier": "high", "severity": "high",
+      "reachability": "the init_if_needed account that holds value or authority (re-init drops it)",
+      "exclusions": [
+        "the account holds no lamports, token balances, authority keys, OR access-gating state that a second initialization could reset — access-gating state includes (non-exhaustively) a timestamp / nonce / status used as a lock, AND any field that controls subsequent PDA derivation, account creation, or role assignment",
+        "an explicit already-initialized guard rejects a second initialization"
+      ]
+    },
+    "SOL-011": {
+      "tier": "high", "severity": "high",
+      "reachability": "the close= account that isn't fully drained/zeroed before close, or whose lamports go to an attacker-chosen destination",
+      "exclusions": [
+        "the account is fully drained (lamports AND any token balances) before close and its data is zeroed, AND it holds no delegated authority over other on-chain resources (mints, PDAs, vaults) that must be explicitly revoked before close",
+        "the close destination is program-controlled or a signer-validated key, not an attacker-supplied account"
+      ]
+    },
+    "SOL-012": {
+      "tier": "high", "severity": "medium",
+      "reachability": "the funded account used without a rent-exempt assertion",
+      "exclusions": [
+        "the account is created with Anchor `init` (rent-exemption enforced by the framework)",
+        "a rent-exempt assertion (Rent::get) is present before/at funding"
+      ]
+    },
+    "SOL-013": {
+      "tier": "high", "severity": "high",
+      "reachability": "the hardcoded token-program id and the token account it is used to invoke",
+      "exclusions": [
+        "the typed anchor_spl::token::ID / token_2022::ID is used via a typed Program<> account, not a raw literal",
+        "the literal lives only in a test/const and is NEVER reached on any runtime branch for a program id used in a CPI — including behind a #[cfg(feature = ...)] / #[cfg(not(test))] block that ships in ANY production build (verify the call site AND the build's enabled features, not just the declaration; only #[cfg(test)] truly excludes it)"
+      ]
+    },
+    "SOL-014": {
+      "tier": "high", "severity": "high",
+      "reachability": "the +/-/* on a balance/counter (attacker-influenced) without checked_*",
+      "exclusions": [
+        "the operation already uses checked_/try_/saturating_ math with explicit error handling for the financial case",
+        "both operands are compile-time-bounded constants that cannot overflow/underflow",
+        "the value is non-financial AND does not feed any downstream financial calculation (proven by tracing every use-site, not a 'this field looks non-financial' claim), AND the operands are bounded so the maximum possible result cannot exceed the type's max (proven by an explicit checked bound or a type-level guarantee, not an unverified 'validated range')"
+      ]
+    },
+    "SOL-015": {
+      "tier": "high", "severity": "high",
+      "reachability": "the Account<'info, T> that cross-references another account with no has_one / constraint binding",
+      "exclusions": [
+        "the related accounts are bound by has_one / constraint / seeds in the accounts struct",
+        "the relationship is enforced by an explicit require_keys_eq! in the handler body before use"
+      ]
+    },
+    "SOL-016": {
+      "tier": "high", "severity": "high",
+      "reachability": "the first read of the stored .bump without a canonical-bump (find_program_address) compare",
+      "exclusions": [
+        "the bump is validated against the canonical find_program_address bump on first read, or an Anchor `bump` constraint enforces it",
+        "the PDA (and its bump) is created in the same instruction using the canonical bump obtained from find_program_address (NOT a caller-supplied bump passed to create_program_address, which accepts any valid off-curve bump and re-introduces the non-canonical-bump bug)"
+      ]
+    },
+    "SOL-017": {
+      "tier": "high", "severity": "high",
+      "reachability": "the raw data-buffer cast (&*account.data.borrow() / transmute) used without deserialize-then-validate",
+      "exclusions": [
+        "a typed deserialize with length + discriminator validation precedes any field use",
+        "the cast is over a freshly-created, program-owned, length-checked buffer with a verified layout"
+      ]
+    },
+    "SOL-018": {
+      "tier": "low", "severity": "low",
+      "reachability": "the 32-ones System Program literal used instead of system_program::ID",
+      "exclusions": [
+        "the program-id comparison uses the imported system_program::ID type-safely, not a raw string literal",
+        "the literal appears only in a #[cfg(test)] module or a const that is never reached on a runtime program-id verification — a #[cfg(feature = ...)] block that ships in a production build does NOT qualify"
+      ]
+    },
+    "SOL-019": {
+      "tier": "high", "severity": "high",
+      "reachability": "the try_deserialize_unchecked (or manual deserialize) that skips the 8-byte discriminator",
+      "exclusions": [
+        "try_deserialize (with the discriminator check) is used, or the 8-byte discriminator is verified manually before the unchecked deserialize",
+        "the SAME account being deserialized is declared as an Anchor `Account<'info, T>` field (which enforces the discriminator) — not merely that some other account in the same handler is Anchor-typed"
+      ]
+    },
+    "SOL-020": {
+      "tier": "high", "severity": "high",
+      "reachability": "the SetAuthority CPI without a current-authority verification",
+      "exclusions": [
+        "the current authority is verified to equal the expected key before the SetAuthority CPI",
+        "an Anchor `constraint = <signer>.key() == <resource>.authority` on a Signer<> (or has_one WHERE the bound authority field is itself declared Signer<>) binds the SIGNING caller to the CURRENT authority of the resource being changed — a bare Signer<> not bound to the stored authority key, OR a has_one/constraint on a NON-signing authority account (key matches but the holder never consents), is NOT sufficient"
+      ]
+    },
+    "SOL-021": {
+      "tier": "high", "severity": "high",
+      "reachability": "the close/resolve op guarded by a freshness/expiry condition that cannot hold once status is terminal",
+      "exclusions": [
+        "a separate terminal-state release branch exists that ignores the freshness/expiry guard",
+        "the terminal-state value is unconditionally overwritten on EVERY termination path to a value that IRREVOCABLY satisfies the guard for all future time (e.g. i64::MAX / a permanent terminal flag — a transient value like now + grace_period that lets the guard fail again once the window elapses does NOT qualify), regardless of its prior (possibly attacker-set) value"
+      ]
+    },
+    "SOL-022": {
+      "tier": "low", "severity": "medium",
+      "reachability": "the counter incremented when state degrades with no decrement / settlement path",
+      "exclusions": [
+        "an inverse decrement / settlement path exists that clears the counter when the state recovers",
+        "the counter is monotonic AND verified to never gate resource reuse, fund release, OR any fee/penalty calculation (a code-path check tracing every use-site, not a 'by design' comment)"
+      ]
+    },
+    "SOL-023": {
+      "tier": "low", "severity": "low",
+      "reachability": "the fee/penalty integer division that rounds in the user's favor",
+      "exclusions": [
+        "the amount the user OWES rounds up on the SHIPPED code path (div_ceil in the production build — a div_ceil behind ANY #[cfg(...)] attribute OR a `cfg!(...)` / const-bool branch condition (nightly, a feature flag, target_arch, etc.) while the shipped on-chain BPF build path divides with `/` does NOT qualify); only protocol-side payouts round down",
+        "a minimum-amount/dust floor is enforced so the rounding residual cannot be farmed"
+      ]
+    },
+    "SOL-024": {
+      "tier": "high", "severity": "high",
+      "reachability": "the oracle price read without a staleness (publish-slot age) or confidence check",
+      "exclusions": [
+        "get_price_no_older_than (staleness, with a max-age bound that reflects the protocol's real staleness tolerance — u64::MAX or an unreasonably large age is NOT sufficient) AND a confidence-interval bound are both enforced before use",
+        "the price feeds a non-economic / display-only path that cannot trigger a trade, liquidation, or any other economic action — neither on-chain NOR via an off-chain consumer (e.g. a keeper reading emitted price events to trigger liquidations, rebalancing, or collateral updates)"
+      ]
+    },
+    "SOL-025": {
+      "tier": "high", "severity": "high",
+      "reachability": "the bincode::deserialize of a Clock/Rent sysvar instead of Clock::get() / Sysvar<>",
+      "exclusions": [
+        "Clock::get() / Rent::get() or an Anchor Sysvar<> is used (the account key is checked internally)",
+        "the sysvar account key is explicitly verified against the canonical sysvar id before the raw deserialize"
+      ]
+    },
+    "SOL-026": {
+      "tier": "high", "severity": "high",
+      "reachability": "the two accounts that must differ but are never checked with require_keys_neq! (non-Anchor-Account paths)",
+      "exclusions": [
+        "require_keys_neq! (or Anchor's duplicate-mutable Account<> rejection — which covers ONLY `Account<'info, T>`, NOT AccountLoader / UncheckedAccount / remaining_accounts) guards the pair",
+        "the two accounts are provably distinct by their seeds/constraints so the same key cannot be passed twice"
+      ]
+    },
+    "SOL-027": {
+      "tier": "high", "severity": "high",
+      "reachability": "the ctx.remaining_accounts element read/written/invoked without owner/key/signer validation",
+      "exclusions": [
+        "each remaining account's owner/key/signer is validated before it is read, written, or invoked",
+        "remaining_accounts is iterated for display/logging only and no field is trusted for any authorization, fund-movement, or state-write decision — on-chain OR by an off-chain consumer of the logged/emitted data"
+      ]
+    },
+    "SOL-028": {
+      "tier": "high", "severity": "high",
+      "reachability": "the swap/withdraw/settle output derived with no caller min-out / max-in bound",
+      "exclusions": [
+        "a caller-supplied min-out / max-in bound is taken and enforced before settlement",
+        "the output is fixed or oracle-bounded and not subject to an adverse swap/sandwich — and if oracle-bounded, the oracle itself enforces the SOL-024 staleness + confidence checks for ITS vendor (Pyth, Switchboard, etc.); a silent SOL-024 scanner result does NOT count (the scanner only catches the Pyth surface — verify the actual freshness check exists for whatever oracle is used), since a stale/wide oracle makes 'oracle-bounded' meaningless"
+      ]
+    },
+    "SOL-029": {
+      "tier": "high", "severity": "medium",
+      "reachability": "the send path with skipPreflight: true (or no simulateTransaction before a mainnet send)",
+      "exclusions": [
+        "preflight stays on, or simulateTransaction is called and err === null is asserted before the mainnet send",
+        "skipPreflight: true is on a devnet/test/throwaway path, not a value-moving mainnet send — AND the gate selecting it FAILS CLOSED (defaults to preflight ON for mainnet): an env check like `CLUSTER !== 'mainnet-beta'` that yields skipPreflight when the var is unset does NOT qualify; require an explicit non-mainnet allowlist"
+      ]
+    },
+    "SOL-030": {
+      "tier": "low", "severity": "low",
+      "reachability": "the hardcoded microLamports priority-fee constant",
+      "exclusions": [
+        "the priority fee is derived from getRecentPrioritizationFees() / a fee oracle and clamped to a sane max",
+        "microLamports: 0 (the intentional no-priority opt-out) or a documented test/config default"
+      ]
+    },
+    "SOL-031": {
+      "tier": "high", "severity": "medium",
+      "reachability": "the Jupiter quote consumed (swap built) without a quoteResponse.contextSlot freshness check",
+      "exclusions": [
+        "quoteResponse.contextSlot is captured and the route is refetched/rejected when it lags the current slot",
+        "the quote is consumed within the same slot as the fetch (an undefined 'freshness window' is not sufficient — prefer ex1's explicit contextSlot check) AND a slippage bound protects the fill"
+      ]
+    }
   }
 }

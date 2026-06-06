@@ -29,8 +29,25 @@ test('every entry has a valid tier, severity, and a reachability anchor', () => 
     assert.ok(TIERS.has(m.tier), `${id}: tier ${JSON.stringify(m.tier)} not in {high,low}`);
     assert.ok(SEVS.has(m.severity), `${id}: severity ${JSON.stringify(m.severity)} not in {high,medium,low}`);
     assert.ok(typeof m.reachability === 'string' && m.reachability.length > 10, `${id}: missing reachability anchor`);
-    if ('exclusions' in m) {
-      assert.ok(Array.isArray(m.exclusions) && m.exclusions.every((e) => typeof e === 'string' && e.length), `${id}: exclusions must be non-empty strings`);
+    // Every rule carries ≥1 numbered "do NOT flag when…" exclusion, each a
+    // SPECIFIC condition (length-gated to discourage vague "looks fine" clauses).
+    assert.ok(Array.isArray(m.exclusions) && m.exclusions.length >= 1, `${id}: must have ≥1 exclusion`);
+    for (const e of m.exclusions) {
+      assert.ok(typeof e === 'string' && e.length >= 20, `${id}: exclusion too short/vague: ${JSON.stringify(e)}`);
+    }
+  }
+});
+
+// Vagueness guard. The length gate alone passes a long-but-empty clause; this
+// rejects pure hand-waves ("looks fine", "obviously safe") that would let a
+// reviewer dismiss a finding without a verifiable condition. (Semantic quality
+// of an exclusion is enforced by the 3-reviewer content audit — this is just a
+// mechanical tripwire against the laziest fluff.)
+const VAGUE = /\b(looks?\s+fine|obviously\s+safe|trust\s+me|seems?\s+(fine|ok|okay|correct|safe)|no\s+real\s+issue|should\s+be\s+fine|probably\s+(fine|ok|safe))\b/i;
+test('no exclusion is a vague hand-wave (must be a verifiable condition)', () => {
+  for (const [id, m] of Object.entries(meta)) {
+    for (const e of m.exclusions) {
+      assert.ok(!VAGUE.test(e), `${id}: exclusion reads as a vague hand-wave, not a verifiable condition: ${JSON.stringify(e)}`);
     }
   }
 });
