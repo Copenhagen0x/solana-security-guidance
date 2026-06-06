@@ -22,7 +22,7 @@ try {
   scanner = null;
   RULES = [];
 }
-const REPO = 'https://github.com/Copenhagen0x/solana-security-guidance';
+const REPO = 'https://github.com/Copenhagen0x/solana-security-standard';
 
 // A workspace-relative POSIX path so the rules' paths/exclude_paths globs
 // (**/tests/**, **/client/**, ...) apply. Falls back to the basename when the

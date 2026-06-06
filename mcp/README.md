@@ -28,10 +28,10 @@ That's the whole setup. The server speaks JSON-RPC 2.0 over stdio.
 
 ## Privacy
 
-100% local. It runs the same zero-dependency scanner as the [CLI](https://github.com/Copenhagen0x/solana-security-guidance) on your machine - no network calls, no telemetry. The scanner core and rules are vendored into the package; nothing is fetched at runtime.
+100% local. It runs the same zero-dependency scanner as the [CLI](https://github.com/Copenhagen0x/solana-security-standard) on your machine - no network calls, no telemetry. The scanner core and rules are vendored into the package; nothing is fetched at runtime.
 
 ## How it fits
 
-This is the MCP layer of the [Solana Security Standard](https://github.com/Copenhagen0x/solana-security-guidance). The same SOL-0XX rules also ship as a CLI, a GitHub Action, a Semgrep ruleset, editor rules files (`integrations/`), and a VS Code extension.
+This is the MCP layer of the [Solana Security Standard](https://github.com/Copenhagen0x/solana-security-standard). The same SOL-0XX rules also ship as a CLI, a GitHub Action, a Semgrep ruleset, editor rules files (`integrations/`), and a VS Code extension.
 
 MIT. By [Jelleo](https://jelleo.com).

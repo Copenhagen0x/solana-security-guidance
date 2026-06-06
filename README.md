@@ -1,10 +1,10 @@
-# Solana Security Guidance
+# Solana Security Standard
 
 > The **Solana Security Standard** — `SOL-0XX` rules for Anthropic's Claude Code security-guidance plugin. By the team that finds the bugs.
 
 ![SOL-001 firing on a vulnerable Solana program — Bounty 6 H2 case study](assets/sol-001-demo.png)
 
-[![CI](https://github.com/Copenhagen0x/solana-security-guidance/actions/workflows/validate.yml/badge.svg)](https://github.com/Copenhagen0x/solana-security-guidance/actions/workflows/validate.yml)
+[![CI](https://github.com/Copenhagen0x/solana-security-standard/actions/workflows/validate.yml/badge.svg)](https://github.com/Copenhagen0x/solana-security-standard/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-1.8.1-blue.svg)](CHANGELOG.md)
 [![Bounty wins](https://img.shields.io/badge/bounty_wins-2_confirmed_(SOL--001)-orange)](https://jelleo.com/cycles)
@@ -15,9 +15,9 @@ Drop these two files into your Solana project's `.claude/` directory and your ID
 
 ```bash
 mkdir -p .claude && \
-  curl -sL https://raw.githubusercontent.com/Copenhagen0x/solana-security-guidance/main/claude-security-guidance.md \
+  curl -sL https://raw.githubusercontent.com/Copenhagen0x/solana-security-standard/main/claude-security-guidance.md \
        -o .claude/claude-security-guidance.md && \
-  curl -sL https://raw.githubusercontent.com/Copenhagen0x/solana-security-guidance/main/security-patterns.yaml \
+  curl -sL https://raw.githubusercontent.com/Copenhagen0x/solana-security-standard/main/security-patterns.yaml \
        -o .claude/security-patterns.yaml
 ```
 
@@ -46,7 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: Copenhagen0x/solana-security-guidance@v1
+      - uses: Copenhagen0x/solana-security-standard@v1
         with:
           paths: ./programs        # what to scan (default: .)
           # fail-on-findings: true # red X on findings (default)
@@ -56,10 +56,10 @@ jobs:
 Then show the world you adopt it — drop this badge in your README:
 
 ```md
-[![Solana Security Standard](https://img.shields.io/badge/Solana%20Security%20Standard-SOL--0XX-7c3aed)](https://github.com/Copenhagen0x/solana-security-guidance)
+[![Solana Security Standard](https://img.shields.io/badge/Solana%20Security%20Standard-SOL--0XX-7c3aed)](https://github.com/Copenhagen0x/solana-security-standard)
 ```
 
-[![Solana Security Standard](https://img.shields.io/badge/Solana%20Security%20Standard-SOL--0XX-7c3aed)](https://github.com/Copenhagen0x/solana-security-guidance)
+[![Solana Security Standard](https://img.shields.io/badge/Solana%20Security%20Standard-SOL--0XX-7c3aed)](https://github.com/Copenhagen0x/solana-security-standard)
 
 ## Run it from the CLI
 
@@ -80,7 +80,7 @@ and Windsurf. Details in [`extensions/vscode/`](extensions/vscode/).
 Already have a Semgrep pipeline? Point it at the [ported ruleset](semgrep):
 
 ```bash
-semgrep --config https://raw.githubusercontent.com/Copenhagen0x/solana-security-guidance/main/semgrep/solana-security-standard.yaml ./programs
+semgrep --config https://raw.githubusercontent.com/Copenhagen0x/solana-security-standard/main/semgrep/solana-security-standard.yaml ./programs
 ```
 
 The same SOL-0XX rules as `pattern-regex` rules. Details in [`semgrep/`](semgrep/).
@@ -216,7 +216,7 @@ Open an issue first if you're proposing a new rule category. Keep rules focused:
 This repo follows [Semantic Versioning](https://semver.org/). Tagged releases are safe to pin in your `.claude/` directory:
 
 ```bash
-curl -sL https://raw.githubusercontent.com/Copenhagen0x/solana-security-guidance/v1.0.0/claude-security-guidance.md \
+curl -sL https://raw.githubusercontent.com/Copenhagen0x/solana-security-standard/v1.0.0/claude-security-guidance.md \
      -o .claude/claude-security-guidance.md
 ```
 

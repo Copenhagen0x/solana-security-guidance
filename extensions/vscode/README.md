@@ -12,7 +12,7 @@ No setup needed. Toggle it with the `solanaSecurityStandard.enable` setting.
 
 This is the editor layer of the Solana Security Standard. The same rule set also runs as a CLI (`npx @jelleo/solana-security-standard`), a GitHub Action, a Semgrep ruleset, and a Claude Code plugin.
 
-Source code and the full rule list: https://github.com/Copenhagen0x/solana-security-guidance
+Source code and the full rule list: https://github.com/Copenhagen0x/solana-security-standard
 
 ## Privacy
 

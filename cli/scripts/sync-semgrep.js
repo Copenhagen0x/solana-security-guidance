@@ -24,7 +24,7 @@ const yaml = require('js-yaml');
 const repoRoot = path.join(__dirname, '..', '..');
 const srcYaml = path.join(repoRoot, 'security-patterns.yaml');
 const dstYaml = path.join(repoRoot, 'semgrep', 'solana-security-standard.yaml');
-const REPO = 'https://github.com/Copenhagen0x/solana-security-guidance';
+const REPO = 'https://github.com/Copenhagen0x/solana-security-standard';
 
 /** Derive a display id like "SOL-001" from a rule_name like "sol_001_foo". */
 function solId(ruleName) {

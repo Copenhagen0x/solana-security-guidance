@@ -35,7 +35,7 @@ We follow coordinated disclosure. If you find an issue that affects production c
 
 1. Email us first — no public issue, no PR with a CVE in the description
 2. We acknowledge within 72 hours and aim for a fix within 14 days
-3. After the fix is tagged in a release, we publish a security advisory at `github.com/Copenhagen0x/solana-security-guidance/security/advisories` with credit
+3. After the fix is tagged in a release, we publish a security advisory at `github.com/Copenhagen0x/solana-security-standard/security/advisories` with credit
 4. If we can't reach a fix in 30 days, we surface the issue publicly with a workaround so users aren't blind
 
 ## Hall of fame

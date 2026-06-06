@@ -35,7 +35,7 @@ EXIT CODES
   1  findings present
   2  usage / runtime error
 
-Full rule catalog: https://github.com/Copenhagen0x/solana-security-guidance`;
+Full rule catalog: https://github.com/Copenhagen0x/solana-security-standard`;
 
 function parseArgs(argv) {
   const o = {

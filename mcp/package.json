@@ -37,10 +37,10 @@
   ],
   "author": "Jelleo (https://jelleo.com)",
   "license": "MIT",
-  "homepage": "https://github.com/Copenhagen0x/solana-security-guidance",
+  "homepage": "https://github.com/Copenhagen0x/solana-security-standard",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Copenhagen0x/solana-security-guidance.git",
+    "url": "git+https://github.com/Copenhagen0x/solana-security-standard.git",
     "directory": "mcp"
   }
 }

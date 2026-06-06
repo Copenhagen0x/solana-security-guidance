@@ -12,14 +12,14 @@ Which SOL-0XX rule class each exploit falls under.
 
 | Rule | Class | Exploits |
 | --- | --- | --- |
-| [SOL-004](https://github.com/Copenhagen0x/solana-security-guidance/blob/main/claude-security-guidance.md#sol-004--penaltyhealth-terms-omitted) | Penalty/health terms omitted | Cypher Protocol |
-| [SOL-006](https://github.com/Copenhagen0x/solana-security-guidance/blob/main/claude-security-guidance.md#sol-006--missing-signer-check) | Missing signer check | Solend |
-| [SOL-007](https://github.com/Copenhagen0x/solana-security-guidance/blob/main/claude-security-guidance.md#sol-007--missing-owner-verification) | Missing owner verification | Solend, Wormhole, Cashio, Crema Finance |
-| [SOL-015](https://github.com/Copenhagen0x/solana-security-guidance/blob/main/claude-security-guidance.md#sol-015--anchor-constraints-missing) | Anchor constraints missing | Cashio |
-| [SOL-017](https://github.com/Copenhagen0x/solana-security-guidance/blob/main/claude-security-guidance.md#sol-017--raw-accountinfo-without-typed-deserialize) | Raw AccountInfo without typed deserialize | Crema Finance |
-| [SOL-024](https://github.com/Copenhagen0x/solana-security-guidance/blob/main/claude-security-guidance.md#sol-024--stale--unchecked-oracle-price) | Stale / unchecked oracle price | Nirvana Finance, Mango Markets, Loopscale |
-| [SOL-025](https://github.com/Copenhagen0x/solana-security-guidance/blob/main/claude-security-guidance.md#sol-025--sysvar-read-by-raw-deserialize) | Sysvar read by raw deserialize | Wormhole |
-| [SOL-028](https://github.com/Copenhagen0x/solana-security-guidance/blob/main/claude-security-guidance.md#sol-028--missing-slippage--min-out-bound) | Missing slippage / min-out bound | Nirvana Finance, Loopscale |
+| [SOL-004](https://github.com/Copenhagen0x/solana-security-standard/blob/main/claude-security-guidance.md#sol-004--penaltyhealth-terms-omitted) | Penalty/health terms omitted | Cypher Protocol |
+| [SOL-006](https://github.com/Copenhagen0x/solana-security-standard/blob/main/claude-security-guidance.md#sol-006--missing-signer-check) | Missing signer check | Solend |
+| [SOL-007](https://github.com/Copenhagen0x/solana-security-standard/blob/main/claude-security-guidance.md#sol-007--missing-owner-verification) | Missing owner verification | Solend, Wormhole, Cashio, Crema Finance |
+| [SOL-015](https://github.com/Copenhagen0x/solana-security-standard/blob/main/claude-security-guidance.md#sol-015--anchor-constraints-missing) | Anchor constraints missing | Cashio |
+| [SOL-017](https://github.com/Copenhagen0x/solana-security-standard/blob/main/claude-security-guidance.md#sol-017--raw-accountinfo-without-typed-deserialize) | Raw AccountInfo without typed deserialize | Crema Finance |
+| [SOL-024](https://github.com/Copenhagen0x/solana-security-standard/blob/main/claude-security-guidance.md#sol-024--stale--unchecked-oracle-price) | Stale / unchecked oracle price | Nirvana Finance, Mango Markets, Loopscale |
+| [SOL-025](https://github.com/Copenhagen0x/solana-security-standard/blob/main/claude-security-guidance.md#sol-025--sysvar-read-by-raw-deserialize) | Sysvar read by raw deserialize | Wormhole |
+| [SOL-028](https://github.com/Copenhagen0x/solana-security-standard/blob/main/claude-security-guidance.md#sol-028--missing-slippage--min-out-bound) | Missing slippage / min-out bound | Nirvana Finance, Loopscale |
 
 ## Code-level exploits
 

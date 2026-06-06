@@ -128,7 +128,7 @@ function renderReadme(data, ruleTitles) {
   for (const h of mapped) for (const r of h.sol_rules) (ruleToHacks[r] = ruleToHacks[r] || []).push(h);
   const coveredRules = Object.keys(ruleToHacks).sort();
 
-  const GH = 'https://github.com/Copenhagen0x/solana-security-guidance/blob/main/claude-security-guidance.md';
+  const GH = 'https://github.com/Copenhagen0x/solana-security-standard/blob/main/claude-security-guidance.md';
   const slug = (rule, title) => `${GH}#${ruleAnchor(rule, title)}`;
 
   const L = [];
