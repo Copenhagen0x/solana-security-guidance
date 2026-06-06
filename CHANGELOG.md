@@ -98,7 +98,7 @@ Makes the standard **installable everywhere**: the SOL-0XX rules now run in your
 ### Added — installable surface (CLI + GitHub Action)
 
 - **Zero-dependency scanner CLI** (`npx @jelleo/solana-security-standard scan`) — matches the SOL-0XX fast patterns against full file content (so multi-line constructs are caught), with human / JSON / SARIF output and a non-zero exit on findings so it gates any CI. `rules.json` is pre-compiled from `security-patterns.yaml` so the runtime needs no YAML parser.
-- **GitHub Action** (`Copenhagen0x/solana-security-guidance@v1`) — runs the same patterns as a PR check, uploads SARIF for inline code-scanning annotations, and ships the adoption badge.
+- **GitHub Action** (`Copenhagen0x/solana-security-standard@v1`) — runs the same patterns as a PR check, uploads SARIF for inline code-scanning annotations, and ships the adoption badge.
 - **Hardening** (adversarial review before shipping): ReDoS-prone `[^)]*` quantifiers were bounded (whole-file scans went from ~70–86 s to single-digit ms on 1 MB inputs), and Action inputs are passed via `env:` with a `--` sentinel so an untrusted `paths` value can't inject scanner flags.
 
 ## [1.1.0] — 2026-06-02
@@ -156,9 +156,9 @@ The original v1.0.0 framing was wrong about which findings translated to paid bo
 - MIT license
 - **Note:** the v1.0.0 release's specific bounty attributions for SOL-002/SOL-003/SOL-004/SOL-005 were superseded by the v1.0.1 honest-provenance correction after the maintainer's triage of `percolator-cli#78` clarified disposition. See v1.0.1 entry above.
 
-[1.3.1]: https://github.com/Copenhagen0x/solana-security-guidance/compare/v1.3.0...v1.3.1
-[1.3.0]: https://github.com/Copenhagen0x/solana-security-guidance/compare/v1.2.0...v1.3.0
-[1.2.0]: https://github.com/Copenhagen0x/solana-security-guidance/compare/v1.1.0...v1.2.0
-[1.1.0]: https://github.com/Copenhagen0x/solana-security-guidance/compare/v1.0.1...v1.1.0
-[1.0.1]: https://github.com/Copenhagen0x/solana-security-guidance/releases/tag/v1.0.1
-[1.0.0]: https://github.com/Copenhagen0x/solana-security-guidance/releases/tag/v1.0.0
+[1.3.1]: https://github.com/Copenhagen0x/solana-security-standard/compare/v1.3.0...v1.3.1
+[1.3.0]: https://github.com/Copenhagen0x/solana-security-standard/compare/v1.2.0...v1.3.0
+[1.2.0]: https://github.com/Copenhagen0x/solana-security-standard/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/Copenhagen0x/solana-security-standard/compare/v1.0.1...v1.1.0
+[1.0.1]: https://github.com/Copenhagen0x/solana-security-standard/releases/tag/v1.0.1
+[1.0.0]: https://github.com/Copenhagen0x/solana-security-standard/releases/tag/v1.0.0

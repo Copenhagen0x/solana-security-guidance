@@ -52,11 +52,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Copenhagen0x/solana-security-guidance.git",
+    "url": "git+https://github.com/Copenhagen0x/solana-security-standard.git",
     "directory": "extensions/vscode"
   },
-  "homepage": "https://github.com/Copenhagen0x/solana-security-guidance",
+  "homepage": "https://github.com/Copenhagen0x/solana-security-standard",
   "bugs": {
-    "url": "https://github.com/Copenhagen0x/solana-security-guidance/issues"
+    "url": "https://github.com/Copenhagen0x/solana-security-standard/issues"
   }
 }

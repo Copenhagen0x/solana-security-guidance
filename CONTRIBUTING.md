@@ -21,7 +21,7 @@ This ruleset compounds with every cycle. Each new bounty finding becomes a new r
 
 ## Before opening a PR
 
-1. **Open an issue first** if you're proposing a new rule category. Use the [new-rule-proposal](https://github.com/Copenhagen0x/solana-security-guidance/issues/new/choose) template.
+1. **Open an issue first** if you're proposing a new rule category. Use the [new-rule-proposal](https://github.com/Copenhagen0x/solana-security-standard/issues/new/choose) template.
 2. **Test against a real codebase** — at minimum the percolator wrapper or an Anchor example. Aim for false positive rate <5% (see "QA expectations" below).
 3. **Check CI will pass** — run the validation locally:
    ```bash

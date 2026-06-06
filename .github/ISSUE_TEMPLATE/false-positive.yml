@@ -82,7 +82,7 @@ body:
     attributes:
       label: Checklist
       options:
-        - label: I have searched [existing false-positive issues](https://github.com/Copenhagen0x/solana-security-guidance/issues?q=is%3Aissue+label%3Afalse-positive) for duplicates
+        - label: I have searched [existing false-positive issues](https://github.com/Copenhagen0x/solana-security-standard/issues?q=is%3Aissue+label%3Afalse-positive) for duplicates
           required: true
         - label: The code I'm pasting is sanitized / OK to share publicly
           required: true

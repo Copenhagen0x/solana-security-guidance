@@ -96,7 +96,7 @@ body:
     attributes:
       label: Checklist
       options:
-        - label: I have searched [existing issues](https://github.com/Copenhagen0x/solana-security-guidance/issues?q=is%3Aissue) for duplicates
+        - label: I have searched [existing issues](https://github.com/Copenhagen0x/solana-security-standard/issues?q=is%3Aissue) for duplicates
           required: true
         - label: The finding I'm citing is publicly disclosed (or I have permission to disclose it here)
           required: true

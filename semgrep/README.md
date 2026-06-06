@@ -12,7 +12,7 @@ SOL-0XX bug-class rules that power the [CLI, GitHub Action](../cli), the
 semgrep --config semgrep/solana-security-standard.yaml path/to/program
 
 # or straight from GitHub, no clone needed
-semgrep --config https://raw.githubusercontent.com/Copenhagen0x/solana-security-guidance/main/semgrep/solana-security-standard.yaml path/to/program
+semgrep --config https://raw.githubusercontent.com/Copenhagen0x/solana-security-standard/main/semgrep/solana-security-standard.yaml path/to/program
 ```
 
 Every rule is scoped to Rust (`languages: [rust]`) and matches with a raw regex, so it needs no

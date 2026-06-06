@@ -1,6 +1,6 @@
 # Solana Security Guidance — by Jelleo
 
-> **Solana Security Standard** — `SOL-0XX` rules from real Solana audits + 2 bounty wins. Catalog → github.com/Copenhagen0x/solana-security-guidance · jelleo.com
+> **Solana Security Standard** — `SOL-0XX` rules from real Solana audits + 2 bounty wins. Catalog → github.com/Copenhagen0x/solana-security-standard · jelleo.com
 
 Extends Claude Code's security-guidance plugin with Solana rules. Each has a stable ID (`SOL-0XX`) — cite like a CWE. Detail in the README.
 

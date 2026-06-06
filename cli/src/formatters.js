@@ -69,7 +69,7 @@ function sarif(findings, rules = [], { version = '0.0.0' } = {}) {
         name: solId(r.name),
         shortDescription: { text: `${solId(r.name)} — Solana Security Standard` },
         fullDescription: { text: shortReminder(r.reminder, 1000) || solId(r.name) },
-        helpUri: `https://github.com/Copenhagen0x/solana-security-guidance#${solId(r.name).toLowerCase()}`,
+        helpUri: `https://github.com/Copenhagen0x/solana-security-standard#${solId(r.name).toLowerCase()}`,
         defaultConfiguration: { level: 'warning' },
         properties: { tags: ['security', 'solana'] },
       });
@@ -91,7 +91,7 @@ function sarif(findings, rules = [], { version = '0.0.0' } = {}) {
           tool: {
             driver: {
               name: 'solana-security-standard',
-              informationUri: 'https://github.com/Copenhagen0x/solana-security-guidance',
+              informationUri: 'https://github.com/Copenhagen0x/solana-security-standard',
               version,
               rules: ruleArr,
             },

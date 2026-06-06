@@ -23,7 +23,7 @@ const path = require('path');
 const repoRoot = path.join(__dirname, '..', '..');
 const srcGuidance = path.join(repoRoot, 'claude-security-guidance.md');
 const outDir = path.join(repoRoot, 'integrations');
-const REPO = 'https://github.com/Copenhagen0x/solana-security-guidance';
+const REPO = 'https://github.com/Copenhagen0x/solana-security-standard';
 // Windsurf WORKSPACE rule files are capped at 12,000 chars each (the 6,000 cap is
 // for the GLOBAL rules file); the total across all rules is also 12,000. Our single
 // ~8 KB file is under the per-file cap - build() asserts it. Source: Windsurf docs,
