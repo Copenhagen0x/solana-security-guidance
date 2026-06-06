@@ -34,7 +34,7 @@ function sha256LF(rel) {
 function build() {
   const header =
     '# SHA-256 of the files served over raw.githubusercontent (curl install + `semgrep --config`).\n' +
-    '# Verify a download:  sha256sum -c CHECKSUMS.txt   (run from the dir holding the files)\n' +
+    '# Verify a download:  sha256sum -c CHECKSUMS.txt  (Linux)  or  shasum -a 256 -c CHECKSUMS.txt  (macOS)\n' +
     '# Regenerate:         node scripts/checksums.js\n' +
     '# Hashes are over LF-normalized bytes (what GitHub serves).\n';
   const lines = FILES.map((f) => `${sha256LF(f)}  ${f}`);

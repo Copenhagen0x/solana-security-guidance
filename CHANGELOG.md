@@ -165,6 +165,14 @@ The original v1.0.0 framing was wrong about which findings translated to paid bo
 - MIT license
 - **Note:** the v1.0.0 release's specific bounty attributions for SOL-002/SOL-003/SOL-004/SOL-005 were superseded by the v1.0.1 honest-provenance correction after the maintainer's triage of `percolator-cli#78` clarified disposition. See v1.0.1 entry above.
 
+[1.9.1]: https://github.com/Copenhagen0x/solana-security-standard/compare/v1.9.0...v1.9.1
+[1.9.0]: https://github.com/Copenhagen0x/solana-security-standard/compare/v1.8.1...v1.9.0
+[1.8.1]: https://github.com/Copenhagen0x/solana-security-standard/compare/v1.8.0...v1.8.1
+[1.8.0]: https://github.com/Copenhagen0x/solana-security-standard/compare/v1.7.0...v1.8.0
+[1.7.0]: https://github.com/Copenhagen0x/solana-security-standard/compare/v1.6.0...v1.7.0
+[1.6.0]: https://github.com/Copenhagen0x/solana-security-standard/compare/v1.5.0...v1.6.0
+[1.5.0]: https://github.com/Copenhagen0x/solana-security-standard/compare/v1.4.0...v1.5.0
+[1.4.0]: https://github.com/Copenhagen0x/solana-security-standard/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/Copenhagen0x/solana-security-standard/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/Copenhagen0x/solana-security-standard/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/Copenhagen0x/solana-security-standard/compare/v1.1.0...v1.2.0

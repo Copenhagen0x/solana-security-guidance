@@ -42,8 +42,8 @@ We follow coordinated disclosure. If you find an issue that affects production c
 
 Install files are fetched over plain HTTPS. For supply-chain-sensitive use, verify what you download:
 
-- **Checksums** — each release publishes [`CHECKSUMS.txt`](CHECKSUMS.txt) (SHA-256 of the files served over raw URLs). After downloading, run `sha256sum -c CHECKSUMS.txt` (see the README's "Verified install").
-- **Signed tags** — release tags are SSH-signed:
+- **Checksums** — each release publishes [`CHECKSUMS.txt`](CHECKSUMS.txt) (SHA-256 of the files served over raw URLs). After downloading, run `sha256sum -c CHECKSUMS.txt` (macOS: `shasum -a 256 -c CHECKSUMS.txt`) — see the README's "Verified install".
+- **Signed tags** — tags from `v1.9.1` onward are SSH-signed (earlier tags predate signing):
 
   ```bash
   git config gpg.ssh.allowedSignersFile .github/allowed_signers
@@ -52,7 +52,7 @@ Install files are fetched over plain HTTPS. For supply-chain-sensitive use, veri
 
   Signing key: `ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPH7L8nFtHegnLCrghC2R09Si9kIIFp59PRdPbjE7xIq`
 
-**Honest scope:** checksums and the in-repo allowed-signers are convenience checks against a tampered `main`, a CDN swap, or transit corruption — they do **not** on their own defend against a full compromise of the maintainer's GitHub account (which could rewrite both the files and the checksums). The signed tag, verified against the key received out of band (or shown **Verified** on GitHub), is the origin check for that.
+**Honest scope:** checksums and the in-repo allowed-signers are convenience checks against a tampered `main`, a CDN swap, or transit corruption — they do **not** on their own defend against a full compromise of the maintainer's GitHub account (which could rewrite both the files and the checksums). The signed tag, verified against the key received out of band (or confirmed **Verified** on the tag's GitHub page — which requires the key registered as a *signing* key on the account), is the origin check for that.
 
 ## Hall of fame
 

@@ -30,6 +30,8 @@ Then make sure you have Anthropic's security-guidance plugin installed:
 
 Done. Open a Solana program file in Claude Code and the plugin will catch issues as you write.
 
+*(This pulls from `main` with no integrity check. For supply-chain-sensitive use, see **Verified install** below.)*
+
 ## Verified install (pin + checksum)
 
 For CI or supply-chain-sensitive setups, **pin to a release tag and verify the download** against the published `CHECKSUMS.txt` instead of pulling `main`:
@@ -42,11 +44,13 @@ curl -fsSL "$BASE/CHECKSUMS.txt"                          -o CHECKSUMS.txt
 curl -fsSL "$BASE/claude-security-guidance.md"            -o claude-security-guidance.md
 curl -fsSL "$BASE/security-patterns.yaml"                 -o security-patterns.yaml
 curl -fsSL "$BASE/semgrep/solana-security-standard.yaml"  -o semgrep/solana-security-standard.yaml
-sha256sum -c CHECKSUMS.txt          # all three must print "OK" — aborts if any byte differs
+sha256sum -c CHECKSUMS.txt          # Linux — all three must print "OK"; aborts on any mismatch
+# macOS (no sha256sum): shasum -a 256 -c CHECKSUMS.txt
 mkdir -p "$OLDPWD/.claude" && cp claude-security-guidance.md security-patterns.yaml "$OLDPWD/.claude/"
+# the verified semgrep ruleset stays in $tmp/semgrep/ — point `semgrep --config` at it or copy where you need it
 ```
 
-Pinning to a tag freezes you to a known release (a tampered `main` can't reach you); `sha256sum -c` confirms nothing was altered in transit. Release tags are **signed** — verify origin with `git verify-tag v1.9.1` (signing key in [`SECURITY.md`](SECURITY.md)). *(Checksums committed in the repo can't defend against a full account compromise that rewrites both the files and the checksums — the signed tag is the cryptographic origin check for that.)*
+Pinning to a tag freezes you to a known release (a tampered `main` can't reach you); the checksum confirms nothing was altered in transit. (Hashes are over the LF bytes GitHub serves — verify the *downloaded* files, not a CRLF local checkout.) Tags from `v1.9.1` on are SSH-signed — verify origin with `git verify-tag v1.9.1` (key + steps in [`SECURITY.md`](SECURITY.md)). *(Checksums and the in-repo allowed-signers can't defend against a full account compromise that rewrites both — the signed tag, verified out of band, is the origin check for that.)*
 
 ## Run it in CI — GitHub Action
 
@@ -231,12 +235,14 @@ Open an issue first if you're proposing a new rule category. Keep rules focused:
 
 ## Versioning
 
-This repo follows [Semantic Versioning](https://semver.org/). Tagged releases are safe to pin in your `.claude/` directory:
+This repo follows [Semantic Versioning](https://semver.org/). Pin a tagged release rather than `main`:
 
 ```bash
-curl -sL https://raw.githubusercontent.com/Copenhagen0x/solana-security-standard/v1.0.0/claude-security-guidance.md \
+curl -sL https://raw.githubusercontent.com/Copenhagen0x/solana-security-standard/v1.9.1/claude-security-guidance.md \
      -o .claude/claude-security-guidance.md
 ```
+
+A bare `curl` like this has no integrity check — for checksum + signed-tag verification use the [**Verified install**](#verified-install-pin--checksum) flow above.
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
 
