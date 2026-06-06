@@ -29,8 +29,18 @@ pub fn activate(
     let chain_slot = Clock::get()?.slot;
     let authenticated = authenticated_slot_or_fallback(now_slot, chain_slot);
 
+    // Bounds-check the caller-supplied index too (separate concern from the
+    // now_slot fix, but a u32 asset_id must never index the account unchecked).
+    let start = asset_id as usize;
+    let end = start.checked_add(8).ok_or(ErrorCode::AssetIdOutOfBounds)?;
     let mut market = ctx.accounts.market.try_borrow_mut_data()?;
-    market[asset_id as usize..asset_id as usize + 8]
-        .copy_from_slice(&authenticated.to_le_bytes());
+    require!(end <= market.len(), ErrorCode::AssetIdOutOfBounds);
+    market[start..end].copy_from_slice(&authenticated.to_le_bytes());
     Ok(())
+}
+
+#[error_code]
+pub enum ErrorCode {
+    #[msg("asset_id indexes past the account")]
+    AssetIdOutOfBounds,
 }

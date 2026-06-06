@@ -35,7 +35,7 @@ pub fn compute_account_health(acct: &Account) -> i64 {
     // Caller sees inflated health → under-collateralized account looks safe.
     let position_notional = acct.position_size
         .checked_mul(acct.mark_price)
-        .unwrap_or(i64::MAX);
+        .unwrap_or(i64::MAX); // BUG: i64::MAX on overflow masks insolvency — see fixed.rs
     acct.collateral
         .saturating_add(position_notional)
         .saturating_sub(acct.funding_owed)

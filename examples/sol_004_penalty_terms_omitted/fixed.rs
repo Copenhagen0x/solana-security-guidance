@@ -23,9 +23,12 @@ pub struct Account {
 
 pub fn compute_account_health(acct: &Account) -> i64 {
     // FIX: every spec-mandated term is subtracted.
+    // Fail SAFE on overflow: fall back to the most-UNHEALTHY value (i64::MIN),
+    // never i64::MAX — an i64::MAX notional would mask insolvency and skip
+    // liquidation. (Production should abort outright with a checked error.)
     let position_notional = acct.position_size
         .checked_mul(acct.mark_price)
-        .unwrap_or(i64::MAX);
+        .unwrap_or(i64::MIN);
 
     let total_penalties = acct.funding_owed
         .saturating_add(acct.fees_owed)
