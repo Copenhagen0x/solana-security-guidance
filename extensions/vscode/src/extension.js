@@ -60,7 +60,12 @@ function activate(context) {
     vscode.workspace.onDidOpenTextDocument(refresh),
     vscode.workspace.onDidSaveTextDocument(refresh),
     vscode.workspace.onDidChangeTextDocument((e) => refreshDebounced(e.document)),
-    vscode.workspace.onDidCloseTextDocument((d) => collection && collection.delete(d.uri)),
+    vscode.workspace.onDidCloseTextDocument((d) => {
+      const key = d.uri.toString();
+      clearTimeout(timers.get(key)); // cancel any pending debounce for the closed doc
+      timers.delete(key);
+      if (collection) collection.delete(d.uri);
+    }),
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration('solanaSecurityStandard.enable')) {
         vscode.workspace.textDocuments.forEach(refresh);

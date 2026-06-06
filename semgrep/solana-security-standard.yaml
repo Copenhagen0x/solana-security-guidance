@@ -113,7 +113,7 @@ rules:
     severity: WARNING
     message: 'Jelleo SOL-007: raw `&*account.data.borrow()` access. Verify `account.owner == program_id` BEFORE deserializing — attacker can pass a same-length account from a different program whose layout matches. See: github.com/Copenhagen0x/solana-security-standard#sol-007.'
     patterns:
-      - pattern-regex: '&\*\w+\.data\.borrow\(\)'
+      - pattern-regex: '&\*[\w.]{1,200}\.data\.borrow\(\)'
     paths:
       exclude:
         - '**/tests/**'
@@ -289,7 +289,7 @@ rules:
     severity: WARNING
     message: 'Jelleo SOL-017: `unsafe transmute` on account data. Use bytemuck/anchor typed deserialize with explicit length + discriminator checks. transmute skips both. See: github.com/Copenhagen0x/solana-security-standard#sol-017.'
     patterns:
-      - pattern-regex: (?:unsafe \{ transmute|unsafe\{transmute)
+      - pattern-regex: (?:unsafe \{ transmute|unsafe\{transmute|mem::transmute\(|mem::transmute::)
     paths:
       exclude:
         - '**/tests/**'

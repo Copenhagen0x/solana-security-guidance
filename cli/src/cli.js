@@ -37,7 +37,10 @@ OPTIONS
 EXIT CODES
   0  no findings (or --no-fail)
   1  findings present
-  2  usage / runtime error
+  2  usage / runtime error, OR an INCOMPLETE scan (finding cap hit; results partial)
+
+ENVIRONMENT
+  SSS_MAX_FINDINGS  findings cap before a scan is flagged INCOMPLETE (default 100000)
 
 Full rule catalog: https://github.com/Copenhagen0x/solana-security-standard`;
 
@@ -74,7 +77,7 @@ function parseArgs(argv) {
       case '-r': case '--root': o.root = argv[++i]; break;
       default:
         if (a === 'scan' && o.command === null) o.command = 'scan';
-        else if (a.startsWith('-')) { o.unknown = a; }
+        else if (a.startsWith('-')) { if (!o.unknown) o.unknown = a; } // keep the FIRST unknown flag (don't let a later one mask it)
         else o.paths.push(a);
     }
   }
@@ -121,11 +124,34 @@ function main(argv, io = {}) {
       }
     }
   }
-  let findings = [];
+  // Validate every requested path exists before scanning anything.
   for (const p of o.paths) {
     if (!fs.existsSync(p)) { err.write(`error: path not found: ${p}\n`); return 2; }
+  }
+  // Drop a scan path nested inside another requested path (e.g. `scan . ./src`)
+  // so a file in the overlap isn't scanned — and reported — twice. Deduping by
+  // reported path doesn't work (the same file has a different rel path under each
+  // scan root), so redundant roots are eliminated up front. Single-path scans
+  // (the common case) are untouched.
+  let scanPaths = o.paths;
+  if (o.paths.length > 1) {
+    const fold = (s) => (process.platform === 'win32' ? s.toLowerCase() : s); // win32 FS is case-insensitive
+    const abs = o.paths.map((p) => ({ p, a: fold(path.resolve(p)) })).sort((x, y) => x.a.length - y.a.length);
+    const kept = [];
+    for (const cur of abs) {
+      if (!kept.some((k) => cur.a === k.a || cur.a.startsWith(k.a + path.sep))) kept.push(cur);
+    }
+    scanPaths = kept.map((k) => k.p);
+  }
+  let findings = [];
+  let truncated = false; // a finding-cap hit => the scan is INCOMPLETE
+  for (const p of scanPaths) {
     try {
-      findings.push(...scanner.scan(p, rules, { root: o.root, onWarn: (m) => err.write(`warning: ${m}\n`) }));
+      // SSS_MAX_FINDINGS lets a power user raise/lower the incompleteness cap (a
+      // non-finite/zero value falls back to the scanner's default inside scan()).
+      const res = scanner.scan(p, rules, { root: o.root, maxFindings: Number(process.env.SSS_MAX_FINDINGS), onWarn: (m) => err.write(`warning: ${m}\n`) });
+      if (res.truncated) truncated = true;
+      for (const f of res) findings.push(f);
     } catch (e) {
       err.write(`error: scanning ${p}: ${e.message}\n`);
       return 2;
@@ -145,9 +171,9 @@ function main(argv, io = {}) {
 
   let rendered;
   const color = o.color === undefined ? Boolean(out.isTTY) : o.color;
-  if (o.format === 'json') rendered = formatters.json(findings) + '\n';
-  else if (o.format === 'sarif') rendered = formatters.sarif(findings, rules, { version: PKG.version }) + '\n';
-  else rendered = formatters.text(findings, { color: o.quiet ? false : color });
+  if (o.format === 'json') rendered = formatters.json(findings, { truncated }) + '\n';
+  else if (o.format === 'sarif') rendered = formatters.sarif(findings, rules, { version: PKG.version, truncated }) + '\n';
+  else rendered = formatters.text(findings, { color: o.quiet ? false : color, truncated });
 
   if (o.output) {
     try { fs.writeFileSync(o.output, rendered); }
@@ -157,6 +183,9 @@ function main(argv, io = {}) {
     out.write(rendered);
   }
 
+  // An INCOMPLETE scan (finding cap hit) must never silently pass a gate — fail
+  // it distinctly (exit 2) unless the user opted out of gating with --no-fail.
+  if (truncated && o.fail) return 2;
   if (findings.length && o.fail) return 1;
   return 0;
 }

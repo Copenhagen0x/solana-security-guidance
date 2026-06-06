@@ -35,7 +35,7 @@ patterns:
     reminder: "Jelleo SOL-006: raw `AccountInfo` (no Signer<>/Account<> type). If this account is a privileged CALLER, verify `account.is_signer == true` before mutating state, or use Anchor's `Signer<>`. (A documented `/// CHECK:` account used only as a CPI target / program ID / read-only ref is fine — this is a heuristic flag.) See: github.com/Copenhagen0x/solana-security-standard#sol-006."
 
   - rule_name: sol_007_raw_data_borrow
-    regex: "&\\*\\w+\\.data\\.borrow\\(\\)"
+    regex: "&\\*[\\w.]{1,200}\\.data\\.borrow\\(\\)"
     paths: ["**/*.rs"]
     exclude_paths: ["**/tests/**"]
     reminder: "Jelleo SOL-007: raw `&*account.data.borrow()` access. Verify `account.owner == program_id` BEFORE deserializing — attacker can pass a same-length account from a different program whose layout matches. See: github.com/Copenhagen0x/solana-security-standard#sol-007."
@@ -76,7 +76,7 @@ patterns:
     reminder: "Jelleo SOL-016: reading a stored `.bump` field. Verify the bump matches `Pubkey::find_program_address(seeds, &program_id).1` (canonical bump) on the FIRST read — subsequent reads of the same bump are OK. Without this, an attacker can pre-create a PDA with a non-canonical bump. See: github.com/Copenhagen0x/solana-security-standard#sol-016."
 
   - rule_name: sol_017_unsafe_transmute
-    substrings: ["unsafe { transmute", "unsafe{transmute"]
+    substrings: ["unsafe { transmute", "unsafe{transmute", "mem::transmute(", "mem::transmute::"]
     paths: ["**/*.rs"]
     exclude_paths: ["**/tests/**"]
     reminder: "Jelleo SOL-017: `unsafe transmute` on account data. Use bytemuck/anchor typed deserialize with explicit length + discriminator checks. transmute skips both. See: github.com/Copenhagen0x/solana-security-standard#sol-017."

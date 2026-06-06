@@ -50,7 +50,7 @@ Which SOL-0XX rule class each exploit falls under.
 
 **Wormhole bridge guardian-signature forgery** · 2022-02-02 · `SOL-025` `SOL-007`
 
-**What happened.** The Solana bridge's verify_signatures used the deprecated load_instruction_at instead of load_instruction_at_checked, so it never verified that the supplied instructions sysvar was the real Sysvar1nstructions account. The attacker passed a look-alike account containing a fabricated Secp256k1 verification result, forged the guardian signature set, and minted 120,000 wETH with no backing — the second-largest DeFi exploit at the time.
+**What happened.** The Solana bridge's verify_signatures used the deprecated load_instruction_at instead of load_instruction_at_checked, so it never verified that the supplied instructions sysvar was the real Sysvar1nstructions account. The attacker passed a look-alike account containing a fabricated Secp256k1 verification result, forged the guardian signature set, and minted 120,000 wETH with no backing — at the time the largest-ever exploit of a Solana program (≈$326M).
 
 **Why it maps here.** SOL-025 (sysvar read by raw/unchecked deserialize instead of a key-checking accessor) is exactly this bug; SOL-007 (owner/account not verified) is the same class of trusting an attacker-supplied account.
 
@@ -110,7 +110,7 @@ Which SOL-0XX rule class each exploit falls under.
 
 **Loopscale RateX collateral price manipulation** · 2025-04-26 · `SOL-024` `SOL-028`
 
-**What happened.** Loopscale priced RateX PT collateral from a single time-point on-chain price feed (a liquidity pool) with no time-weighting or multi-source aggregation. A flash-loan trade depressed the reported PT price just before loan origination, so the protocol accepted manipulated values and issued under-collateralized loans, draining ≈5.7M USDC + 1,200 SOL.
+**What happened.** Loopscale priced RateX PT collateral from a single time-point on-chain price feed (a liquidity pool) with no time-weighting or multi-source aggregation. A flash-loan trade depressed the reported PT price just before loan origination, so the protocol accepted manipulated values and issued under-collateralized loans, draining ≈$5.8M (5.7M USDC + 1,200 SOL at prevailing prices).
 
 **Why it maps here.** SOL-024 (single-source price with no manipulation-resistance) and SOL-028 (no bound protecting against an adverse same-transaction price move) cover instantaneous-price collateral valuation.
 

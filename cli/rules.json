@@ -76,7 +76,7 @@
     },
     {
       "rule_name": "sol_007_raw_data_borrow",
-      "regex": "&\\*\\w+\\.data\\.borrow\\(\\)",
+      "regex": "&\\*[\\w.]{1,200}\\.data\\.borrow\\(\\)",
       "paths": [
         "**/*.rs"
       ],
@@ -201,7 +201,9 @@
       "rule_name": "sol_017_unsafe_transmute",
       "substrings": [
         "unsafe { transmute",
-        "unsafe{transmute"
+        "unsafe{transmute",
+        "mem::transmute(",
+        "mem::transmute::"
       ],
       "paths": [
         "**/*.rs"
