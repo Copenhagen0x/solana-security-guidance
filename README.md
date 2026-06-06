@@ -1,4 +1,4 @@
-# Solana Security Guidance
+# Solana Security Standard
 
 > The **Solana Security Standard** — `SOL-0XX` rules for Anthropic's Claude Code security-guidance plugin. By the team that finds the bugs.
 
