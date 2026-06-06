@@ -24,6 +24,8 @@ rules:
       references:
         - https://github.com/Copenhagen0x/solana-security-standard#sol-001
       license: MIT
+      sss-tier: high
+      sss-severity: high
   - id: solana-security-standard.sol-002-cross-market-counter
     languages:
       - rust
@@ -44,6 +46,8 @@ rules:
       references:
         - https://github.com/Copenhagen0x/solana-security-standard#sol-002
       license: MIT
+      sss-tier: high
+      sss-severity: high
   - id: solana-security-standard.sol-005-realloc-no-guard
     languages:
       - rust
@@ -64,6 +68,8 @@ rules:
       references:
         - https://github.com/Copenhagen0x/solana-security-standard#sol-005
       license: MIT
+      sss-tier: high
+      sss-severity: medium
   - id: solana-security-standard.sol-006-raw-account-info
     languages:
       - rust
@@ -84,6 +90,8 @@ rules:
       references:
         - https://github.com/Copenhagen0x/solana-security-standard#sol-006
       license: MIT
+      sss-tier: high
+      sss-severity: high
   - id: solana-security-standard.sol-007-raw-data-borrow
     languages:
       - rust
@@ -104,6 +112,8 @@ rules:
       references:
         - https://github.com/Copenhagen0x/solana-security-standard#sol-007
       license: MIT
+      sss-tier: high
+      sss-severity: high
   - id: solana-security-standard.sol-009-invoke-signed
     languages:
       - rust
@@ -124,6 +134,8 @@ rules:
       references:
         - https://github.com/Copenhagen0x/solana-security-standard#sol-009
       license: MIT
+      sss-tier: high
+      sss-severity: high
   - id: solana-security-standard.sol-010-init-if-needed
     languages:
       - rust
@@ -144,6 +156,8 @@ rules:
       references:
         - https://github.com/Copenhagen0x/solana-security-standard#sol-010
       license: MIT
+      sss-tier: high
+      sss-severity: high
   - id: solana-security-standard.sol-011-close-attr
     languages:
       - rust
@@ -164,6 +178,8 @@ rules:
       references:
         - https://github.com/Copenhagen0x/solana-security-standard#sol-011
       license: MIT
+      sss-tier: high
+      sss-severity: high
       note: 'RE2-safe port: the scanner''s depth-2 paren-balanced regex is rejected by Semgrep as "too large" (RE2 expands the nested {0,N} repetitions). This delimiter-bounded window flags `close =` within a 400-char #[account( ... ) region. It stops the window at ; { } and # — none appear inside an attribute, and stopping at # means the NEAREST #[account( wins so the finding lands on the right attribute even when two are adjacent. It favors recall over the scanner''s exact paren-balancing; both flag the same real #[account(close = ...)] attributes incl. long multi-line ones. Known limit: a raw-string literal (r#"..."#) inside a constraint before close= would stop the window early — a theoretical Semgrep-only miss; the scanner still catches it.'
   - id: solana-security-standard.sol-013-hardcoded-token-program
     languages:
@@ -182,6 +198,8 @@ rules:
       references:
         - https://github.com/Copenhagen0x/solana-security-standard#sol-013
       license: MIT
+      sss-tier: high
+      sss-severity: high
   - id: solana-security-standard.sol-014-unchecked-arithmetic
     languages:
       - rust
@@ -202,6 +220,8 @@ rules:
       references:
         - https://github.com/Copenhagen0x/solana-security-standard#sol-014
       license: MIT
+      sss-tier: high
+      sss-severity: high
   - id: solana-security-standard.sol-016-bump-field-read
     languages:
       - rust
@@ -224,6 +244,8 @@ rules:
       references:
         - https://github.com/Copenhagen0x/solana-security-standard#sol-016
       license: MIT
+      sss-tier: high
+      sss-severity: high
   - id: solana-security-standard.sol-017-unsafe-transmute
     languages:
       - rust
@@ -244,6 +266,8 @@ rules:
       references:
         - https://github.com/Copenhagen0x/solana-security-standard#sol-017
       license: MIT
+      sss-tier: high
+      sss-severity: high
   - id: solana-security-standard.sol-018-hardcoded-system-program
     languages:
       - rust
@@ -264,6 +288,8 @@ rules:
       references:
         - https://github.com/Copenhagen0x/solana-security-standard#sol-018
       license: MIT
+      sss-tier: low
+      sss-severity: low
   - id: solana-security-standard.sol-019-try-deserialize-unchecked
     languages:
       - rust
@@ -284,6 +310,8 @@ rules:
       references:
         - https://github.com/Copenhagen0x/solana-security-standard#sol-019
       license: MIT
+      sss-tier: high
+      sss-severity: high
   - id: solana-security-standard.sol-020-set-authority
     languages:
       - rust
@@ -304,6 +332,8 @@ rules:
       references:
         - https://github.com/Copenhagen0x/solana-security-standard#sol-020
       license: MIT
+      sss-tier: high
+      sss-severity: high
   - id: solana-security-standard.sol-024-oracle-price-unchecked
     languages:
       - rust
@@ -328,6 +358,8 @@ rules:
       references:
         - https://github.com/Copenhagen0x/solana-security-standard#sol-024
       license: MIT
+      sss-tier: high
+      sss-severity: high
   - id: solana-security-standard.sol-025-sysvar-raw-deserialize
     languages:
       - rust
@@ -352,6 +384,8 @@ rules:
       references:
         - https://github.com/Copenhagen0x/solana-security-standard#sol-025
       license: MIT
+      sss-tier: high
+      sss-severity: high
   - id: solana-security-standard.sol-029-skip-preflight
     languages:
       - typescript
@@ -383,6 +417,8 @@ rules:
       references:
         - https://github.com/Copenhagen0x/solana-security-standard#sol-029
       license: MIT
+      sss-tier: high
+      sss-severity: medium
   - id: solana-security-standard.sol-030-static-priority-fee
     languages:
       - typescript
@@ -414,6 +450,8 @@ rules:
       references:
         - https://github.com/Copenhagen0x/solana-security-standard#sol-030
       license: MIT
+      sss-tier: low
+      sss-severity: low
   - id: solana-security-standard.sol-031-jupiter-quote-freshness
     languages:
       - typescript
@@ -445,3 +483,5 @@ rules:
       references:
         - https://github.com/Copenhagen0x/solana-security-standard#sol-031
       license: MIT
+      sss-tier: high
+      sss-severity: medium

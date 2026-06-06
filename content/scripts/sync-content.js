@@ -21,6 +21,7 @@ const GUIDANCE_MD = path.join(REPO, 'claude-security-guidance.md');
 const RULES_JSON = path.join(REPO, 'cli', 'rules.json');
 const HACKS_JSON = path.join(REPO, 'hacks', 'hacks.json');
 const EXAMPLES_DIR = path.join(REPO, 'examples');
+const RULES_META = path.join(REPO, 'rules-meta.json');
 
 const norm = (s) => s.replace(/\r\n/g, '\n');
 
@@ -100,6 +101,31 @@ function renderRulePage(rule, ctx) {
       : '**Enforcement — review-only.** A judgment-call class with no deterministic pattern: it lives in the standard\'s review checklist and in your AI agent\'s [rules file](../../integrations), so the model reviews for it.',
   );
   L.push('');
+  const m = ctx.meta[rule.id];
+  if (m) {
+    const tierTxt =
+      m.tier === 'low'
+        ? 'LOW — hygiene / defense-in-depth / operational (filtered out by `--min-tier high`)'
+        : 'HIGH — high-value; surfaced even at a strict submission floor';
+    L.push(`**Value tier — ${String(m.tier || '').toUpperCase()}.** ${tierTxt}`);
+    L.push('');
+    L.push(
+      `**Baseline severity — ${m.severity}.** A starting point, not a verdict: calibrate by preconditions × access level (take the lower) per [SEVERITY.md](../../SEVERITY.md).`,
+    );
+    L.push('');
+    if (m.reachability) {
+      L.push(
+        `**Reachability anchor.** To confirm this is exploitable (not merely present), cite ${m.reachability}.`,
+      );
+      L.push('');
+    }
+    if (Array.isArray(m.exclusions) && m.exclusions.length) {
+      L.push('**Do NOT flag when** — cite the number when suppressing a finding:');
+      L.push('');
+      m.exclusions.forEach((e, i) => L.push(`${i + 1}. ${e}`));
+      L.push('');
+    }
+  }
   L.push('## Real exploits in this class');
   L.push('');
   if (hacks.length) {
@@ -134,14 +160,15 @@ function renderIndex(rules, ctx) {
   L.push('');
   L.push(`**${withPattern} of ${rules.length}** rules are machine-checkable (deterministic pattern); the rest are review-only. **${withHack}** map to a catalogued real-world exploit.`);
   L.push('');
-  L.push('| Rule | Title | Enforcement | Real exploits | Example |');
-  L.push('| --- | --- | --- | --- | --- |');
+  L.push('| Rule | Title | Tier | Severity | Enforcement | Real exploits | Example |');
+  L.push('| --- | --- | --- | --- | --- | --- | --- |');
   for (const r of rules) {
+    const m = ctx.meta[r.id] || {};
     const enforcement = ctx.patternIds.has(r.id) ? 'pattern' : 'review';
     const hacks = ctx.hacksByRule[r.id] || [];
     const exploits = hacks.length ? hacks.map((h) => h.protocol).join(', ') : '—';
     const example = ctx.examples[r.num] ? '✓' : '—';
-    L.push(`| [${r.id}](./rules/${r.id}.md) | ${r.title} | ${enforcement} | ${exploits} | ${example} |`);
+    L.push(`| [${r.id}](./rules/${r.id}.md) | ${r.title} | ${m.tier || '—'} | ${m.severity || '—'} | ${enforcement} | ${exploits} | ${example} |`);
   }
   L.push('');
   L.push('Maintained by [Jelleo](https://jelleo.com). MIT.');
@@ -156,6 +183,7 @@ function build() {
     patternIds: loadPatternIds(JSON.parse(fs.readFileSync(RULES_JSON, 'utf8'))),
     hacksByRule: loadHacksByRule(JSON.parse(fs.readFileSync(HACKS_JSON, 'utf8'))),
     examples: loadExamples(),
+    meta: (JSON.parse(fs.readFileSync(RULES_META, 'utf8')) || {}).rules || {},
   };
   const files = {}; // relpath -> content
   for (const r of rules) files[`rules/${r.id}.md`] = norm(renderRulePage(r, ctx));

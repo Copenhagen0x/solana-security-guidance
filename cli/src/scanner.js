@@ -33,6 +33,12 @@ function compileRule(rule) {
     reminder: rule.reminder || '',
     paths: rule.paths && rule.paths.length ? rule.paths : ['**/*'],
     exclude: rule.exclude_paths || [],
+    // Per-rule metadata (from rules-meta.json via rules.json). Optional so a
+    // custom -p rules file without metadata still scans. ADVISORY ONLY — these
+    // annotate findings; they never change whether a rule fires.
+    tier: rule.tier || null,
+    severity: rule.severity || null,
+    exclusions: Array.isArray(rule.exclusions) ? rule.exclusions : [],
     regex: null,
     substrings: null,
     invalid: null,
@@ -117,6 +123,10 @@ function scanContent(content, relPath, rules) {
         rule: rule.name,
         reminder: rule.reminder,
         match: h.text.length > 100 ? h.text.slice(0, 100) + '…' : h.text,
+        // Advisory metadata (additive — consumers that predate these ignore them).
+        tier: rule.tier,
+        severity: rule.severity,
+        exclusions: rule.exclusions && rule.exclusions.length ? rule.exclusions : undefined,
       });
     }
   }

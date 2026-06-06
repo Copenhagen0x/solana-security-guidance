@@ -74,3 +74,31 @@ test('invalid regex rule is skipped, not thrown', () => {
   assert.ok(r[0].invalid);
   assert.doesNotThrow(() => scanner.scanContent('whatever', 'a.rs', r));
 });
+
+test('exclude_paths is case-insensitive end-to-end (mixed-case Tests/ does not bypass)', () => {
+  // Regression for the threat-modeler finding: a `Tests/` dir bypassed the test
+  // exclude and was scanned as on-chain code (false positive); a `Lib.RS` file
+  // silently never scanned. The exclude must hold regardless of case.
+  const src = 'fn t(now_slot: u64) {}\n';
+  assert.equal(scanner.scanContent(src, 'src/Tests/mod.rs', RULES).length, 0, 'Tests/ suppressed');
+  assert.equal(scanner.scanContent(src, 'src/TESTS/mod.rs', RULES).length, 0, 'TESTS/ suppressed');
+  assert.equal(scanner.scanContent(src, 'src/Lib.RS', RULES).length, 1, 'Lib.RS is still scanned');
+});
+
+test('findings carry tier + severity from the rule (advisory metadata)', () => {
+  const r = scanner.compileRules({
+    patterns: [{ rule_name: 'sol_099_x', substrings: ['BOOM'], paths: ['**/*.rs'], tier: 'high', severity: 'medium' }],
+  });
+  const f = scanner.scanContent('let x = BOOM;\n', 'a.rs', r);
+  assert.equal(f.length, 1);
+  assert.equal(f[0].tier, 'high');
+  assert.equal(f[0].severity, 'medium');
+});
+
+test('a rule without metadata still scans (tier/severity undefined, not a crash)', () => {
+  const r = scanner.compileRules({ patterns: [{ rule_name: 'sol_098_y', substrings: ['ZAP'], paths: ['**/*.rs'] }] });
+  const f = scanner.scanContent('ZAP\n', 'a.rs', r);
+  assert.equal(f.length, 1);
+  assert.equal(f[0].tier, null);
+  assert.equal(f[0].severity, null);
+});

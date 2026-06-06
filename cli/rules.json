@@ -10,7 +10,9 @@
         "**/tests/**",
         "**/test/**"
       ],
-      "reminder": "Jelleo SOL-001: handler accepts `now_slot` from instruction data. Authenticate against Clock::get()?.slot before use — caller-controlled clocks enable permanent DoS of permissionless cranks. Two confirmed-exploitable bounty wins in this class: percolator-prog#107 (ACTIVATE, fixed 6512fa1) + percolator-cli#78 F33 (RETIRE, fixed 3fd9b1d). See: github.com/Copenhagen0x/solana-security-standard#sol-001."
+      "reminder": "Jelleo SOL-001: handler accepts `now_slot` from instruction data. Authenticate against Clock::get()?.slot before use — caller-controlled clocks enable permanent DoS of permissionless cranks. Two confirmed-exploitable bounty wins in this class: percolator-prog#107 (ACTIVATE, fixed 6512fa1) + percolator-cli#78 F33 (RETIRE, fixed 3fd9b1d). See: github.com/Copenhagen0x/solana-security-standard#sol-001.",
+      "tier": "high",
+      "severity": "high"
     },
     {
       "rule_name": "sol_002_cross_market_counter",
@@ -21,7 +23,9 @@
       "exclude_paths": [
         "**/tests/**"
       ],
-      "reminder": "Jelleo SOL-002: cross-market aggregate counter. Verify EVERY write to this field is gated by per-market authorization — permissionless cross-market inflation enables insurance-fund drain. Documented public class (percolator-prog#104); not a Jelleo bounty win — included because the pattern is reproducible across perp-DEX programs. See: github.com/Copenhagen0x/solana-security-standard#sol-002."
+      "reminder": "Jelleo SOL-002: cross-market aggregate counter. Verify EVERY write to this field is gated by per-market authorization — permissionless cross-market inflation enables insurance-fund drain. Documented public class (percolator-prog#104); not a Jelleo bounty win — included because the pattern is reproducible across perp-DEX programs. See: github.com/Copenhagen0x/solana-security-standard#sol-002.",
+      "tier": "high",
+      "severity": "high"
     },
     {
       "rule_name": "sol_005_realloc_no_guard",
@@ -34,7 +38,9 @@
       "exclude_paths": [
         "**/tests/**"
       ],
-      "reminder": "Jelleo SOL-005: AccountInfo.realloc() called. Verify (1) account owner == program_id, (2) new size is bounded, (3) rent-exemption maintained after resize. Latent pattern documented in our bounty 5 disclosure (percolator-cli#78 F12) — reachable when the per-program asset cap is lifted. See: github.com/Copenhagen0x/solana-security-standard#sol-005."
+      "reminder": "Jelleo SOL-005: AccountInfo.realloc() called. Verify (1) account owner == program_id, (2) new size is bounded, (3) rent-exemption maintained after resize. Latent pattern documented in our bounty 5 disclosure (percolator-cli#78 F12) — reachable when the per-program asset cap is lifted. See: github.com/Copenhagen0x/solana-security-standard#sol-005.",
+      "tier": "high",
+      "severity": "medium"
     },
     {
       "rule_name": "sol_006_raw_account_info",
@@ -45,7 +51,9 @@
       "exclude_paths": [
         "**/tests/**"
       ],
-      "reminder": "Jelleo SOL-006: raw `AccountInfo` (no Signer<>/Account<> type). If this account is a privileged CALLER, verify `account.is_signer == true` before mutating state, or use Anchor's `Signer<>`. (A documented `/// CHECK:` account used only as a CPI target / program ID / read-only ref is fine — this is a heuristic flag.) See: github.com/Copenhagen0x/solana-security-standard#sol-006."
+      "reminder": "Jelleo SOL-006: raw `AccountInfo` (no Signer<>/Account<> type). If this account is a privileged CALLER, verify `account.is_signer == true` before mutating state, or use Anchor's `Signer<>`. (A documented `/// CHECK:` account used only as a CPI target / program ID / read-only ref is fine — this is a heuristic flag.) See: github.com/Copenhagen0x/solana-security-standard#sol-006.",
+      "tier": "high",
+      "severity": "high"
     },
     {
       "rule_name": "sol_007_raw_data_borrow",
@@ -56,7 +64,9 @@
       "exclude_paths": [
         "**/tests/**"
       ],
-      "reminder": "Jelleo SOL-007: raw `&*account.data.borrow()` access. Verify `account.owner == program_id` BEFORE deserializing — attacker can pass a same-length account from a different program whose layout matches. See: github.com/Copenhagen0x/solana-security-standard#sol-007."
+      "reminder": "Jelleo SOL-007: raw `&*account.data.borrow()` access. Verify `account.owner == program_id` BEFORE deserializing — attacker can pass a same-length account from a different program whose layout matches. See: github.com/Copenhagen0x/solana-security-standard#sol-007.",
+      "tier": "high",
+      "severity": "high"
     },
     {
       "rule_name": "sol_009_invoke_signed",
@@ -67,7 +77,9 @@
       "exclude_paths": [
         "**/tests/**"
       ],
-      "reminder": "Jelleo SOL-009: `invoke_signed` CPI. Verify the CALLER has authority for this operation BEFORE the CPI — `invoke_signed` just signs with a PDA, it doesn't validate upstream authority. See: github.com/Copenhagen0x/solana-security-standard#sol-009."
+      "reminder": "Jelleo SOL-009: `invoke_signed` CPI. Verify the CALLER has authority for this operation BEFORE the CPI — `invoke_signed` just signs with a PDA, it doesn't validate upstream authority. See: github.com/Copenhagen0x/solana-security-standard#sol-009.",
+      "tier": "high",
+      "severity": "high"
     },
     {
       "rule_name": "sol_010_init_if_needed",
@@ -80,7 +92,9 @@
       "exclude_paths": [
         "**/tests/**"
       ],
-      "reminder": "Jelleo SOL-010: init_if_needed enables reinit attacks. If the account holds value or grants authority, a second call can drop balances. Use plain `init` with explicit existence checks unless reinit is truly required. See: github.com/Copenhagen0x/solana-security-standard#sol-010."
+      "reminder": "Jelleo SOL-010: init_if_needed enables reinit attacks. If the account holds value or grants authority, a second call can drop balances. Use plain `init` with explicit existence checks unless reinit is truly required. See: github.com/Copenhagen0x/solana-security-standard#sol-010.",
+      "tier": "high",
+      "severity": "high"
     },
     {
       "rule_name": "sol_011_close_attr",
@@ -91,7 +105,9 @@
       "exclude_paths": [
         "**/tests/**"
       ],
-      "reminder": "Jelleo SOL-011: `#[account(close = ...)]`. Verify (1) account is fully drained before close, (2) lamports go to a controlled destination, (3) any token accounts are closed via Token program, not just zeroed. See: github.com/Copenhagen0x/solana-security-standard#sol-011."
+      "reminder": "Jelleo SOL-011: `#[account(close = ...)]`. Verify (1) account is fully drained before close, (2) lamports go to a controlled destination, (3) any token accounts are closed via Token program, not just zeroed. See: github.com/Copenhagen0x/solana-security-standard#sol-011.",
+      "tier": "high",
+      "severity": "high"
     },
     {
       "rule_name": "sol_013_hardcoded_token_program",
@@ -101,7 +117,9 @@
       "paths": [
         "**/*.rs"
       ],
-      "reminder": "Jelleo SOL-013: hardcoded SPL Token program ID. Use `anchor_spl::token::ID` (or `anchor_spl::token_2022::ID` for Token-2022 accounts) so the typed account ensures the right program is invoked. See: github.com/Copenhagen0x/solana-security-standard#sol-013."
+      "reminder": "Jelleo SOL-013: hardcoded SPL Token program ID. Use `anchor_spl::token::ID` (or `anchor_spl::token_2022::ID` for Token-2022 accounts) so the typed account ensures the right program is invoked. See: github.com/Copenhagen0x/solana-security-standard#sol-013.",
+      "tier": "high",
+      "severity": "high"
     },
     {
       "rule_name": "sol_014_unchecked_arithmetic",
@@ -112,7 +130,9 @@
       "exclude_paths": [
         "**/tests/**"
       ],
-      "reminder": "Jelleo SOL-014: integer +/-/* without checked_*. Release builds wrap silently — overflow OR subtraction underflow (the classic lamport drain) — and the wrap is the financial bug. Use `a.checked_add(b)` / `checked_sub(b).ok_or(ErrorCode::Overflow)?`. Heuristic flag — already-checked code can ignore. See: github.com/Copenhagen0x/solana-security-standard#sol-014."
+      "reminder": "Jelleo SOL-014: integer +/-/* without checked_*. Release builds wrap silently — overflow OR subtraction underflow (the classic lamport drain) — and the wrap is the financial bug. Use `a.checked_add(b)` / `checked_sub(b).ok_or(ErrorCode::Overflow)?`. Heuristic flag — already-checked code can ignore. See: github.com/Copenhagen0x/solana-security-standard#sol-014.",
+      "tier": "high",
+      "severity": "high"
     },
     {
       "rule_name": "sol_016_bump_field_read",
@@ -125,7 +145,9 @@
         "**/state*.rs",
         "**/state/**"
       ],
-      "reminder": "Jelleo SOL-016: reading a stored `.bump` field. Verify the bump matches `Pubkey::find_program_address(seeds, &program_id).1` (canonical bump) on the FIRST read — subsequent reads of the same bump are OK. Without this, an attacker can pre-create a PDA with a non-canonical bump. See: github.com/Copenhagen0x/solana-security-standard#sol-016."
+      "reminder": "Jelleo SOL-016: reading a stored `.bump` field. Verify the bump matches `Pubkey::find_program_address(seeds, &program_id).1` (canonical bump) on the FIRST read — subsequent reads of the same bump are OK. Without this, an attacker can pre-create a PDA with a non-canonical bump. See: github.com/Copenhagen0x/solana-security-standard#sol-016.",
+      "tier": "high",
+      "severity": "high"
     },
     {
       "rule_name": "sol_017_unsafe_transmute",
@@ -139,7 +161,9 @@
       "exclude_paths": [
         "**/tests/**"
       ],
-      "reminder": "Jelleo SOL-017: `unsafe transmute` on account data. Use bytemuck/anchor typed deserialize with explicit length + discriminator checks. transmute skips both. See: github.com/Copenhagen0x/solana-security-standard#sol-017."
+      "reminder": "Jelleo SOL-017: `unsafe transmute` on account data. Use bytemuck/anchor typed deserialize with explicit length + discriminator checks. transmute skips both. See: github.com/Copenhagen0x/solana-security-standard#sol-017.",
+      "tier": "high",
+      "severity": "high"
     },
     {
       "rule_name": "sol_018_hardcoded_system_program",
@@ -152,7 +176,9 @@
       "exclude_paths": [
         "**/tests/**"
       ],
-      "reminder": "Jelleo SOL-018: hardcoded System Program ID literal (32 ones in quotes — the canonical empty pubkey). Use `solana_program::system_program::ID` so the comparison is type-safe and a future renaming/typo doesn't silently break verification. See: github.com/Copenhagen0x/solana-security-standard#sol-018."
+      "reminder": "Jelleo SOL-018: hardcoded System Program ID literal (32 ones in quotes — the canonical empty pubkey). Use `solana_program::system_program::ID` so the comparison is type-safe and a future renaming/typo doesn't silently break verification. See: github.com/Copenhagen0x/solana-security-standard#sol-018.",
+      "tier": "low",
+      "severity": "low"
     },
     {
       "rule_name": "sol_019_try_deserialize_unchecked",
@@ -165,7 +191,9 @@
       "exclude_paths": [
         "**/tests/**"
       ],
-      "reminder": "Jelleo SOL-019: `try_deserialize_unchecked` skips the 8-byte discriminator check. An attacker can pass a different account type with matching length. Use `try_deserialize` (with discriminator check) unless you've already verified the discriminator manually. See: github.com/Copenhagen0x/solana-security-standard#sol-019."
+      "reminder": "Jelleo SOL-019: `try_deserialize_unchecked` skips the 8-byte discriminator check. An attacker can pass a different account type with matching length. Use `try_deserialize` (with discriminator check) unless you've already verified the discriminator manually. See: github.com/Copenhagen0x/solana-security-standard#sol-019.",
+      "tier": "high",
+      "severity": "high"
     },
     {
       "rule_name": "sol_020_set_authority",
@@ -176,7 +204,9 @@
       "exclude_paths": [
         "**/tests/**"
       ],
-      "reminder": "Jelleo SOL-020: SetAuthority CPI. Verify the CURRENT authority matches the expected key BEFORE invoking — without this check, an attacker can hijack ownership of any token account that flows through this handler. See: github.com/Copenhagen0x/solana-security-standard#sol-020."
+      "reminder": "Jelleo SOL-020: SetAuthority CPI. Verify the CURRENT authority matches the expected key BEFORE invoking — without this check, an attacker can hijack ownership of any token account that flows through this handler. See: github.com/Copenhagen0x/solana-security-standard#sol-020.",
+      "tier": "high",
+      "severity": "high"
     },
     {
       "rule_name": "sol_024_oracle_price_unchecked",
@@ -193,7 +223,9 @@
         "**/offchain/**",
         "**/sdk/**"
       ],
-      "reminder": "Jelleo SOL-024: `get_price_unchecked` reads a Pyth price with NO staleness or confidence check. Use `get_price_no_older_than(...)` and reject prices whose confidence interval is too wide — a stale or wide-confidence price lets an attacker trade/liquidate at a mispriced value. See: github.com/Copenhagen0x/solana-security-standard#sol-024."
+      "reminder": "Jelleo SOL-024: `get_price_unchecked` reads a Pyth price with NO staleness or confidence check. Use `get_price_no_older_than(...)` and reject prices whose confidence interval is too wide — a stale or wide-confidence price lets an attacker trade/liquidate at a mispriced value. See: github.com/Copenhagen0x/solana-security-standard#sol-024.",
+      "tier": "high",
+      "severity": "high"
     },
     {
       "rule_name": "sol_025_sysvar_raw_deserialize",
@@ -211,7 +243,9 @@
         "**/offchain/**",
         "**/sdk/**"
       ],
-      "reminder": "Jelleo SOL-025: a sysvar (Clock/Rent) read by RAW-deserializing account data instead of `Clock::get()` or `Sysvar::from_account_info` (both of which key-check the account internally). The raw path trusts whatever account is passed, so an attacker supplies a look-alike carrying chosen time/rent values. Fix: use `Clock::get()` / Anchor `Sysvar<>`; never hand-deserialize a sysvar account. See: github.com/Copenhagen0x/solana-security-standard#sol-025."
+      "reminder": "Jelleo SOL-025: a sysvar (Clock/Rent) read by RAW-deserializing account data instead of `Clock::get()` or `Sysvar::from_account_info` (both of which key-check the account internally). The raw path trusts whatever account is passed, so an attacker supplies a look-alike carrying chosen time/rent values. Fix: use `Clock::get()` / Anchor `Sysvar<>`; never hand-deserialize a sysvar account. See: github.com/Copenhagen0x/solana-security-standard#sol-025.",
+      "tier": "high",
+      "severity": "high"
     },
     {
       "rule_name": "sol_029_skip_preflight",
@@ -236,7 +270,9 @@
         "**/dist/**",
         "**/build/**"
       ],
-      "reminder": "Jelleo SOL-029: transaction sent with preflight simulation disabled (`skipPreflight: true`). A blind send eats reverts and fees and can desync a live bot/keeper. Either drop `skipPreflight`, or call `simulateTransaction()` and assert `err === null` (inspecting logs/compute units) BEFORE sending to mainnet. See: github.com/Copenhagen0x/solana-security-standard#sol-029."
+      "reminder": "Jelleo SOL-029: transaction sent with preflight simulation disabled (`skipPreflight: true`). A blind send eats reverts and fees and can desync a live bot/keeper. Either drop `skipPreflight`, or call `simulateTransaction()` and assert `err === null` (inspecting logs/compute units) BEFORE sending to mainnet. See: github.com/Copenhagen0x/solana-security-standard#sol-029.",
+      "tier": "high",
+      "severity": "medium"
     },
     {
       "rule_name": "sol_030_static_priority_fee",
@@ -261,7 +297,9 @@
         "**/dist/**",
         "**/build/**"
       ],
-      "reminder": "Jelleo SOL-030: hardcoded priority fee (`microLamports: <constant>`). A static compute-unit price underpays during congestion (the tx never lands) or overpays when the network is idle. Derive it from `getRecentPrioritizationFees()` (or a fee oracle) and clamp to a sane max. (`microLamports: 0` — the intentional no-priority-fee opt-out — does not fire.) See: github.com/Copenhagen0x/solana-security-standard#sol-030."
+      "reminder": "Jelleo SOL-030: hardcoded priority fee (`microLamports: <constant>`). A static compute-unit price underpays during congestion (the tx never lands) or overpays when the network is idle. Derive it from `getRecentPrioritizationFees()` (or a fee oracle) and clamp to a sane max. (`microLamports: 0` — the intentional no-priority-fee opt-out — does not fire.) See: github.com/Copenhagen0x/solana-security-standard#sol-030.",
+      "tier": "low",
+      "severity": "low"
     },
     {
       "rule_name": "sol_031_jupiter_quote_freshness",
@@ -289,7 +327,9 @@
         "**/dist/**",
         "**/build/**"
       ],
-      "reminder": "Jelleo SOL-031: Jupiter quote consumed without a `contextSlot` freshness check. Quotes go stale within a few slots; executing an old route means a worse fill and MEV/sandwich exposure. Capture `quoteResponse.contextSlot` and refetch (or reject) if it lags the current slot before you swap. Heuristic flag — fires on Jupiter quote usage (any `api.jup.ag` host or the `@jup-ag/api` client); ignore if you already gate on `contextSlot`. See: github.com/Copenhagen0x/solana-security-standard#sol-031."
+      "reminder": "Jelleo SOL-031: Jupiter quote consumed without a `contextSlot` freshness check. Quotes go stale within a few slots; executing an old route means a worse fill and MEV/sandwich exposure. Capture `quoteResponse.contextSlot` and refetch (or reject) if it lags the current slot before you swap. Heuristic flag — fires on Jupiter quote usage (any `api.jup.ag` host or the `@jup-ag/api` client); ignore if you already gate on `contextSlot`. See: github.com/Copenhagen0x/solana-security-standard#sol-031.",
+      "tier": "high",
+      "severity": "medium"
     }
   ]
 }

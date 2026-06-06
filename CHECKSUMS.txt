@@ -4,4 +4,4 @@
 # Hashes are over LF-normalized bytes (what GitHub serves).
 8b82c02add090faf6ecd68af0f8b50adabe6ee5062aef4222006a6e07c64453a  claude-security-guidance.md
 bd8e9c3482d308c983e043894ab4dd4b1195a3f152fd67b22e628804ff61bed5  security-patterns.yaml
-5fbac782308eb2b83565dc06a9dbbce17f893c63589d4266bb4f02f175712c8a  semgrep/solana-security-standard.yaml
+0cc5476e279253546998c8528a9298b5d90d517464b110cebf53c284f7c90f93  semgrep/solana-security-standard.yaml

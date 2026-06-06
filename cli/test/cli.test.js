@@ -103,3 +103,40 @@ test('-o writes output to a file', () => {
   assert.ok(fs.existsSync(outFile));
   assert.ok(JSON.parse(fs.readFileSync(outFile, 'utf8')).findingCount >= 1);
 });
+
+test('json findings carry severity + tier from rules-meta', () => {
+  const dir = tmpRepo({ 'src/lib.rs': VULN });
+  const out = cap();
+  cli.main(['scan', dir, '-f', 'json', '--no-fail'], { stdout: out, stderr: cap() });
+  const f = JSON.parse(out.str()).findings.find((x) => x.ruleId === 'SOL-001');
+  assert.ok(f, 'SOL-001 present');
+  assert.equal(f.severity, 'high');
+  assert.equal(f.tier, 'high');
+});
+
+test('--min-tier high drops LOW-tier findings but keeps HIGH', () => {
+  // now_slot -> SOL-001 (tier high); the 32-ones System Program literal -> SOL-018 (tier low)
+  const dir = tmpRepo({ 'src/lib.rs': VULN + 'pub fn s() { let _x = "11111111111111111111111111111111"; }\n' });
+  const all = cap();
+  cli.main(['scan', dir, '-f', 'json', '--no-fail'], { stdout: all, stderr: cap() });
+  const allIds = new Set(JSON.parse(all.str()).findings.map((x) => x.ruleId));
+  assert.ok(allIds.has('SOL-001') && allIds.has('SOL-018'), 'both fire with no floor');
+  const hi = cap();
+  cli.main(['scan', dir, '-f', 'json', '--no-fail', '--min-tier', 'high'], { stdout: hi, stderr: cap() });
+  const hiIds = new Set(JSON.parse(hi.str()).findings.map((x) => x.ruleId));
+  assert.ok(hiIds.has('SOL-001'), 'high-tier SOL-001 kept');
+  assert.ok(!hiIds.has('SOL-018'), 'low-tier SOL-018 dropped');
+});
+
+test('--min-tier low reports everything (the default floor, well-defined)', () => {
+  const dir = tmpRepo({ 'src/lib.rs': VULN + 'pub fn s() { let _x = "11111111111111111111111111111111"; }\n' });
+  const lo = cap();
+  cli.main(['scan', dir, '-f', 'json', '--no-fail', '--min-tier', 'low'], { stdout: lo, stderr: cap() });
+  const loIds = new Set(JSON.parse(lo.str()).findings.map((x) => x.ruleId));
+  assert.ok(loIds.has('SOL-001') && loIds.has('SOL-018'), 'low floor keeps both high- and low-tier');
+});
+
+test('unknown --min-tier exits 2', () => {
+  const code = cli.main(['scan', '.', '--min-tier', 'bogus'], { stdout: cap(), stderr: cap() });
+  assert.equal(code, 2);
+});

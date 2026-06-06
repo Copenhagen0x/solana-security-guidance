@@ -6,6 +6,7 @@ on:
     paths:
       - 'cli/**'
       - 'security-patterns.yaml'
+      - 'rules-meta.json'
       - 'semgrep/**'
       - 'integrations/**'
       - 'claude-security-guidance.md'
@@ -21,6 +22,7 @@ on:
     paths:
       - 'cli/**'
       - 'security-patterns.yaml'
+      - 'rules-meta.json'
       - 'semgrep/**'
       - 'integrations/**'
       - 'claude-security-guidance.md'

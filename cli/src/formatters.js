@@ -30,7 +30,8 @@ function text(findings, { color = false } = {}) {
       lastFile = f.file;
     }
     const loc = dim(`${String(f.line).padStart(4)}:${String(f.column)}`);
-    lines.push(`  ${loc}  ${yellow(solId(f.rule))}  ${shortReminder(f.reminder)}`);
+    const sev = f.severity ? ` ${dim('[' + f.severity + ']')}` : '';
+    lines.push(`  ${loc}  ${yellow(solId(f.rule))}${sev}  ${shortReminder(f.reminder)}`);
   }
   lines.push('');
   const files = new Set(findings.map((f) => f.file)).size;
@@ -50,8 +51,11 @@ function json(findings) {
         file: f.file,
         line: f.line,
         column: f.column,
+        severity: f.severity,        // SSS baseline impact (advisory; calibrate per SEVERITY.md)
+        tier: f.tier,                // submission-floor value: high | low
         message: shortReminder(f.reminder, 1000),
         match: f.match,
+        exclusions: f.exclusions,    // numbered "do NOT flag when…" (cite by index+1 when suppressing)
       })),
     },
     null,
@@ -102,8 +106,11 @@ function sarif(findings, rules = [], { version = '0.0.0' } = {}) {
           results: used.map((f) => ({
             ruleId: f.rule,
             ruleIndex: ruleIndex.has(f.rule) ? ruleIndex.get(f.rule) : undefined,
+            // level stays 'warning' (advisory) so existing GitHub code-scanning
+            // gating is unchanged; the SSS baseline severity/tier ride in properties.
             level: 'warning',
             message: { text: `${solId(f.rule)}: ${shortReminder(f.reminder, 1000)}` },
+            properties: { sssSeverity: f.severity, tier: f.tier },
             locations: [
               {
                 physicalLocation: {

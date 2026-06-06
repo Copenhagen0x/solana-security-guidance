@@ -24,6 +24,10 @@ OPTIONS
   -p, --patterns <rules.json>     custom rules — TRUSTED files only (runs their regexes)
   -r, --root <dir>                base for reported paths — must be an ancestor of the paths
       --no-fail                   always exit 0 (report only; don't fail CI)
+      --min-tier <high|low>       report only findings at/above this value tier.
+                                  high = high-value only (drops LOW-tier hygiene/
+                                  operational noise); low = everything (the default).
+                                  A noise floor, NOT a verdict — not for audit-grade scans.
   -q, --quiet                     text mode: print only the findings, no banner
       --no-color                  disable ANSI color
       --                          end of options; everything after is a path
@@ -45,6 +49,7 @@ function parseArgs(argv) {
     patterns: DEFAULT_RULES,
     root: null,
     fail: true,
+    minTier: null,
     quiet: false,
     color: undefined,
     help: false,
@@ -61,6 +66,7 @@ function parseArgs(argv) {
       case '-v': case '--version': o.version = true; break;
       case '-q': case '--quiet': o.quiet = true; break;
       case '--no-fail': o.fail = false; break;
+      case '--min-tier': o.minTier = argv[++i]; break;
       case '--no-color': o.color = false; break;
       case '-f': case '--format': o.format = argv[++i]; break;
       case '-o': case '--output': o.output = argv[++i]; break;
@@ -86,6 +92,10 @@ function main(argv, io = {}) {
   if (o.unknown) { err.write(`error: unknown option ${o.unknown}\n`); return 2; }
   if (!['text', 'json', 'sarif'].includes(o.format)) {
     err.write(`error: unknown format '${o.format}' (text|json|sarif)\n`);
+    return 2;
+  }
+  if (o.minTier && !['high', 'low'].includes(o.minTier)) {
+    err.write(`error: unknown --min-tier '${o.minTier}' (high|low)\n`);
     return 2;
   }
   if (o.command && o.command !== 'scan') { err.write(`error: unknown command '${o.command}'\n`); return 2; }
@@ -120,6 +130,17 @@ function main(argv, io = {}) {
       err.write(`error: scanning ${p}: ${e.message}\n`);
       return 2;
     }
+  }
+
+  // Value-tier floor (opt-in). Ranks: low < high. `--min-tier high` keeps only
+  // HIGH-tier findings (drops LOW-tier hygiene/defense-in-depth/operational noise).
+  // `--min-tier low` is the default floor — reports everything (so the flag has a
+  // well-defined, non-surprising meaning for BOTH values). A finding with no tier
+  // (e.g. a custom -p rules file) is ALWAYS kept — never silently hidden.
+  if (o.minTier) {
+    const RANK = { low: 0, high: 1 };
+    const floor = RANK[o.minTier];
+    findings = findings.filter((f) => (f.tier in RANK ? RANK[f.tier] : Infinity) >= floor);
   }
 
   let rendered;
