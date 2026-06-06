@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.1] — 2026-06-06
+
+### Changed — repo renamed + supply-chain hardening
+
+- **Repo renamed `solana-security-guidance` → `solana-security-standard`** for brand consistency (the npm packages, CLI, Action, and docs already said "standard"). The old URL 301-redirects and the old raw URLs still resolve, so existing installs, `semgrep --config` pins, the GitHub Action, and every shared link keep working unchanged. All in-repo references swept to the new name.
+- **Verified install + checksums.** Each release now publishes [`CHECKSUMS.txt`](CHECKSUMS.txt) (SHA-256 of the files served over raw URLs); the README gains a "Verified install" path that pins to a tag and runs `sha256sum -c`. A new `validate` CI gate keeps the checksums in sync ([`scripts/checksums.js`](scripts/checksums.js)).
+- **Signed release tags.** Tags are SSH-signed; verify with `git verify-tag` against [`.github/allowed_signers`](.github/allowed_signers) (see [`SECURITY.md`](SECURITY.md) → "Verifying a release").
+- **Floating `v1` tag moved to current HEAD** — `uses: …@v1` Action adopters now get the current ruleset (incl. the integrator rules SOL-029/030/031) instead of the stale v1.3.0 it was pinned to.
+
 ## [1.9.0] — 2026-06-05
 
 ### Added — integrator / client-side rules (SOL-029–031)
@@ -156,6 +165,14 @@ The original v1.0.0 framing was wrong about which findings translated to paid bo
 - MIT license
 - **Note:** the v1.0.0 release's specific bounty attributions for SOL-002/SOL-003/SOL-004/SOL-005 were superseded by the v1.0.1 honest-provenance correction after the maintainer's triage of `percolator-cli#78` clarified disposition. See v1.0.1 entry above.
 
+[1.9.1]: https://github.com/Copenhagen0x/solana-security-standard/compare/v1.9.0...v1.9.1
+[1.9.0]: https://github.com/Copenhagen0x/solana-security-standard/compare/v1.8.1...v1.9.0
+[1.8.1]: https://github.com/Copenhagen0x/solana-security-standard/compare/v1.8.0...v1.8.1
+[1.8.0]: https://github.com/Copenhagen0x/solana-security-standard/compare/v1.7.0...v1.8.0
+[1.7.0]: https://github.com/Copenhagen0x/solana-security-standard/compare/v1.6.0...v1.7.0
+[1.6.0]: https://github.com/Copenhagen0x/solana-security-standard/compare/v1.5.0...v1.6.0
+[1.5.0]: https://github.com/Copenhagen0x/solana-security-standard/compare/v1.4.0...v1.5.0
+[1.4.0]: https://github.com/Copenhagen0x/solana-security-standard/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/Copenhagen0x/solana-security-standard/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/Copenhagen0x/solana-security-standard/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/Copenhagen0x/solana-security-standard/compare/v1.1.0...v1.2.0

@@ -1,0 +1,5 @@
+# Signing keys for `git verify-tag` on this repo's release tags.
+# Verify a release:
+#   git config gpg.ssh.allowedSignersFile .github/allowed_signers
+#   git verify-tag v1.9.1
+btr.corpus@gmail.com namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPH7L8nFtHegnLCrghC2R09Si9kIIFp59PRdPbjE7xIq

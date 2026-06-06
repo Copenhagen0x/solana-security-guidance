@@ -82,3 +82,9 @@ jobs:
               raise SystemExit(1)
           print(f"YAML/MD cross-reference: all {len(yaml_ids)} YAML rule IDs have MD sections")
           PYEOF
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Verify CHECKSUMS.txt is in sync with the distributed files
+        run: node scripts/checksums.js --check

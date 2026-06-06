@@ -38,6 +38,22 @@ We follow coordinated disclosure. If you find an issue that affects production c
 3. After the fix is tagged in a release, we publish a security advisory at `github.com/Copenhagen0x/solana-security-standard/security/advisories` with credit
 4. If we can't reach a fix in 30 days, we surface the issue publicly with a workaround so users aren't blind
 
+## Verifying a release
+
+Install files are fetched over plain HTTPS. For supply-chain-sensitive use, verify what you download:
+
+- **Checksums** — each release publishes [`CHECKSUMS.txt`](CHECKSUMS.txt) (SHA-256 of the files served over raw URLs). After downloading, run `sha256sum -c CHECKSUMS.txt` (macOS: `shasum -a 256 -c CHECKSUMS.txt`) — see the README's "Verified install".
+- **Signed tags** — tags from `v1.9.1` onward are SSH-signed (earlier tags predate signing):
+
+  ```bash
+  git config gpg.ssh.allowedSignersFile .github/allowed_signers
+  git verify-tag v1.9.1     # expect: Good "git" signature for btr.corpus@gmail.com
+  ```
+
+  Signing key: `ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPH7L8nFtHegnLCrghC2R09Si9kIIFp59PRdPbjE7xIq`
+
+**Honest scope:** checksums and the in-repo allowed-signers are convenience checks against a tampered `main`, a CDN swap, or transit corruption — they do **not** on their own defend against a full compromise of the maintainer's GitHub account (which could rewrite both the files and the checksums). The signed tag, verified against the key received out of band (or confirmed **Verified** on the tag's GitHub page — which requires the key registered as a *signing* key on the account), is the origin check for that.
+
 ## Hall of fame
 
 Contributors who responsibly reported issues will be listed here once we have any. (None yet — this is a fresh project.)
