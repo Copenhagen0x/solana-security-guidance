@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.1] — 2026-06-06
+
+### Changed — repo renamed + supply-chain hardening
+
+- **Repo renamed `solana-security-guidance` → `solana-security-standard`** for brand consistency (the npm packages, CLI, Action, and docs already said "standard"). The old URL 301-redirects and the old raw URLs still resolve, so existing installs, `semgrep --config` pins, the GitHub Action, and every shared link keep working unchanged. All in-repo references swept to the new name.
+- **Verified install + checksums.** Each release now publishes [`CHECKSUMS.txt`](CHECKSUMS.txt) (SHA-256 of the files served over raw URLs); the README gains a "Verified install" path that pins to a tag and runs `sha256sum -c`. A new `validate` CI gate keeps the checksums in sync ([`scripts/checksums.js`](scripts/checksums.js)).
+- **Signed release tags.** Tags are SSH-signed; verify with `git verify-tag` against [`.github/allowed_signers`](.github/allowed_signers) (see [`SECURITY.md`](SECURITY.md) → "Verifying a release").
+- **Floating `v1` tag moved to current HEAD** — `uses: …@v1` Action adopters now get the current ruleset (incl. the integrator rules SOL-029/030/031) instead of the stale v1.3.0 it was pinned to.
+
 ## [1.9.0] — 2026-06-05
 
 ### Added — integrator / client-side rules (SOL-029–031)
