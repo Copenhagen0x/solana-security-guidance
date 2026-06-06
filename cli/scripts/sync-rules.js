@@ -12,7 +12,21 @@ const yaml = require('js-yaml');
 
 const repoRoot = path.join(__dirname, '..', '..');
 const srcYaml = path.join(repoRoot, 'security-patterns.yaml');
+const metaJson = path.join(repoRoot, 'rules-meta.json');
 const dstJson = path.join(__dirname, '..', 'rules.json');
+
+/** Derive a display id like "SOL-001" from a rule_name like "sol_001_foo". */
+function solId(ruleName) {
+  const m = /^sol[_-]?(\d{3})/i.exec(ruleName || '');
+  return m ? `SOL-${m[1]}` : null;
+}
+
+/** Load rules-meta.json -> { "SOL-001": {tier,severity,reachability,exclusions?}, ... }.
+ * JSON (not YAML) so the zero-dependency content generator can read the same source. */
+function loadMeta() {
+  const doc = JSON.parse(fs.readFileSync(metaJson, 'utf8'));
+  return (doc && doc.rules) || {};
+}
 
 function build() {
   // js-yaml's load() is safe by default — it has no code-executing tags like
@@ -20,6 +34,7 @@ function build() {
   // custom/typed tags, so only plain maps/lists/scalars are accepted.
   const doc = yaml.load(fs.readFileSync(srcYaml, 'utf8'), { schema: yaml.CORE_SCHEMA });
   const patterns = (doc && doc.patterns) || [];
+  const meta = loadMeta();
   return {
     patterns: patterns.map((p) => {
       const r = { rule_name: p.rule_name };
@@ -28,6 +43,16 @@ function build() {
       if (p.paths) r.paths = p.paths;
       if (p.exclude_paths) r.exclude_paths = p.exclude_paths;
       if (p.reminder) r.reminder = p.reminder;
+      // Merge per-rule metadata from rules-meta.json (the single source for
+      // tier/severity/exclusions). Fail-closed: every machine rule MUST have an
+      // entry, else the catalog has drifted. `reachability` is intentionally NOT
+      // emitted here — it is guidance rendered on the content pages, not scanner output.
+      const id = solId(p.rule_name);
+      const m = id ? meta[id] : null;
+      if (!m) throw new Error(`sync-rules: no rules-meta.json entry for ${p.rule_name} (${id})`);
+      if (m.tier) r.tier = m.tier;
+      if (m.severity) r.severity = m.severity;
+      if (Array.isArray(m.exclusions) && m.exclusions.length) r.exclusions = m.exclusions.slice();
       return r;
     }),
   };

@@ -83,6 +83,50 @@ test('--format sarif emits valid SARIF 2.1.0', () => {
   // every result references a rule that exists in the driver
   const ids = new Set(sarif.runs[0].tool.driver.rules.map((r) => r.id));
   assert.ok(sarif.runs[0].results.every((r) => ids.has(r.ruleId)));
+  // `reported` is present in the non-truncated branch too; both truncation flags false
+  const props = sarif.runs[0].properties;
+  assert.equal(props.reported, sarif.runs[0].results.length);
+  assert.equal(props.truncated, false);
+  assert.equal(props.scannerTruncated, false);
+});
+
+test('an incomplete scan (finding cap hit) fails exit 2 — never a silent pass, even with --min-tier high', () => {
+  // Two SOL-001 (high-tier) findings; force the cap to 1 so the scan is incomplete.
+  const dir = tmpRepo({ 'src/lib.rs': VULN + 'pub fn g(ctx: C, now_slot: u64) -> Result<()> { Ok(()) }\n' });
+  process.env.SSS_MAX_FINDINGS = '1';
+  try {
+    const out = cap();
+    const code = cli.main(['scan', dir, '-f', 'json', '--min-tier', 'high'], { stdout: out, stderr: cap() });
+    assert.equal(code, 2, 'a capped/incomplete scan must exit 2, never silently pass a gate');
+    assert.equal(JSON.parse(out.str()).scanComplete, false, 'json marks the scan incomplete');
+  } finally {
+    delete process.env.SSS_MAX_FINDINGS;
+  }
+});
+
+test('SARIF marks an incomplete scan with properties.scannerTruncated', () => {
+  const dir = tmpRepo({ 'src/lib.rs': VULN + 'pub fn g(ctx: C, now_slot: u64) -> Result<()> { Ok(()) }\n' });
+  process.env.SSS_MAX_FINDINGS = '1';
+  try {
+    const out = cap();
+    cli.main(['scan', dir, '-f', 'sarif', '--no-fail'], { stdout: out, stderr: cap() });
+    assert.equal(JSON.parse(out.str()).runs[0].properties.scannerTruncated, true);
+  } finally {
+    delete process.env.SSS_MAX_FINDINGS;
+  }
+});
+
+test('--no-fail suppresses the incomplete-scan exit 2 (report-only opt-out)', () => {
+  const dir = tmpRepo({ 'src/lib.rs': VULN + 'pub fn g(ctx: C, now_slot: u64) -> Result<()> { Ok(()) }\n' });
+  process.env.SSS_MAX_FINDINGS = '1';
+  try {
+    const out = cap();
+    const code = cli.main(['scan', dir, '-f', 'json', '--no-fail'], { stdout: out, stderr: cap() });
+    assert.equal(code, 0, '--no-fail opts out of gating');
+    assert.equal(JSON.parse(out.str()).scanComplete, false, 'but incompleteness is still surfaced');
+  } finally {
+    delete process.env.SSS_MAX_FINDINGS;
+  }
 });
 
 test('unknown format exits 2', () => {
@@ -102,4 +146,58 @@ test('-o writes output to a file', () => {
   assert.equal(code, 0);
   assert.ok(fs.existsSync(outFile));
   assert.ok(JSON.parse(fs.readFileSync(outFile, 'utf8')).findingCount >= 1);
+});
+
+test('json findings carry severity + tier from rules-meta', () => {
+  const dir = tmpRepo({ 'src/lib.rs': VULN });
+  const out = cap();
+  cli.main(['scan', dir, '-f', 'json', '--no-fail'], { stdout: out, stderr: cap() });
+  const f = JSON.parse(out.str()).findings.find((x) => x.ruleId === 'SOL-001');
+  assert.ok(f, 'SOL-001 present');
+  assert.equal(f.severity, 'high');
+  assert.equal(f.tier, 'high');
+});
+
+test('--min-tier high drops LOW-tier findings but keeps HIGH', () => {
+  // now_slot -> SOL-001 (tier high); the 32-ones System Program literal -> SOL-018 (tier low)
+  const dir = tmpRepo({ 'src/lib.rs': VULN + 'pub fn s() { let _x = "11111111111111111111111111111111"; }\n' });
+  const all = cap();
+  cli.main(['scan', dir, '-f', 'json', '--no-fail'], { stdout: all, stderr: cap() });
+  const allIds = new Set(JSON.parse(all.str()).findings.map((x) => x.ruleId));
+  assert.ok(allIds.has('SOL-001') && allIds.has('SOL-018'), 'both fire with no floor');
+  const hi = cap();
+  cli.main(['scan', dir, '-f', 'json', '--no-fail', '--min-tier', 'high'], { stdout: hi, stderr: cap() });
+  const hiIds = new Set(JSON.parse(hi.str()).findings.map((x) => x.ruleId));
+  assert.ok(hiIds.has('SOL-001'), 'high-tier SOL-001 kept');
+  assert.ok(!hiIds.has('SOL-018'), 'low-tier SOL-018 dropped');
+});
+
+test('--min-tier low reports everything (the default floor, well-defined)', () => {
+  const dir = tmpRepo({ 'src/lib.rs': VULN + 'pub fn s() { let _x = "11111111111111111111111111111111"; }\n' });
+  const lo = cap();
+  cli.main(['scan', dir, '-f', 'json', '--no-fail', '--min-tier', 'low'], { stdout: lo, stderr: cap() });
+  const loIds = new Set(JSON.parse(lo.str()).findings.map((x) => x.ruleId));
+  assert.ok(loIds.has('SOL-001') && loIds.has('SOL-018'), 'low floor keeps both high- and low-tier');
+});
+
+test('unknown --min-tier exits 2', () => {
+  const code = cli.main(['scan', '.', '--min-tier', 'bogus'], { stdout: cap(), stderr: cap() });
+  assert.equal(code, 2);
+});
+
+test('overlapping scan paths report each finding once (nested path deduped)', () => {
+  const dir = tmpRepo({ 'src/lib.rs': VULN });
+  const out = cap();
+  // `scan <dir> <dir>/src` — src is nested in dir; the file must not double-count.
+  cli.main(['scan', dir, path.join(dir, 'src'), '-f', 'json', '--no-fail'], { stdout: out, stderr: cap() });
+  const hits = JSON.parse(out.str()).findings.filter((f) => f.ruleId === 'SOL-001');
+  assert.equal(hits.length, 1, 'a file under two overlapping scan roots must be reported once');
+});
+
+test('sibling (non-overlapping) scan paths are both scanned', () => {
+  const dir = tmpRepo({ 'a/lib.rs': VULN, 'b/lib.rs': VULN });
+  const out = cap();
+  cli.main(['scan', path.join(dir, 'a'), path.join(dir, 'b'), '-f', 'json', '--no-fail'], { stdout: out, stderr: cap() });
+  const hits = JSON.parse(out.str()).findings.filter((f) => f.ruleId === 'SOL-001');
+  assert.equal(hits.length, 2, 'distinct sibling roots must each be scanned');
 });

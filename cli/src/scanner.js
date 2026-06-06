@@ -20,6 +20,9 @@ const { matchesAny } = require('./glob');
 const MAX_FILE_BYTES = 4 * 1024 * 1024;
 // Backstop against a runaway / maliciously huge tree.
 const MAX_FILES = 200_000;
+// Backstop against a single dense file (or whole tree) producing a pathologically
+// large findings array — bounds memory and avoids a spread-arg overflow at push.
+const MAX_FINDINGS = 100_000;
 
 const IGNORE_DIRS = new Set([
   '.git', 'node_modules', 'target', 'dist', 'build', '.next', '.svelte-kit',
@@ -33,6 +36,12 @@ function compileRule(rule) {
     reminder: rule.reminder || '',
     paths: rule.paths && rule.paths.length ? rule.paths : ['**/*'],
     exclude: rule.exclude_paths || [],
+    // Per-rule metadata (from rules-meta.json via rules.json). Optional so a
+    // custom -p rules file without metadata still scans. ADVISORY ONLY — these
+    // annotate findings; they never change whether a rule fires.
+    tier: rule.tier || null,
+    severity: rule.severity || null,
+    exclusions: Array.isArray(rule.exclusions) ? rule.exclusions : [],
     regex: null,
     substrings: null,
     invalid: null,
@@ -117,6 +126,10 @@ function scanContent(content, relPath, rules) {
         rule: rule.name,
         reminder: rule.reminder,
         match: h.text.length > 100 ? h.text.slice(0, 100) + '…' : h.text,
+        // Advisory metadata (additive — consumers that predate these ignore them).
+        tier: rule.tier,
+        severity: rule.severity,
+        exclusions: rule.exclusions && rule.exclusions.length ? rule.exclusions : undefined,
       });
     }
   }
@@ -168,7 +181,13 @@ function scan(target, rules, opts = {}) {
       opts.onWarn(`reached the ${maxFiles}-file scan limit under ${target}; some files were not scanned`);
     } catch { /* a broken stderr pipe must not abort the scan */ }
   }
+  // Honor an explicit override but clamp it to a hard ceiling so an operator can't
+  // set it so high the unbounded-memory risk the cap exists to prevent comes back.
+  const maxFindings = (Number.isFinite(opts.maxFindings) && opts.maxFindings > 0)
+    ? Math.min(opts.maxFindings, MAX_FINDINGS * 10)
+    : MAX_FINDINGS;
   const findings = [];
+  let capped = false;
   for (const file of files) {
     const rel = toPosixRel(baseDir, file);
     // Skip vendored/generated trees even if they appear in the relative path.
@@ -182,7 +201,23 @@ function scan(target, rules, opts = {}) {
     } catch {
       continue;
     }
-    findings.push(...scanContent(content, rel, rules));
+    // Accumulate without spread: a single dense file can return >100k findings,
+    // and `findings.push(...arr)` would overflow the argument limit and throw.
+    for (const f of scanContent(content, rel, rules)) {
+      findings.push(f);
+      if (findings.length >= maxFindings) { capped = true; break; }
+    }
+    if (capped) break;
+  }
+  if (capped) {
+    // Signal an INCOMPLETE scan to the caller. A capped scan must NOT be allowed
+    // to silently pass a security gate (a flood of findings could bury a real one),
+    // so the CLI turns this into a non-zero exit + a visible marker in every format.
+    findings.truncated = true;
+    if (typeof opts.onWarn === 'function') {
+      try { opts.onWarn(`reached the ${maxFindings}-finding cap under ${target}; scan is INCOMPLETE — narrow the scan scope`); }
+      catch { /* a broken stderr pipe must not abort the scan */ }
+    }
   }
   findings.sort((a, b) =>
     a.file < b.file ? -1 : a.file > b.file ? 1 : a.line - b.line || a.column - b.column,

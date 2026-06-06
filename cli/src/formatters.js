@@ -16,8 +16,11 @@ function shortReminder(reminder, max = 140) {
   return r;
 }
 
-function text(findings, { color = false } = {}) {
-  if (!findings.length) return 'Solana Security Standard: no findings.\n';
+function text(findings, { color = false, truncated = false } = {}) {
+  const warn = truncated
+    ? 'WARNING: finding cap reached — this scan is INCOMPLETE (results below are partial).\n\n'
+    : '';
+  if (!findings.length) return warn + 'Solana Security Standard: no findings.\n';
   const bold = (s) => (color ? `\x1b[1m${s}\x1b[0m` : s);
   const dim = (s) => (color ? `\x1b[2m${s}\x1b[0m` : s);
   const yellow = (s) => (color ? `\x1b[33m${s}\x1b[0m` : s);
@@ -30,19 +33,21 @@ function text(findings, { color = false } = {}) {
       lastFile = f.file;
     }
     const loc = dim(`${String(f.line).padStart(4)}:${String(f.column)}`);
-    lines.push(`  ${loc}  ${yellow(solId(f.rule))}  ${shortReminder(f.reminder)}`);
+    const sev = f.severity ? ` ${dim('[' + f.severity + ']')}` : '';
+    lines.push(`  ${loc}  ${yellow(solId(f.rule))}${sev}  ${shortReminder(f.reminder)}`);
   }
   lines.push('');
   const files = new Set(findings.map((f) => f.file)).size;
   lines.push(`${findings.length} finding(s) across ${files} file(s).`);
-  return lines.join('\n') + '\n';
+  return warn + lines.join('\n') + '\n';
 }
 
-function json(findings) {
+function json(findings, { truncated = false } = {}) {
   return JSON.stringify(
     {
       standard: 'Solana Security Standard (SOL-0XX)',
       tool: 'solana-security-standard',
+      scanComplete: !truncated, // false => finding cap hit; findings below are INCOMPLETE
       findingCount: findings.length,
       findings: findings.map((f) => ({
         ruleId: solId(f.rule),
@@ -50,8 +55,11 @@ function json(findings) {
         file: f.file,
         line: f.line,
         column: f.column,
+        severity: f.severity,        // SSS baseline impact (advisory; calibrate per SEVERITY.md)
+        tier: f.tier,                // submission-floor value: high | low
         message: shortReminder(f.reminder, 1000),
         match: f.match,
+        exclusions: f.exclusions,    // numbered "do NOT flag when…" (cite by index+1 when suppressing)
       })),
     },
     null,
@@ -59,7 +67,7 @@ function json(findings) {
   );
 }
 
-function sarif(findings, rules = [], { version = '0.0.0' } = {}) {
+function sarif(findings, rules = [], { version = '0.0.0', truncated: scannerCapped = false } = {}) {
   // Stable rule list for the driver (deduped by rule_name, in id order).
   const seen = new Map();
   for (const r of rules) {
@@ -96,14 +104,18 @@ function sarif(findings, rules = [], { version = '0.0.0' } = {}) {
               rules: ruleArr,
             },
           },
-          properties: truncated
-            ? { truncated: true, totalFindings: findings.length, reported: MAX_RESULTS }
-            : { totalFindings: findings.length },
+          // `reported` is emitted in BOTH branches so consumers can always read it.
+          // `truncated` = SARIF 5000-result cap; `scannerTruncated` = the scanner's
+          // finding cap (the whole scan was incomplete) — distinct conditions.
+          properties: { truncated, totalFindings: findings.length, reported: used.length, scannerTruncated: scannerCapped },
           results: used.map((f) => ({
             ruleId: f.rule,
             ruleIndex: ruleIndex.has(f.rule) ? ruleIndex.get(f.rule) : undefined,
+            // level stays 'warning' (advisory) so existing GitHub code-scanning
+            // gating is unchanged; the SSS baseline severity/tier ride in properties.
             level: 'warning',
             message: { text: `${solId(f.rule)}: ${shortReminder(f.reminder, 1000)}` },
+            properties: { sssSeverity: f.severity, tier: f.tier },
             locations: [
               {
                 physicalLocation: {

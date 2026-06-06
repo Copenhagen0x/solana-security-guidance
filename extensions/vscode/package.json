@@ -2,7 +2,7 @@
   "name": "solana-security-standard",
   "displayName": "Solana Security Standard",
   "description": "Inline SOL-0XX security checks for Solana/Anchor Rust and transaction-sending TypeScript/JavaScript.",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "publisher": "jelleo",
   "license": "MIT",
   "icon": "icon.png",
@@ -32,6 +32,12 @@
     "onLanguage:javascriptreact"
   ],
   "main": "./src/extension.js",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true,
+      "description": "Read-only: scans open Rust/TypeScript files with regex patterns and shows inline diagnostics. It never executes workspace code, writes files, or runs shell commands."
+    }
+  },
   "contributes": {
     "configuration": {
       "title": "Solana Security Standard",

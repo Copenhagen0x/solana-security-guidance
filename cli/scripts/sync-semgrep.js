@@ -23,6 +23,7 @@ const yaml = require('js-yaml');
 
 const repoRoot = path.join(__dirname, '..', '..');
 const srcYaml = path.join(repoRoot, 'security-patterns.yaml');
+const metaSrc = path.join(repoRoot, 'rules-meta.json');
 const dstYaml = path.join(repoRoot, 'semgrep', 'solana-security-standard.yaml');
 const REPO = 'https://github.com/Copenhagen0x/solana-security-standard';
 
@@ -75,11 +76,16 @@ function build() {
   // CORE_SCHEMA: no code-executing tags, only plain maps/lists/scalars (same as sync-rules.js).
   const doc = yaml.load(fs.readFileSync(srcYaml, 'utf8'), { schema: yaml.CORE_SCHEMA });
   const patterns = (doc && doc.patterns) || [];
+  // Per-rule metadata (tier/severity) from rules-meta.json. Surfaced ONLY in
+  // Semgrep `metadata` (advisory) — the rule `severity` stays WARNING so existing
+  // consumer gating on Semgrep severity is unchanged.
+  const meta = (JSON.parse(fs.readFileSync(metaSrc, 'utf8')) || {}).rules || {};
   const rules = [];
   for (const p of patterns) {
     const rx = toRegex(p);
     if (!rx) continue; // skip rules with neither regex nor substrings
     const id = solId(p.rule_name);
+    const m = meta[id] || {};
     const slug = p.rule_name.replace(/_/g, '-'); // sol_001_unauth_now_slot -> sol-001-unauth-now-slot
     // Per-rule languages: absent => rust (the on-chain default). Integrator rules
     // (SOL-029+) set [typescript, javascript] so Semgrep scans the right files —
@@ -115,6 +121,13 @@ function build() {
       references: [`${REPO}#${id.toLowerCase()}`],
       license: 'MIT',
     };
+    // SSS baseline severity + submission-floor tier (advisory metadata; does NOT
+    // change the rule's WARNING severity that consumers gate on).
+    if (m.tier) rule.metadata['sss-tier'] = m.tier;
+    if (m.severity) rule.metadata['sss-severity'] = m.severity;
+    // Numbered "do NOT flag when…" exclusions (advisory guidance a reviewer cites
+    // when dismissing a finding; Semgrep still fires — fail-open, no auto-suppression).
+    if (Array.isArray(m.exclusions) && m.exclusions.length) rule.metadata['sss-exclusions'] = m.exclusions.slice();
     const ov = SEMGREP_OVERRIDES[p.rule_name];
     if (ov) rule.metadata.note = ov.note; // record why this rule's regex diverges from the scanner
     rules.push(rule);

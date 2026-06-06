@@ -39,7 +39,7 @@ test('no orphan files under integrations/ (every on-disk file is generated)', ()
   for (const f of walk(intDir, intDir)) assert.ok(generated.has(f), `orphan file not produced by the generator: ${f}`);
 });
 
-test('every AI-tool rules file carries all 28 SOL-0XX rules + the behavioral intro', () => {
+test('every AI-tool rules file carries all 31 SOL-0XX rules + the behavioral intro', () => {
   const ruleFiles = Object.keys(gen.TOOLS); // codex, copilot, cursor, windsurf, cline, aider
   assert.equal(ruleFiles.length, 6, 'six AI-tool rules files');
   for (const rel of ruleFiles) {
