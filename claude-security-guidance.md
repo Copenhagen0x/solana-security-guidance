@@ -2,7 +2,7 @@
 
 > **Solana Security Standard** — `SOL-0XX` rules from real Solana audits + 2 bounty wins. Catalog → github.com/Copenhagen0x/solana-security-standard · jelleo.com
 
-Extends Claude Code's security-guidance plugin with Solana rules. Each has a stable ID (`SOL-0XX`) — cite like a CWE. Detail in the README.
+Extends Claude Code's security-guidance plugin with Solana rules. Each has a stable ID (`SOL-0XX`) — cite like a CWE.
 
 ## Threat model
 
@@ -60,7 +60,7 @@ Hardcoded SPL Token ID but the account is Token-2022 (or vice versa). Fix: `anch
 `Account<'info, T>` cross-references another account with no `has_one =` / `constraint =`. Fix: tie related accounts together with constraints.
 
 ### SOL-016 · Bump seed unvalidated
-A stored `.bump` isn't checked against the canonical bump on first read → attacker pre-creates a non-canonical PDA. Fix: compare to the `find_program_address` bump once.
+A stored `.bump` used without a canonical check → PDA substitution. `bump = x.bump` reuse is safe ONLY IF you verify that account's OWN bump was set at init by bare `bump`/`ctx.bumps`, not a caller `#[instruction(bump)]` or `create_program_address` bump. Fix: bare `bump` / `find_program_address`.
 
 ### SOL-017 · Raw AccountInfo without typed deserialize
 Data buffer cast to a struct with no deserialize-then-validate (`&*account.data.borrow()`, `transmute`). Fix: typed deserialize + length/field checks.
@@ -90,7 +90,7 @@ A Pyth/Switchboard price with no staleness (publish-slot age) or confidence chec
 A sysvar (Clock/Rent) read by **raw-deserializing** account data (`bincode::deserialize::<Clock>`) instead of `Clock::get()` / `Sysvar::from_account_info` (which key-check) → attacker passes a look-alike. Fix: `Clock::get()` / Anchor `Sysvar<>`; never hand-deserialize a sysvar.
 
 ### SOL-026 · Duplicate mutable account (native programs)
-Two accounts that must differ aren't checked → attacker passes one twice, collapsing a delta check. Fix: `require_keys_neq!`. *(Anchor rejects dupe-mutable `Account<>` (err 2040); NOT `AccountLoader`/`UncheckedAccount`/remaining_accounts.)*
+Two accounts that must differ aren't checked → attacker passes one twice, collapsing a delta check. Fix: `require_keys_neq!`. *(Anchor rejects dupe-mutable `Account<>`; NOT `AccountLoader`/`UncheckedAccount`/remaining_accounts.)*
 
 ### SOL-027 · Unvalidated remaining_accounts
 `ctx.remaining_accounts` read/written/invoked without checking each one's owner/key/signer — fully attacker-controlled. Fix: validate every account like a declared one.
@@ -109,6 +109,6 @@ Jupiter quote swapped without a `quoteResponse.contextSlot` freshness check → 
 
 ## Provenance
 
-Honest origins (full table in README): SOL-001 = 2 confirmed bounty wins; SOL-002 = a public class (another researcher); SOL-003/004/005 = our bounty-5 patterns; SOL-021/022/023 = our v16 audit; SOL-029-031 = a live integrator report; the rest = documented Solana/DeFi hygiene. We never claim credit we didn't earn.
+Honest origins (full table in README): SOL-001 = 2 confirmed bounty wins; SOL-002 = a public class; SOL-003/004/005 = our bounty-5 patterns; SOL-021/022/023 = our v16 audit; SOL-029-031 = a live integrator report; the rest = documented Solana/DeFi hygiene.
 
 Maintained by [Jelleo](https://jelleo.com). MIT.
