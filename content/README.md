@@ -21,7 +21,7 @@
 | [SOL-013](./rules/SOL-013.md) | Token Program ID confusion | high | high | pattern | — | ✓ |
 | [SOL-014](./rules/SOL-014.md) | Unchecked integer arithmetic | high | high | pattern | — | ✓ |
 | [SOL-015](./rules/SOL-015.md) | Anchor constraints missing | high | high | review | Cashio | — |
-| [SOL-016](./rules/SOL-016.md) | Bump seed unvalidated | low | medium | pattern | — | ✓ |
+| [SOL-016](./rules/SOL-016.md) | Bump seed unvalidated | high | high | pattern | — | ✓ |
 | [SOL-017](./rules/SOL-017.md) | Raw AccountInfo without typed deserialize | high | high | pattern | Crema Finance | ✓ |
 | [SOL-018](./rules/SOL-018.md) | Hardcoded System Program ID | low | low | pattern | — | ✓ |
 | [SOL-019](./rules/SOL-019.md) | Missing discriminator check | high | high | pattern | — | ✓ |
