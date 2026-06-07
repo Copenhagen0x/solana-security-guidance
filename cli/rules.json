@@ -189,11 +189,12 @@
         "**/state*.rs",
         "**/state/**"
       ],
-      "reminder": "Jelleo SOL-016: reading a stored `.bump` field. Verify the bump matches `Pubkey::find_program_address(seeds, &program_id).1` (canonical bump) on the FIRST read — subsequent reads of the same bump are OK. Without this, an attacker can pre-create a PDA with a non-canonical bump. See: github.com/Copenhagen0x/solana-security-standard#sol-016.",
-      "tier": "high",
-      "severity": "high",
+      "reminder": "Jelleo SOL-016: a stored `.bump` is read. The real risk is a stored bump fed to `create_program_address` (it accepts non-canonical bumps → PDA substitution). The Anchor `bump = <account>.bump` constraint reuse on a typed `Account<>` whose bump was set canonically at init is the idiomatic SAFE pattern — confirm init, then dismiss. For non-constraint reads, compare to `find_program_address(seeds, &program_id).1` once. See: github.com/Copenhagen0x/solana-security-standard#sol-016.",
+      "tier": "low",
+      "severity": "medium",
       "exclusions": [
-        "the bump is validated against the canonical find_program_address bump on first read, or an Anchor `bump` constraint enforces it",
+        "the read is an Anchor constraint reusing a canonical stored bump — `bump = <account>.bump` (or a bare `seeds + bump`) on a typed `Account<'info, T>` whose bump was set at init with a bare canonical `bump` from ctx.bumps: Anchor re-derives the PDA and the typed account enforces owner + discriminator, so confirm the init site stored a canonical bump, then dismiss — this idiomatic reuse is not a finding",
+        "a non-constraint read is validated against the canonical bump before use (e.g. require!(stored == Pubkey::find_program_address(seeds, program_id).1))",
         "the PDA (and its bump) is created in the same instruction using the canonical bump obtained from find_program_address (NOT a caller-supplied bump passed to create_program_address, which accepts any valid off-curve bump and re-introduces the non-canonical-bump bug)"
       ]
     },

@@ -73,7 +73,7 @@ patterns:
     regex: "\\.bump\\s*[;,)}\\]]"
     paths: ["**/*.rs"]
     exclude_paths: ["**/tests/**", "**/state*.rs", "**/state/**"]
-    reminder: "Jelleo SOL-016: reading a stored `.bump` field. Verify the bump matches `Pubkey::find_program_address(seeds, &program_id).1` (canonical bump) on the FIRST read — subsequent reads of the same bump are OK. Without this, an attacker can pre-create a PDA with a non-canonical bump. See: github.com/Copenhagen0x/solana-security-standard#sol-016."
+    reminder: "Jelleo SOL-016: a stored `.bump` is read. The real risk is a stored bump fed to `create_program_address` (it accepts non-canonical bumps → PDA substitution). The Anchor `bump = <account>.bump` constraint reuse on a typed `Account<>` whose bump was set canonically at init is the idiomatic SAFE pattern — confirm init, then dismiss. For non-constraint reads, compare to `find_program_address(seeds, &program_id).1` once. See: github.com/Copenhagen0x/solana-security-standard#sol-016."
 
   - rule_name: sol_017_unsafe_transmute
     substrings: ["unsafe { transmute", "unsafe{transmute", "mem::transmute(", "mem::transmute::"]

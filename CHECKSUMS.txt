@@ -3,5 +3,5 @@
 # Regenerate:         node scripts/checksums.js
 # Hashes are over LF-normalized bytes (what GitHub serves).
 8b82c02add090faf6ecd68af0f8b50adabe6ee5062aef4222006a6e07c64453a  claude-security-guidance.md
-f8e7ab56bf3783cffdee18ed49a8e22de599bc5dceb9b106b6faf8a0d1ec416d  security-patterns.yaml
-7ada4d7e77c0958c007adab038cb7f6d5eca8884e3fbfd5cf46b5a73b7990c69  semgrep/solana-security-standard.yaml
+f63facbd6488ae57ed172fa8f540c5e43462aae9fcdbd4166c31198ffa40a222  security-patterns.yaml
+51a9d5e8a401e64baeff3b71bc00d3d04d4c5831122636cd493fa7ad34a937b8  semgrep/solana-security-standard.yaml
