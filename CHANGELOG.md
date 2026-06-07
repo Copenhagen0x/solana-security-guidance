@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.1] — 2026-06-07
+
+### Fixed — SOL-016 canonical-bump triage precision (no coverage change)
+
+- **SOL-016 (canonical bump) guidance sharpened to cut false-positive noise without losing coverage.** The detector fires on the idiomatic-safe Anchor reuse `bump = <account>.bump`, which surfaced as `[high]` noise (reported in issue #3; an earlier user hit 24). Rather than down-tier the rule — which would have *hidden a real fund-loss bug*, since that same match is the only tripwire for a non-canonical bump stored at init and reused via the constraint (PDA substitution) — the rule keeps its `high` tier/severity and ships **precise triage guidance**: the reuse is safe only when the *same* account's bump was set at init via Anchor's bare `bump` / `ctx.bumps` (canonical), **not** a caller-supplied `#[instruction(bump)]` value or a `create_program_address` result. The reminder, reachability anchor, and exclusions now state this exactly, and a latent error in the prior exclusion ("an Anchor `bump` constraint enforces it" — which `bump = <stored>` does not, since it re-derives with the given bump) is corrected. The detector regex is unchanged. Reviewed to 0 Critical/High/Medium by code-reviewer + paranoid-goober + threat-modeler.
+
 ## [1.10.0] — 2026-06-06
 
 ### Added — per-rule metadata, hardened exclusions, self-testing examples

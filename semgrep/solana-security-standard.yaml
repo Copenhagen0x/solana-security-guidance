@@ -260,7 +260,7 @@ rules:
     languages:
       - rust
     severity: WARNING
-    message: 'Jelleo SOL-016: reading a stored `.bump` field. Verify the bump matches `Pubkey::find_program_address(seeds, &program_id).1` (canonical bump) on the FIRST read — subsequent reads of the same bump are OK. Without this, an attacker can pre-create a PDA with a non-canonical bump. See: github.com/Copenhagen0x/solana-security-standard#sol-016.'
+    message: 'Jelleo SOL-016: a stored `.bump` is read. Risk: a non-canonical bump — reused via an Anchor `bump = <account>.bump` constraint, or read and fed to `create_program_address` (both accept non-canonical bumps → PDA substitution). SAFE only if the SAME account''s bump was set at init via Anchor''s bare `bump`/`ctx.bumps` (canonical), NOT a caller-supplied `#[instruction(bump)]` value — verify that init, then dismiss; otherwise it''s the bug. For non-constraint reads compare to `find_program_address(seeds, &program_id).1`. See: github.com/Copenhagen0x/solana-security-standard#sol-016.'
     patterns:
       - pattern-regex: \.bump\s*[;,)}\]]
     paths:
@@ -281,8 +281,9 @@ rules:
       sss-tier: high
       sss-severity: high
       sss-exclusions:
-        - the bump is validated against the canonical find_program_address bump on first read, or an Anchor `bump` constraint enforces it
-        - the PDA (and its bump) is created in the same instruction using the canonical bump obtained from find_program_address (NOT a caller-supplied bump passed to create_program_address, which accepts any valid off-curve bump and re-introduces the non-canonical-bump bug)
+        - 'the read is `bump = <account>.bump` (or a bare `seeds = [...], bump` with NO `= target` after bump) on a typed `Account<''info, T>`, AND the SAME account''s stored bump was written at init by Anchor''s bare `bump` / `ctx.bumps.<name>` (canonical) — NOT a caller-supplied `#[instruction(bump)]` value and NOT a value from create_program_address: verify that exact init site, then dismiss (idiomatic canonical reuse, not a finding). If the init bump is caller-supplied or otherwise non-canonical, this reuse IS the bug — keep it (Anchor''s `bump = <expr>` re-derives via create_program_address with the GIVEN bump, so a non-canonical stored bump still validates).'
+        - a non-constraint read is validated against the canonical bump before use (e.g. require!(stored == Pubkey::find_program_address(seeds, program_id).1))
+        - the PDA (and its bump) is created in the same instruction using the canonical bump from find_program_address (NOT a caller-supplied bump passed to create_program_address, which accepts any valid off-curve bump and re-introduces the non-canonical-bump bug)
   - id: solana-security-standard.sol-017-unsafe-transmute
     languages:
       - rust
