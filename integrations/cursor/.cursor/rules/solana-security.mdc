@@ -61,7 +61,7 @@ Hardcoded SPL Token ID but the account is Token-2022 (or vice versa). Fix: `anch
 `Account<'info, T>` cross-references another account with no `has_one =` / `constraint =`. Fix: tie related accounts together with constraints.
 
 ### SOL-016 · Bump seed unvalidated
-A stored `.bump` used without a canonical check → PDA substitution. The `bump = x.bump` reuse is SAFE only if that same account's bump was set at init via bare `bump`/`ctx.bumps`; it's the bug if caller-supplied (`#[instruction(bump)]`) or fed to `create_program_address`. Fix: bare `bump` / `find_program_address`.
+A stored `.bump` used without a canonical check → PDA substitution. `bump = x.bump` reuse is safe ONLY IF you verify that account's OWN bump was set at init by bare `bump`/`ctx.bumps`, not a caller `#[instruction(bump)]` or `create_program_address` bump. Fix: bare `bump` / `find_program_address`.
 
 ### SOL-017 · Raw AccountInfo without typed deserialize
 Data buffer cast to a struct with no deserialize-then-validate (`&*account.data.borrow()`, `transmute`). Fix: typed deserialize + length/field checks.
@@ -88,7 +88,7 @@ Fee/penalty uses integer `/` (rounds down) → user underpays, dust → 0 (evasi
 A Pyth/Switchboard price with no staleness (publish-slot age) or confidence check → attacker trades/liquidates at a mispriced value. Fix: `get_price_no_older_than(...)`; reject wide-confidence.
 
 ### SOL-025 · Sysvar read by raw deserialize
-A sysvar (Clock/Rent) read by **raw-deserializing** account data (`bincode::deserialize::<Clock>`) instead of `Clock::get()` / `Sysvar::from_account_info` (which key-check) → attacker passes a look-alike. Fix: `Clock::get()` / Anchor `Sysvar<>`.
+A sysvar (Clock/Rent) read by **raw-deserializing** account data (`bincode::deserialize::<Clock>`) instead of `Clock::get()` / `Sysvar::from_account_info` (which key-check) → attacker passes a look-alike. Fix: `Clock::get()` / Anchor `Sysvar<>`; never hand-deserialize a sysvar.
 
 ### SOL-026 · Duplicate mutable account (native programs)
 Two accounts that must differ aren't checked → attacker passes one twice, collapsing a delta check. Fix: `require_keys_neq!`. *(Anchor rejects dupe-mutable `Account<>`; NOT `AccountLoader`/`UncheckedAccount`/remaining_accounts.)*
