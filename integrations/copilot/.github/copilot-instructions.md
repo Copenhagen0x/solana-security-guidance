@@ -58,7 +58,7 @@ Hardcoded SPL Token ID but the account is Token-2022 (or vice versa). Fix: `anch
 `Account<'info, T>` cross-references another account with no `has_one =` / `constraint =`. Fix: tie related accounts together with constraints.
 
 ### SOL-016 · Bump seed unvalidated
-A stored `.bump` isn't checked against the canonical bump on first read → attacker pre-creates a non-canonical PDA. Fix: compare to the `find_program_address` bump once.
+A stored `.bump` used without a canonical check → PDA substitution. The `bump = x.bump` reuse is SAFE only if that same account's bump was set at init via bare `bump`/`ctx.bumps`; it's the bug if caller-supplied (`#[instruction(bump)]`) or fed to `create_program_address`. Fix: bare `bump` / `find_program_address`.
 
 ### SOL-017 · Raw AccountInfo without typed deserialize
 Data buffer cast to a struct with no deserialize-then-validate (`&*account.data.borrow()`, `transmute`). Fix: typed deserialize + length/field checks.
@@ -85,10 +85,10 @@ Fee/penalty uses integer `/` (rounds down) → user underpays, dust → 0 (evasi
 A Pyth/Switchboard price with no staleness (publish-slot age) or confidence check → attacker trades/liquidates at a mispriced value. Fix: `get_price_no_older_than(...)`; reject wide-confidence.
 
 ### SOL-025 · Sysvar read by raw deserialize
-A sysvar (Clock/Rent) read by **raw-deserializing** account data (`bincode::deserialize::<Clock>`) instead of `Clock::get()` / `Sysvar::from_account_info` (which key-check) → attacker passes a look-alike. Fix: `Clock::get()` / Anchor `Sysvar<>`; never hand-deserialize a sysvar.
+A sysvar (Clock/Rent) read by **raw-deserializing** account data (`bincode::deserialize::<Clock>`) instead of `Clock::get()` / `Sysvar::from_account_info` (which key-check) → attacker passes a look-alike. Fix: `Clock::get()` / Anchor `Sysvar<>`.
 
 ### SOL-026 · Duplicate mutable account (native programs)
-Two accounts that must differ aren't checked → attacker passes one twice, collapsing a delta check. Fix: `require_keys_neq!`. *(Anchor rejects dupe-mutable `Account<>` (err 2040); NOT `AccountLoader`/`UncheckedAccount`/remaining_accounts.)*
+Two accounts that must differ aren't checked → attacker passes one twice, collapsing a delta check. Fix: `require_keys_neq!`. *(Anchor rejects dupe-mutable `Account<>`; NOT `AccountLoader`/`UncheckedAccount`/remaining_accounts.)*
 
 ### SOL-027 · Unvalidated remaining_accounts
 `ctx.remaining_accounts` read/written/invoked without checking each one's owner/key/signer — fully attacker-controlled. Fix: validate every account like a declared one.
@@ -107,6 +107,6 @@ Jupiter quote swapped without a `quoteResponse.contextSlot` freshness check → 
 
 ## Provenance
 
-Honest origins (full table in README): SOL-001 = 2 confirmed bounty wins; SOL-002 = a public class (another researcher); SOL-003/004/005 = our bounty-5 patterns; SOL-021/022/023 = our v16 audit; SOL-029-031 = a live integrator report; the rest = documented Solana/DeFi hygiene. We never claim credit we didn't earn.
+Honest origins (full table in README): SOL-001 = 2 confirmed bounty wins; SOL-002 = a public class; SOL-003/004/005 = our bounty-5 patterns; SOL-021/022/023 = our v16 audit; SOL-029-031 = a live integrator report; the rest = documented Solana/DeFi hygiene.
 
 Maintained by [Jelleo](https://jelleo.com). MIT.
