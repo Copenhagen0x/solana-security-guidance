@@ -86,6 +86,18 @@ Then show the world you adopt it — drop this badge in your README:
 
 [![Solana Security Standard](https://img.shields.io/badge/Solana%20Security%20Standard-SOL--0XX-a855f7?labelColor=6d28d9)](https://github.com/Copenhagen0x/solana-security-standard)
 
+**Prefer it automatic?** On a push to your default branch the action opens a **one-time PR** that adds this badge for you — just give it write access:
+
+```yaml
+on: [push, pull_request]       # `push` is what enables the one-time badge PR
+permissions:
+  contents: write              # create the badge branch
+  pull-requests: write         # open the PR
+  security-events: write       # optional — inline PR annotations
+```
+
+It's best-effort and idempotent — it never reopens a declined PR and never touches your branches directly (PR only). Turn it off any time with `add-badge: false`.
+
 ## Run it from the CLI
 
 ```bash

@@ -22,6 +22,15 @@ inputs:
     description: 'Path to a custom rules.json (default: the bundled SOL-0XX rules).'
     required: false
     default: ''
+  add-badge:
+    description: >-
+      On a push to the default branch, open a ONE-TIME PR adding the Solana
+      Security Standard badge to your README. Best-effort + idempotent (never
+      reopens, never nags). Requires `contents: write` + `pull-requests: write`
+      in the calling workflow; with the default read-only token it silently
+      no-ops. Set to `false` to disable entirely.
+    required: false
+    default: 'true'
 
 runs:
   using: 'composite'
@@ -71,3 +80,21 @@ runs:
         if [ -n "$SSS_NOFAIL" ]; then args+=(--no-fail); fi
         args+=(-- $SSS_PATHS)
         node "$SSS_BIN" "${args[@]}"
+
+    # Opt-out, best-effort: on a push to the default branch, open a one-time PR
+    # adding the SSS badge to the adopter's README. continue-on-error + the
+    # script's own guards mean this can NEVER break the security check above.
+    # Gated to `push` events here so it never runs in a fork-PR context where
+    # GITHUB_TOKEN is read-only.
+    - name: Adopt badge (one-time PR)
+      if: ${{ inputs.add-badge == 'true' && github.event_name == 'push' }}
+      continue-on-error: true
+      shell: bash
+      env:
+        # Trusted GitHub context only — no caller inputs reach the PR body.
+        GH_TOKEN: ${{ github.token }}
+        SARIF: ${{ runner.temp }}/solana-security-standard.sarif
+        DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        SSS_DIR: ${{ github.action_path }}
+        SSS_SCRIPT: ${{ github.action_path }}/scripts/adopt-badge.sh
+      run: bash "$SSS_SCRIPT"

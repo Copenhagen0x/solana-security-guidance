@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added — automatic badge-adoption PR
+
+- **New `add-badge` input (default `true`): the action can now open a one-time PR adding the Solana Security Standard badge to the adopter's README.** Best-effort and idempotent — it runs **only on a push to the default branch**, skips if the badge is already present or a badge PR (open *or* closed/declined) already exists, and **only ever opens a PR, never a direct commit**. The PR body carries real context from the run that triggered it — findings count, Rust files scanned, ruleset version, commit SHA — all computed locally from the SARIF the scan already produced plus the action's own version (no backend, no network call). Requires `contents: write` + `pull-requests: write` in the calling workflow; with the default read-only `GITHUB_TOKEN` it silently no-ops. Disable with `add-badge: false`. All file work happens in an isolated `git worktree` (the adopter's checkout, HEAD, and git config are never touched); the PR body is a quoted heredoc with charset-validated substitution; README insertion is CommonMark-fence-aware, CRLF-preserving, and symlink-skipping. Reviewed to 0 Critical/High/Medium by code-reviewer + paranoid-goober + threat-modeler (to convergence). ([`scripts/adopt-badge.sh`](scripts/adopt-badge.sh))
+
 ## [1.10.1] — 2026-06-07
 
 ### Fixed — SOL-016 canonical-bump triage precision (no coverage change)
