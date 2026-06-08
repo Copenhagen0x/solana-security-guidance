@@ -80,10 +80,10 @@ jobs:
 Then show the world you adopt it — drop this badge in your README:
 
 ```md
-[![Solana Security Standard](https://img.shields.io/badge/Solana%20Security%20Standard-SOL--0XX-7c3aed)](https://github.com/Copenhagen0x/solana-security-standard)
+[![Solana Security Standard](https://img.shields.io/badge/Solana%20Security%20Standard-SOL--0XX-a855f7?labelColor=6d28d9)](https://github.com/Copenhagen0x/solana-security-standard)
 ```
 
-[![Solana Security Standard](https://img.shields.io/badge/Solana%20Security%20Standard-SOL--0XX-7c3aed)](https://github.com/Copenhagen0x/solana-security-standard)
+[![Solana Security Standard](https://img.shields.io/badge/Solana%20Security%20Standard-SOL--0XX-a855f7?labelColor=6d28d9)](https://github.com/Copenhagen0x/solana-security-standard)
 
 ## Run it from the CLI
 
