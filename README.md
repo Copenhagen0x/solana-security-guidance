@@ -4,7 +4,6 @@
 
 ![SOL-001 firing on a vulnerable Solana program — Bounty 6 H2 case study](assets/sol-001-demo.png)
 
-[![Solana Security Standard](https://img.shields.io/badge/Solana%20Security%20Standard-SOL--0XX-a855f7?labelColor=6d28d9)](https://github.com/Copenhagen0x/solana-security-standard)
 [![CI](https://github.com/Copenhagen0x/solana-security-standard/actions/workflows/validate.yml/badge.svg)](https://github.com/Copenhagen0x/solana-security-standard/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-1.10.1-blue.svg)](CHANGELOG.md)
