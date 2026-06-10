@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — plugin guidance is now a generated digest (breaks the 8 KB rule ceiling)
+
+- **`claude-security-guidance.md` stays the full hand-authored master but is no longer the file the plugin installs** — and the 8 KB Anthropic cap moves OFF it. The plugin now installs a new **generated `plugin-guidance.md`** digest: the threat model + review checklist verbatim, then one terse cue per rule (`**SOL-NNN** · Title — fix`), then a pointer to full detail (the `list_solana_security_rules` MCP tool, or the master on GitHub). A cue is ~80 B vs ~180 B of full prose, so the digest holds far more rules under the cap — the standard can keep growing without the master's size breaking the plugin file.
+- New `cli/scripts/sync-plugin-guidance.js` (reuses the canonical rule parser; extracts the `Fix:` cue; **hard-fails if the digest would exceed 8192 bytes**, so a future rule that overflows fails CI rather than shipping a broken plugin file; normalizes to LF). Wired into `prepublishOnly` + a `validate.yml` `--check`; the 8 KB cap check now targets the digest. The full master is uncapped and every generator, the MCP server, and all anchor links keep reading it unchanged.
+- **Install change:** the curl-install (all three README blocks) now fetches `plugin-guidance.md` and saves it as `.claude/claude-security-guidance.md` (the plugin's expected filename); `CHECKSUMS.txt` covers the digest (= exactly the verified-install fetch set). The MCP still serves the full master, so "pull full rule detail from the MCP" holds.
+- **Known next ceiling (documented, not hidden):** the Windsurf integration embeds the full master and has its own 12,000-char cap (~52 rules). Routing Windsurf's body through the digest too is a separate follow-up; until then ~52 rules is the binding ceiling (up from ~40). The digest itself scales to ~82.
+
 ### Added — Claude Code plugin packaging + MCP registry manifest
 
 - **The repo is now installable as a Claude Code plugin from its own marketplace**: `/plugin marketplace add Copenhagen0x/solana-security-standard` → `/plugin install solana-security-standard@solana-security-standard`. Ships `.claude-plugin/plugin.json` + `marketplace.json` (self-hosted, `source: "./"`), a root `.mcp.json` that auto-registers the `@jelleo/solana-security-mcp` server for installers, and a `/scan` command that runs the scanner and reports findings with exclusions-aware guidance.

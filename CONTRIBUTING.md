@@ -17,7 +17,7 @@ This ruleset compounds with every cycle. Each new bounty finding becomes a new r
 - Rules drawn purely from theory with no real-world finding behind them — bug-class taxonomies should trace to disclosed bugs, not hypotheticals
 - Rules for non-Solana platforms — open a separate repo for those
 - Rules that duplicate Anthropic's built-in checks (we extend the plugin, not compete with it)
-- Cosmetic changes that bloat the 8 KB markdown cap without adding catch coverage
+- Cosmetic changes that bloat the rule set without adding catch coverage (the 8 KB cap is on the generated `plugin-guidance.md` digest, not the master — but keep rules tight)
 
 ## Before opening a PR
 
@@ -26,7 +26,7 @@ This ruleset compounds with every cycle. Each new bounty finding becomes a new r
 3. **Check CI will pass** — run the validation locally:
    ```bash
    python -c "import yaml; data = yaml.safe_load(open('security-patterns.yaml')); print(len(data['patterns']))"
-   wc -c claude-security-guidance.md   # must be ≤8192
+   (cd cli && npm run sync:plugin-guidance)   # regenerates plugin-guidance.md; fails if the digest would exceed 8192
    ```
 
 ## Rule format
@@ -77,7 +77,7 @@ Every new rule must show:
 
 PRs are reviewed by Jelleo maintainers. Expect:
 
-1. CI must pass (validate.yml — YAML parse, regex compile, MD ≤8 KB)
+1. CI must pass (validate.yml — YAML parse, regex compile, the generated `plugin-guidance.md` digest ≤8 KB + in sync)
 2. At least one maintainer reviews the rule's correctness + false-positive rate
 3. For rules backed by disclosed findings, we verify the finding exists at the cited URL
 4. We may request example pairs under `examples/<sol_nnn>/` for headline rules

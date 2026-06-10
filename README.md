@@ -18,11 +18,13 @@ The same SOL-0XX rules flag Solana-specific bugs while you code — caller-contr
 
 ```bash
 mkdir -p .claude && \
-  curl -sL https://raw.githubusercontent.com/Copenhagen0x/solana-security-standard/main/claude-security-guidance.md \
+  curl -sL https://raw.githubusercontent.com/Copenhagen0x/solana-security-standard/main/plugin-guidance.md \
        -o .claude/claude-security-guidance.md && \
   curl -sL https://raw.githubusercontent.com/Copenhagen0x/solana-security-standard/main/security-patterns.yaml \
        -o .claude/security-patterns.yaml
 ```
+
+`plugin-guidance.md` is the compact ≤8 KB plugin digest (every rule as a one-line cue, generated from the full [`claude-security-guidance.md`](claude-security-guidance.md)); it lands as the plugin's `.claude/claude-security-guidance.md`. Full per-rule detail is one MCP call (`list_solana_security_rules`) or one click (the master on GitHub) away.
 
 Then make sure you have Anthropic's security-guidance plugin installed:
 
@@ -46,21 +48,25 @@ Or install the whole standard as a **Claude Code plugin** (the MCP scan tool + a
 
 For CI or supply-chain-sensitive setups, **pin to a release tag and verify the download** against the published `CHECKSUMS.txt` instead of pulling `main`:
 
+> **Note:** the `plugin-guidance.md` digest ships from **v1.11.0** onward. Until that release is tagged, use the **Quick install** above (which pulls the digest from `main`); the pinned-tag flow below works once v1.11.0 exists.
+
 ```bash
-TAG=v1.10.0
+TAG=v1.11.0   # the digest ships from v1.11.0 on; older tags use claude-security-guidance.md directly
 BASE="https://raw.githubusercontent.com/Copenhagen0x/solana-security-standard/$TAG"
 tmp=$(mktemp -d) && cd "$tmp" && mkdir -p semgrep
 curl -fsSL "$BASE/CHECKSUMS.txt"                          -o CHECKSUMS.txt
-curl -fsSL "$BASE/claude-security-guidance.md"            -o claude-security-guidance.md
+curl -fsSL "$BASE/plugin-guidance.md"                     -o plugin-guidance.md
 curl -fsSL "$BASE/security-patterns.yaml"                 -o security-patterns.yaml
 curl -fsSL "$BASE/semgrep/solana-security-standard.yaml"  -o semgrep/solana-security-standard.yaml
 sha256sum -c CHECKSUMS.txt          # Linux — all three must print "OK"; aborts on any mismatch
 # macOS (no sha256sum): shasum -a 256 -c CHECKSUMS.txt
-mkdir -p "$OLDPWD/.claude" && cp claude-security-guidance.md security-patterns.yaml "$OLDPWD/.claude/"
+mkdir -p "$OLDPWD/.claude"
+cp security-patterns.yaml "$OLDPWD/.claude/"
+cp plugin-guidance.md "$OLDPWD/.claude/claude-security-guidance.md"   # rename to the plugin's expected filename
 # the verified semgrep ruleset stays in $tmp/semgrep/ — point `semgrep --config` at it or copy where you need it
 ```
 
-Pinning to a tag freezes you to a known release (a tampered `main` can't reach you); the checksum confirms nothing was altered in transit. (Hashes are over the LF bytes GitHub serves — verify the *downloaded* files, not a CRLF local checkout.) Tags from `v1.9.1` on are SSH-signed — verify origin with `git verify-tag v1.10.0` (key + steps in [`SECURITY.md`](SECURITY.md)). *(Checksums and the in-repo allowed-signers can't defend against a full account compromise that rewrites both — the signed tag, verified out of band, is the origin check for that.)*
+Pinning to a tag freezes you to a known release (a tampered `main` can't reach you); the checksum confirms nothing was altered in transit. (Hashes are over the LF bytes GitHub serves — verify the *downloaded* files, not a CRLF local checkout.) Tags from `v1.9.1` on are SSH-signed — verify origin with `git verify-tag v1.11.0` (key + steps in [`SECURITY.md`](SECURITY.md)). *(Checksums and the in-repo allowed-signers can't defend against a full account compromise that rewrites both — the signed tag, verified out of band, is the origin check for that.)*
 
 ## Run it in CI — GitHub Action
 
@@ -254,10 +260,10 @@ Open an issue first if you're proposing a new rule category. Keep rules focused:
 
 ## Versioning
 
-This repo follows [Semantic Versioning](https://semver.org/). Pin a tagged release rather than `main`:
+This repo follows [Semantic Versioning](https://semver.org/). Pin a tagged release rather than `main` (the `plugin-guidance.md` digest ships from **v1.11.0** onward — before that tag exists, use the Quick install from `main`):
 
 ```bash
-curl -sL https://raw.githubusercontent.com/Copenhagen0x/solana-security-standard/v1.10.0/claude-security-guidance.md \
+curl -sL https://raw.githubusercontent.com/Copenhagen0x/solana-security-standard/v1.11.0/plugin-guidance.md \
      -o .claude/claude-security-guidance.md
 ```
 

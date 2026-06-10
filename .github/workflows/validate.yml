@@ -22,12 +22,14 @@ jobs:
       - name: Install PyYAML
         run: pip install pyyaml
 
-      - name: Validate claude-security-guidance.md size cap (8 KB per Anthropic spec)
+      - name: Validate plugin-guidance.md size cap (8 KB per Anthropic spec)
+        # The 8 KB cap is on the GENERATED plugin digest (what the plugin installs),
+        # NOT the full hand-authored claude-security-guidance.md master (now uncapped).
         run: |
-          SIZE=$(wc -c < claude-security-guidance.md)
-          echo "claude-security-guidance.md: $SIZE bytes / 8192 cap"
+          SIZE=$(wc -c < plugin-guidance.md)
+          echo "plugin-guidance.md: $SIZE bytes / 8192 cap"
           if [ "$SIZE" -gt 8192 ]; then
-            echo "::error::claude-security-guidance.md exceeds 8192 byte cap ($SIZE bytes)"
+            echo "::error::plugin-guidance.md exceeds 8192 byte cap ($SIZE bytes) — tighten the digest line format"
             exit 1
           fi
 
@@ -88,3 +90,5 @@ jobs:
           node-version: '20'
       - name: Verify CHECKSUMS.txt is in sync with the distributed files
         run: node scripts/checksums.js --check
+      - name: plugin-guidance.md is in sync with claude-security-guidance.md (+ under the 8 KB cap)
+        run: node cli/scripts/sync-plugin-guidance.js --check

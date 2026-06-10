@@ -19,9 +19,13 @@ const crypto = require('crypto');
 const repoRoot = path.join(__dirname, '..');
 const OUT = path.join(repoRoot, 'CHECKSUMS.txt');
 
-// The files distributed over raw URLs (the install/config surface).
+// The files distributed over raw URLs (the install/config surface) — this set MUST
+// equal exactly what the README "Verified install" fetches, or `sha256sum -c` breaks.
+// The plugin installs the GENERATED `plugin-guidance.md` digest (saved locally as
+// `.claude/claude-security-guidance.md`); the full master is served by the MCP /
+// read on GitHub, not curl-installed, so it is not in this set.
 const FILES = [
-  'claude-security-guidance.md',
+  'plugin-guidance.md',
   'security-patterns.yaml',
   'semgrep/solana-security-standard.yaml',
 ];
