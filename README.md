@@ -7,7 +7,7 @@
 [![Solana Security Standard](https://img.shields.io/badge/Solana%20Security%20Standard-SOL--0XX-a855f7?labelColor=6d28d9)](https://github.com/Copenhagen0x/solana-security-standard)
 [![CI](https://github.com/Copenhagen0x/solana-security-standard/actions/workflows/validate.yml/badge.svg)](https://github.com/Copenhagen0x/solana-security-standard/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.10.1-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.11.0-blue.svg)](CHANGELOG.md)
 [![Bounty wins](https://img.shields.io/badge/bounty_wins-2_confirmed_(SOL--001)-orange)](https://jelleo.com/cycles)
 
 The same SOL-0XX rules flag Solana-specific bugs while you code — caller-controlled clock values, cross-market state asymmetry, wrapper handlers that drift from engine logic, missing Anchor constraints, and **37 bug classes in all**, drawn from real audits.
