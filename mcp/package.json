@@ -1,6 +1,7 @@
 {
   "name": "@jelleo/solana-security-mcp",
   "version": "1.2.1",
+  "mcpName": "io.github.Copenhagen0x/solana-security-mcp",
   "publishConfig": {
     "access": "public"
   },
