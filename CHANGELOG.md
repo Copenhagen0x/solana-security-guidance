@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Action `baseline` input + composite-action self-test
+
+- **GitHub Action: new `baseline` input** wires the CLI's baseline/diff into CI — point it at a committed baseline file and the check gates only on NEW findings. Same injection-safe plumbing as every other input (env-passed, one quoted argv entry); a malformed or missing baseline fails the run loudly (exit 2). Review baseline diffs in PRs like code — entries must carry their rule/file snapshot (enforced at load).
+- **New `action-selftest` CI job** (ubuntu + windows): the composite action now exercises itself on every PR via `uses: ./` against the vulnerable examples — report-only scan, `min-tier` passthrough, a full baseline write→apply cycle that must gate green, and a fail-closed negative (an invalid `min-tier` must fail the run). Closes the standing gap where `action.yml`'s bash plumbing had zero CI coverage.
+
+### Notes for the next release tag
+
+- The pinned `upload-sarif` is now v4 (Dependabot, API-verified): it requires a node24-capable runner (GitHub-hosted: fine; self-hosted: runner ≥ 2.327). On older runners the annotations step is skipped (`continue-on-error`) — the gate is unaffected. Include this note in the adopter-facing release notes when `@v1` next moves.
+
 ### Added — baseline / diff scanning (`--baseline`, `--write-baseline`)
 
 - **Adopt the standard on an existing codebase without a red gate on day one.** `--write-baseline <file>` records the scan's findings as a reviewable baseline (one entry per stable 128-bit fingerprint, each with a human-readable rule/file/line/match snapshot — review baseline diffs in PRs like code); `--baseline <file>` then reports and gates **only on findings not in the baseline**. Because matching is by fingerprint, moving or reformatting code never re-alerts an acknowledged finding — only genuinely new ones fail CI. Honesty invariants: suppression is never silent (text shows "N suppressed by baseline", JSON gains a `baseline: {suppressed, stale}` block, SARIF gains `baselineSuppressed`/`baselineStale` run properties); a malformed or missing baseline exits 2 — it never degrades to a baseline-less scan; **the snapshot is enforced at load** (a hand-minimized entry like `{"<fp>": {}}` that hides what it suppresses is rejected — the reviewability defense is checked, not just promised); stale entries (matching nothing — fixed code) are counted and warned so baselines don't rot; an INCOMPLETE (capped) scan still exits 2 regardless of the baseline, and **`--write-baseline` refuses an INCOMPLETE scan** rather than recording an authoritative-looking partial picture. Refresh with `--baseline old --write-baseline new` (keeps prior acknowledgments); use the same scan path/`-r` root when writing and applying (paths are part of the fingerprint — a different root reads as all-stale: a loud false red, never a silent miss). New module `cli/src/baseline.js`; 30 new tests. Reviewed to 0 open Critical/High/Medium by code-reviewer + paranoid-goober + threat-modeler, to convergence.
