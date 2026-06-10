@@ -59,6 +59,8 @@ Findings are matched by their stable 128-bit `fingerprint` (rule + file + normal
 
 Use the **same scan path and `-r` root** when writing and applying a baseline: fingerprints include the reported file path, so a different root changes every path and the baseline reads as all-stale (everything looks new — a loud false red, never a silent miss). A baseline cannot be written from an INCOMPLETE scan (finding cap hit) — that exits 2 rather than recording a partial picture.
 
+In CI, treat the baseline file like a security control: add it to `CODEOWNERS` so a change to it always requires a designated reviewer — the file lives in the scanned checkout, so a PR can edit it in the same diff that adds code.
+
 ## What it flags
 
 The 20 deterministic SOL-0XX patterns — 17 on-chain Rust checks (caller-controlled `now_slot`, missing signer/owner checks, unchecked arithmetic, `init_if_needed` reinit, raw sysvar deserialize, and more) plus 3 integrator checks for the transaction-sending TypeScript/JS (preflight disabled, static priority fee, stale Jupiter quote). These are **fast, advisory tripwires** — a finding means "look here," not "definitely a bug." The on-chain patterns skip off-chain code (`client/`, `cli/`, `offchain/`, `sdk/`, `tests/`) where they're harmless; the integrator patterns target the TS/JS that builds and sends transactions. The full semantic review lives in the [Claude Code plugin](https://github.com/Copenhagen0x/solana-security-standard) and in a [Jelleo audit](https://jelleo.com).

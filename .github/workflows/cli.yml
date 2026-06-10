@@ -66,6 +66,66 @@ jobs:
       - name: smoke — self-scan the vulnerable examples (report only)
         run: node bin.js scan ../examples --no-fail
 
+  action-selftest:
+    name: composite action self-test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '20'
+      # The action itself, run from the local tree (uses: ./) against the vulnerable
+      # examples — the only place the composite's bash plumbing is exercised in CI.
+      # upload-sarif is off everywhere: no security-events permission, no upload.
+      - name: report-only scan finds the examples
+        uses: ./
+        with:
+          paths: examples
+          fail-on-findings: 'false'
+          upload-sarif: 'false'
+      - name: min-tier passthrough (high floor, report-only)
+        uses: ./
+        with:
+          paths: examples
+          fail-on-findings: 'false'
+          upload-sarif: 'false'
+          min-tier: high
+      # Baseline end-to-end: record the examples' findings with the SAME root the
+      # action uses (fingerprints embed the reported path), then a baselined run
+      # with the gate ON must stay green — zero NEW findings. CWD is
+      # $GITHUB_WORKSPACE for both this run step and the composite's run steps,
+      # which is why the relative paths — and so the fingerprints — match.
+      - name: write a baseline with the CLI (same root as the action)
+        shell: bash
+        run: node cli/bin.js scan examples -r "$GITHUB_WORKSPACE" --write-baseline "$RUNNER_TEMP/sss-baseline.json" --no-fail -q
+      - name: baselined run gates green (fail-on-findings stays true)
+        uses: ./
+        with:
+          paths: examples
+          upload-sarif: 'false'
+          baseline: ${{ runner.temp }}/sss-baseline.json
+      # Fail-closed negative: an invalid min-tier must FAIL the action (scanner
+      # exit 2) — proves a bad input can never silently scan without its floor.
+      - name: bogus min-tier (expected to fail)
+        id: bogus
+        continue-on-error: true
+        uses: ./
+        with:
+          paths: examples
+          upload-sarif: 'false'
+          min-tier: bogus
+      - name: assert the bogus run failed
+        shell: bash
+        run: |
+          if [ "${{ steps.bogus.outcome }}" != "failure" ]; then
+            echo "::error::invalid min-tier did not fail the action (outcome: ${{ steps.bogus.outcome }})"
+            exit 1
+          fi
+
   semgrep:
     name: semgrep ruleset (validate in RE2)
     runs-on: ubuntu-latest

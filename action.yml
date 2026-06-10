@@ -33,6 +33,18 @@ inputs:
       it from untrusted PR data.
     required: false
     default: ''
+  baseline:
+    description: >-
+      Path to a committed baseline file (create with `npx
+      @jelleo/solana-security-standard scan . --write-baseline <file>`): only
+      findings NOT in it are reported and gated, so CI alerts on what a change
+      introduces. Suppressed/stale counts are always surfaced; a malformed or
+      missing baseline fails the run (exit 2), never silently scans without it.
+      The baseline lives in the scanned checkout — review baseline diffs in PRs
+      like code (every entry must carry its rule/file snapshot; a minimized
+      entry is rejected at load).
+    required: false
+    default: ''
 
 runs:
   using: 'composite'
@@ -46,6 +58,7 @@ runs:
         SSS_PATHS: ${{ inputs.paths }}
         SSS_PATTERNS: ${{ inputs.patterns }}
         SSS_MIN_TIER: ${{ inputs.min-tier }}
+        SSS_BASELINE: ${{ inputs.baseline }}
         SSS_BIN: ${{ github.action_path }}/cli/bin.js
         SSS_SARIF: ${{ runner.temp }}/solana-security-standard.sarif
       run: |
@@ -53,11 +66,13 @@ runs:
         # Flags first, then a `--` sentinel: anything word-split out of $SSS_PATHS
         # is treated as a PATH, never a flag — so untrusted input can't inject
         # --patterns / --no-fail / -o. --root keeps SARIF paths repo-root-relative.
-        # $SSS_MIN_TIER is passed quoted as ONE argument; the scanner validates it
-        # (exit 2 on anything but high|low) so a bad value fails loud, never quiet.
+        # $SSS_MIN_TIER and $SSS_BASELINE are each passed quoted as ONE argument;
+        # the scanner validates both (exit 2 on a bad tier or a malformed/missing
+        # baseline) so a bad value fails loud, never quiet.
         args=(scan --format sarif --output "$SSS_SARIF" --root "$GITHUB_WORKSPACE" --no-fail)
         if [ -n "$SSS_PATTERNS" ]; then args+=(--patterns "$SSS_PATTERNS"); fi
         if [ -n "$SSS_MIN_TIER" ]; then args+=(--min-tier "$SSS_MIN_TIER"); fi
+        if [ -n "$SSS_BASELINE" ]; then args+=(--baseline "$SSS_BASELINE"); fi
         args+=(-- $SSS_PATHS)
         node "$SSS_BIN" "${args[@]}"
 
@@ -80,6 +95,7 @@ runs:
         SSS_PATHS: ${{ inputs.paths }}
         SSS_PATTERNS: ${{ inputs.patterns }}
         SSS_MIN_TIER: ${{ inputs.min-tier }}
+        SSS_BASELINE: ${{ inputs.baseline }}
         SSS_BIN: ${{ github.action_path }}/cli/bin.js
         SSS_NOFAIL: ${{ inputs.fail-on-findings == 'false' && '1' || '' }}
       run: |
@@ -87,6 +103,7 @@ runs:
         args=(scan --no-color --root "$GITHUB_WORKSPACE")
         if [ -n "$SSS_PATTERNS" ]; then args+=(--patterns "$SSS_PATTERNS"); fi
         if [ -n "$SSS_MIN_TIER" ]; then args+=(--min-tier "$SSS_MIN_TIER"); fi
+        if [ -n "$SSS_BASELINE" ]; then args+=(--baseline "$SSS_BASELINE"); fi
         if [ -n "$SSS_NOFAIL" ]; then args+=(--no-fail); fi
         args+=(-- $SSS_PATHS)
         node "$SSS_BIN" "${args[@]}"

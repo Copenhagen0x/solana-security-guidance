@@ -77,6 +77,7 @@ jobs:
           # fail-on-findings: true # red X on findings (default)
           # upload-sarif: true     # GitHub code scanning (default)
           # min-tier: high         # noise floor: drop LOW-tier hygiene findings
+          # baseline: .sss-baseline.json  # gate only on NEW findings (see cli/README)
 ```
 
 Then show the world you adopt it — drop this badge in your README:
