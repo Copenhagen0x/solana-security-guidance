@@ -370,6 +370,31 @@
       ]
     },
     {
+      "rule_name": "sol_035_instructions_sysvar_substitution",
+      "substrings": [
+        "load_instruction_at_checked",
+        "load_current_index_checked",
+        "get_instruction_relative"
+      ],
+      "paths": [
+        "**/*.rs"
+      ],
+      "exclude_paths": [
+        "**/tests/**",
+        "**/client/**",
+        "**/cli/**",
+        "**/offchain/**",
+        "**/sdk/**"
+      ],
+      "reminder": "Jelleo SOL-035: instruction introspection (`load_instruction_at_checked` / `load_current_index_checked` / `get_instruction_relative`) to verify a precompile (Ed25519/Secp256k1) signature. TWO checks are required: (1) PIN the instructions sysvar account — Anchor `Sysvar<Instructions>` (pins the key) or assert `account.key() == sysvar::instructions::ID`; AND (2) VALIDATE the introspected precompile instruction's program id AND its parsed signer pubkey + signed message against the expected values. Checking only that 'an Ed25519/Secp256k1 instruction ran' is bypassable — an attacker includes a real precompile ix over their own keypair and message. See: github.com/Copenhagen0x/solana-security-standard#sol-035.",
+      "tier": "high",
+      "severity": "high",
+      "exclusions": [
+        "BOTH: the account read is an Anchor `Sysvar<'info, Instructions>` (or `account.key() == solana_program::sysvar::instructions::ID` is asserted), AND the introspected precompile instruction's program id, signer pubkey, AND signed message are all validated against the expected values before the result authorizes anything — pinning the sysvar alone is NOT sufficient (a real Ed25519/Secp256k1 ix over an attacker-chosen pubkey/message still passes a 'did a precompile run' check)",
+        "the introspection result is used only for logging/telemetry — never to authorize a state change, accept a precompile-verified signature, or gate a CPI-origin check (a positive 'not security-relevant' proof, not merely 'looks informational')"
+      ]
+    },
+    {
       "rule_name": "sol_029_skip_preflight",
       "regex": "skipPreflight\\s*:\\s*true|\\.skipPreflight\\s*=\\s*true",
       "paths": [

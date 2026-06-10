@@ -502,6 +502,35 @@ rules:
         - the mutation updates BOTH the lamports and the matching internal balance/claim field in the same instruction (cite both writes), and the debited account remains rent-exempt afterwards
         - 'the mutation is the documented rent-refund path of an account close: the destination is validated against stored state (not caller-chosen), and the account''s data is zeroed or discarded in the same instruction'
         - the accounts are system-owned and the movement uses a system-program transfer CPI — a manual write on a system-owned account cannot deduct anyway (the runtime rejects it); flag it as dead/misleading code
+  - id: solana-security-standard.sol-035-instructions-sysvar-substitution
+    languages:
+      - rust
+    severity: WARNING
+    message: 'Jelleo SOL-035: instruction introspection (`load_instruction_at_checked` / `load_current_index_checked` / `get_instruction_relative`) to verify a precompile (Ed25519/Secp256k1) signature. TWO checks are required: (1) PIN the instructions sysvar account — Anchor `Sysvar<Instructions>` (pins the key) or assert `account.key() == sysvar::instructions::ID`; AND (2) VALIDATE the introspected precompile instruction''s program id AND its parsed signer pubkey + signed message against the expected values. Checking only that ''an Ed25519/Secp256k1 instruction ran'' is bypassable — an attacker includes a real precompile ix over their own keypair and message. See: github.com/Copenhagen0x/solana-security-standard#sol-035.'
+    patterns:
+      - pattern-regex: (?:load_instruction_at_checked|load_current_index_checked|get_instruction_relative)
+    paths:
+      exclude:
+        - '**/tests/**'
+        - '**/client/**'
+        - '**/cli/**'
+        - '**/offchain/**'
+        - '**/sdk/**'
+    metadata:
+      sol-id: SOL-035
+      category: security
+      confidence: LOW
+      technology:
+        - solana
+        - anchor
+      references:
+        - https://github.com/Copenhagen0x/solana-security-standard#sol-035
+      license: MIT
+      sss-tier: high
+      sss-severity: high
+      sss-exclusions:
+        - 'BOTH: the account read is an Anchor `Sysvar<''info, Instructions>` (or `account.key() == solana_program::sysvar::instructions::ID` is asserted), AND the introspected precompile instruction''s program id, signer pubkey, AND signed message are all validated against the expected values before the result authorizes anything — pinning the sysvar alone is NOT sufficient (a real Ed25519/Secp256k1 ix over an attacker-chosen pubkey/message still passes a ''did a precompile run'' check)'
+        - the introspection result is used only for logging/telemetry — never to authorize a state change, accept a precompile-verified signature, or gate a CPI-origin check (a positive 'not security-relevant' proof, not merely 'looks informational')
   - id: solana-security-standard.sol-029-skip-preflight
     languages:
       - typescript

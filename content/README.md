@@ -1,8 +1,8 @@
-# Rule content — all 34 SOL-0XX explainers
+# Rule content — all 37 SOL-0XX explainers
 
 > One page per rule: what it catches, the fix, whether it is machine-checkable, the real exploits in that class, and a code example where one exists. Generated from the standard + patterns + the [Hacks Database](../hacks/) + examples by [`scripts/sync-content.js`](./scripts/sync-content.js) — do not hand-edit.
 
-**22 of 34** rules are machine-checkable (deterministic pattern); the rest are review-only. **8** map to a catalogued real-world exploit.
+**23 of 37** rules are machine-checkable (deterministic pattern); the rest are review-only. **8** map to a catalogued real-world exploit.
 
 | Rule | Title | Tier | Severity | Enforcement | Real exploits | Example |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -40,5 +40,8 @@
 | [SOL-032](./rules/SOL-032.md) | Decimals assumed, not read | high | high | review | — | ✓ |
 | [SOL-033](./rules/SOL-033.md) | Stale account read after CPI | high | high | pattern | — | ✓ |
 | [SOL-034](./rules/SOL-034.md) | Manual lamport mutation | high | high | pattern | — | ✓ |
+| [SOL-035](./rules/SOL-035.md) | Instructions sysvar substitution | high | high | pattern | — | ✓ |
+| [SOL-036](./rules/SOL-036.md) | ATA derivation unpinned | high | high | review | — | ✓ |
+| [SOL-037](./rules/SOL-037.md) | Arbitrary CPI target | high | high | review | — | ✓ |
 
 Maintained by [Jelleo](https://jelleo.com). MIT.

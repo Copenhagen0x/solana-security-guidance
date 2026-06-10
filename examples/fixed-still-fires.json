@@ -8,5 +8,6 @@
   "SOL-020": "set_authority kept; fix constrains the signer == current authority (exclusion #2)",
   "SOL-031": "Jupiter client kept; fix adds a contextSlot freshness gate (exclusion #1)",
   "SOL-033": "CPI-then-read shape kept; fix inserts reload() between them, invisible to RE2 (exclusion #1)",
-  "SOL-034": "try_borrow_mut_lamports kept; fix moves the internal ledger with the lamports + rent-exemption guard (exclusion #1)"
+  "SOL-034": "try_borrow_mut_lamports kept; fix moves the internal ledger with the lamports + rent-exemption guard (exclusion #1)",
+  "SOL-035": "load_instruction_at_checked kept; fix reads it via a key-pinned Sysvar<Instructions> (exclusion #1)"
 }

@@ -9,7 +9,7 @@
     {
       "name": "solana-security-standard",
       "displayName": "Solana Security Standard",
-      "description": "Scan Solana/Anchor code against the SOL-0XX rules as you work: MCP scan tool, full 34-rule guidance, /scan command.",
+      "description": "Scan Solana/Anchor code against the SOL-0XX rules as you work: MCP scan tool, full 37-rule guidance, /scan command.",
       "source": "./",
       "version": "1.10.1",
       "author": {

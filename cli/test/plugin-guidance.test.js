@@ -19,7 +19,7 @@ test('digest is under the 8192-byte Anthropic cap', () => {
 test('digest carries one cue for every rule in the master', () => {
   const out = render();
   const rules = parseRules(master);
-  assert.ok(rules.length >= 34, 'expected the master to parse to >=34 rules');
+  assert.ok(rules.length >= 37, 'expected the master to parse to >=37 rules');
   for (const r of rules) {
     assert.ok(out.includes(`**${r.id}** · ${r.title}`), `${r.id} missing from the digest`);
   }
