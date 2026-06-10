@@ -43,7 +43,7 @@ together before you build the PR. Reduces wasted work.
 ## Checklist
 
 - [ ] CI (`.github/workflows/validate.yml`) is green
-- [ ] `claude-security-guidance.md` stays under 8 KB (check with `wc -c`)
+- [ ] Regenerated the plugin digest (`cd cli && npm run sync:plugin-guidance`) — it stays under 8 KB (the master `claude-security-guidance.md` is uncapped)
 - [ ] All reminder fields in `security-patterns.yaml` are under 1 KB
 - [ ] All YAML rule IDs have a matching MD section (`### SOL-NNN`)
 - [ ] Updated `CHANGELOG.md` under `[Unreleased]` (for rule changes)
