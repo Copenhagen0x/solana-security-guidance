@@ -20,9 +20,10 @@
     "sync": "node scripts/sync-rules.js",
     "sync:semgrep": "node scripts/sync-semgrep.js",
     "sync:integrations": "node scripts/sync-integrations.js",
+    "sync:benchmark": "node scripts/sync-benchmark.js",
     "test": "node --test",
     "prepack": "node scripts/sync-rules.js",
-    "prepublishOnly": "node scripts/sync-rules.js --check && node scripts/sync-semgrep.js --check && node scripts/sync-integrations.js --check && node --test"
+    "prepublishOnly": "node scripts/sync-rules.js --check && node scripts/sync-semgrep.js --check && node scripts/sync-integrations.js --check && node scripts/sync-benchmark.js --check && node --test"
   },
   "engines": {
     "node": ">=18"

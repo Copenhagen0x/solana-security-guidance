@@ -61,6 +61,8 @@ jobs:
         run: node scripts/sync-semgrep.js --check
       - name: AI-tool integrations are in sync with the guidance
         run: node scripts/sync-integrations.js --check
+      - name: BENCHMARK.md is in sync with examples + rules
+        run: node scripts/sync-benchmark.js --check
       - name: unit tests
         run: node --test
       - name: smoke — self-scan the vulnerable examples (report only)

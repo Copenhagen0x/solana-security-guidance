@@ -1,0 +1,10 @@
+{
+  "_comment": "Fixed examples whose fix is runtime/structural: the syntactic pattern is kept on purpose, so the fail-open scanner still fires; the fix clears the rule's EXCLUSION, not the regex. Each entry documents which exclusion does the work. Read by cli/test/examples.test.js (the gate) and cli/scripts/sync-benchmark.js (the scoreboard) — one source of truth.",
+  "SOL-001": "now_slot param kept; fix is runtime clamp vs Clock::get (exclusion #1/#3)",
+  "SOL-002": "shared-counter field kept; fix is a per-market signed authority (exclusion #1)",
+  "SOL-005": ".realloc() kept; fix adds owner + size-cap + rent-exemption guards (exclusion #1/#2)",
+  "SOL-009": "invoke_signed kept; fix adds Signer + has_one binding before the CPI (exclusion #1)",
+  "SOL-011": "close= kept; fix binds has_one and returns lamports to the owner (exclusion #1/#2)",
+  "SOL-020": "set_authority kept; fix constrains the signer == current authority (exclusion #2)",
+  "SOL-031": "Jupiter client kept; fix adds a contextSlot freshness gate (exclusion #1)"
+}

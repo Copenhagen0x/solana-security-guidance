@@ -31,16 +31,13 @@ const machineRuleIds = new Set(rules.map((r) => ruleNameToId(r.name)).filter(Boo
 
 // Fixed examples whose fix is runtime/structural: the syntactic pattern is kept
 // on purpose, so the fail-open scanner still fires; the fix clears the rule's
-// EXCLUSION, not the regex. Each entry documents which exclusion does the work.
-const FIXED_STILL_FIRES = {
-  'SOL-001': 'now_slot param kept; fix is runtime clamp vs Clock::get (exclusion #1/#3)',
-  'SOL-002': 'shared-counter field kept; fix is a per-market signed authority (exclusion #1)',
-  'SOL-005': '.realloc() kept; fix adds owner + size-cap + rent-exemption guards (exclusion #1/#2)',
-  'SOL-009': 'invoke_signed kept; fix adds Signer + has_one binding before the CPI (exclusion #1)',
-  'SOL-011': 'close= kept; fix binds has_one and returns lamports to the owner (exclusion #1/#2)',
-  'SOL-020': 'set_authority kept; fix constrains the signer == current authority (exclusion #2)',
-  'SOL-031': 'Jupiter client kept; fix adds a contextSlot freshness gate (exclusion #1)',
-};
+// EXCLUSION, not the regex. The allowlist lives in examples/fixed-still-fires.json
+// (one source of truth, shared with scripts/sync-benchmark.js); each entry
+// documents which exclusion does the work.
+const FIXED_STILL_FIRES = JSON.parse(
+  fs.readFileSync(path.join(__dirname, '..', '..', 'examples', 'fixed-still-fires.json'), 'utf8'),
+);
+delete FIXED_STILL_FIRES._comment;
 
 function exampleExt(dir) {
   return fs.existsSync(path.join(examplesDir, dir, 'vulnerable.ts')) ? 'ts' : 'rs';
