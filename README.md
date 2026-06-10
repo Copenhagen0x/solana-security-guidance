@@ -96,6 +96,8 @@ npx @jelleo/solana-security-standard scan ./programs
 
 Human, JSON, or SARIF output; exits non-zero on findings (so it gates any CI). Zero dependencies. Details in [`cli/`](cli/).
 
+Every machine rule is scored against its canonical vulnerable/fixed example pair on every change — see [`BENCHMARK.md`](BENCHMARK.md) (generated, CI-enforced: a rule that stops detecting its bug, or starts flagging its fix, cannot merge).
+
 ## Run it in your editor — VS Code / Cursor / Windsurf
 
 The [VS Code extension](extensions/vscode) shows SOL-0XX findings as inline warning squiggles as you
