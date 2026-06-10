@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const scanner = require('./scanner');
 const formatters = require('./formatters');
+const baseline = require('./baseline');
 
 const PKG = require('../package.json');
 const DEFAULT_RULES = path.join(__dirname, '..', 'rules.json');
@@ -28,6 +29,15 @@ OPTIONS
                                   high = high-value only (drops LOW-tier hygiene/
                                   operational noise); low = everything (the default).
                                   A noise floor, NOT a verdict — not for audit-grade scans.
+      --baseline <file>           report only findings NOT in this baseline (their
+                                  count is always surfaced — suppression is never
+                                  silent). An unreadable/invalid baseline exits 2;
+                                  it never degrades to a baseline-less scan.
+      --write-baseline <file>     record the scan's findings (after --min-tier,
+                                  BEFORE --baseline filtering, so refreshing a
+                                  baseline keeps prior acknowledgments) as a
+                                  reviewable baseline file. Exit codes unchanged —
+                                  pair with --no-fail for day-one adoption.
   -q, --quiet                     text mode: print only the findings, no banner
       --no-color                  disable ANSI color
       --                          end of options; everything after is a path
@@ -53,6 +63,8 @@ function parseArgs(argv) {
     root: null,
     fail: true,
     minTier: null,
+    baseline: null,
+    writeBaseline: null,
     quiet: false,
     color: undefined,
     help: false,
@@ -70,6 +82,8 @@ function parseArgs(argv) {
       case '-q': case '--quiet': o.quiet = true; break;
       case '--no-fail': o.fail = false; break;
       case '--min-tier': o.minTier = argv[++i]; break;
+      case '--baseline': o.baseline = argv[++i]; break;
+      case '--write-baseline': o.writeBaseline = argv[++i]; break;
       case '--no-color': o.color = false; break;
       case '-f': case '--format': o.format = argv[++i]; break;
       case '-o': case '--output': o.output = argv[++i]; break;
@@ -101,6 +115,10 @@ function main(argv, io = {}) {
     err.write(`error: unknown --min-tier '${o.minTier}' (high|low)\n`);
     return 2;
   }
+  // A flag given without its file value (e.g. `--baseline` at end of argv) must be
+  // a loud usage error, not a confusing downstream read/write failure.
+  if (o.baseline !== null && !o.baseline) { err.write('error: --baseline requires a file path\n'); return 2; }
+  if (o.writeBaseline !== null && !o.writeBaseline) { err.write('error: --write-baseline requires a file path\n'); return 2; }
   if (o.command && o.command !== 'scan') { err.write(`error: unknown command '${o.command}'\n`); return 2; }
 
   let rules;
@@ -113,6 +131,19 @@ function main(argv, io = {}) {
   const invalid = rules.filter((r) => r.invalid);
   if (invalid.length) {
     for (const r of invalid) err.write(`warning: skipping rule ${r.name}: ${r.invalid}\n`);
+  }
+
+  // Load the baseline BEFORE scanning: a malformed baseline is a hard usage error
+  // (exit 2, fail-fast) — it must never degrade to a baseline-less scan that
+  // suddenly reports (or gates on) everything the baseline was acknowledging.
+  let base = null;
+  if (o.baseline) {
+    try {
+      base = baseline.loadBaseline(o.baseline);
+    } catch (e) {
+      err.write(`error: ${e.message}\n`);
+      return 2;
+    }
   }
 
   if (o.root) {
@@ -169,11 +200,44 @@ function main(argv, io = {}) {
     findings = findings.filter((f) => (f.tier in RANK ? RANK[f.tier] : Infinity) >= floor);
   }
 
+  // Record the baseline from the post-min-tier, PRE-suppression set: refreshing a
+  // baseline (--baseline old --write-baseline new) must keep prior acknowledgments,
+  // not just the still-new findings. Written before filtering for the same reason.
+  if (o.writeBaseline) {
+    // An INCOMPLETE scan must never become an authoritative-looking baseline: the
+    // file would silently encode a partial picture every future scan gates against.
+    if (truncated) {
+      err.write('error: refusing to write a baseline from an INCOMPLETE scan (finding cap hit) — narrow the scan scope or raise SSS_MAX_FINDINGS\n');
+      return 2;
+    }
+    let doc;
+    try {
+      doc = baseline.writeBaseline(o.writeBaseline, findings, { toolVersion: PKG.version });
+    } catch (e) {
+      err.write(`error: cannot write baseline ${o.writeBaseline}: ${e.message}\n`);
+      return 2;
+    }
+    if (!o.quiet) err.write(`Wrote baseline with ${doc.findingCount} finding(s) to ${o.writeBaseline}\n`);
+  }
+
+  // Apply the baseline LAST, and keep the counts — every output format surfaces
+  // how many findings the baseline removed (suppression is never silent) and how
+  // many baseline entries matched nothing (stale — the baseline is rotting).
+  let baseInfo = null;
+  if (base) {
+    const r = baseline.applyBaseline(findings, base);
+    findings = r.kept;
+    baseInfo = { suppressed: r.suppressed, stale: r.stale };
+    if (r.stale > 0 && !o.quiet) {
+      err.write(`warning: ${r.stale} baseline entr${r.stale === 1 ? 'y' : 'ies'} matched nothing (fixed or changed code) — consider refreshing with --write-baseline\n`);
+    }
+  }
+
   let rendered;
   const color = o.color === undefined ? Boolean(out.isTTY) : o.color;
-  if (o.format === 'json') rendered = formatters.json(findings, { truncated }) + '\n';
-  else if (o.format === 'sarif') rendered = formatters.sarif(findings, rules, { version: PKG.version, truncated }) + '\n';
-  else rendered = formatters.text(findings, { color: o.quiet ? false : color, truncated });
+  if (o.format === 'json') rendered = formatters.json(findings, { truncated, baseline: baseInfo }) + '\n';
+  else if (o.format === 'sarif') rendered = formatters.sarif(findings, rules, { version: PKG.version, truncated, baseline: baseInfo }) + '\n';
+  else rendered = formatters.text(findings, { color: o.quiet ? false : color, truncated, baseline: baseInfo });
 
   if (o.output) {
     try { fs.writeFileSync(o.output, rendered); }
