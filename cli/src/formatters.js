@@ -52,6 +52,7 @@ function json(findings, { truncated = false } = {}) {
       findings: findings.map((f) => ({
         ruleId: solId(f.rule),
         ruleName: f.rule,
+        fingerprint: f.fingerprint, // stable id for baseline/diff + suppression (position-independent)
         file: f.file,
         line: f.line,
         column: f.column,
@@ -115,6 +116,10 @@ function sarif(findings, rules = [], { version = '0.0.0', truncated: scannerCapp
             // gating is unchanged; the SSS baseline severity/tier ride in properties.
             level: 'warning',
             message: { text: `${solId(f.rule)}: ${shortReminder(f.reminder, 1000)}` },
+            // SARIF-standard stable id GitHub code-scanning uses to track an alert
+            // across commits (better than its default line-hash, which line drift
+            // perturbs). Omitted if a custom finding has no fingerprint, never empty.
+            ...(f.fingerprint ? { partialFingerprints: { 'sssFindingId/v1': f.fingerprint } } : {}),
             properties: { sssSeverity: f.severity, tier: f.tier },
             locations: [
               {

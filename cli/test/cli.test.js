@@ -201,3 +201,33 @@ test('sibling (non-overlapping) scan paths are both scanned', () => {
   const hits = JSON.parse(out.str()).findings.filter((f) => f.ruleId === 'SOL-001');
   assert.equal(hits.length, 2, 'distinct sibling roots must each be scanned');
 });
+
+test('json findings carry a stable 32-hex (128-bit) fingerprint', () => {
+  const dir = tmpRepo({ 'src/lib.rs': VULN });
+  const out = cap();
+  cli.main(['scan', dir, '-f', 'json', '--no-fail'], { stdout: out, stderr: cap() });
+  const f = JSON.parse(out.str()).findings.find((x) => x.ruleId === 'SOL-001');
+  assert.ok(f, 'SOL-001 present');
+  assert.match(f.fingerprint, /^[0-9a-f]{32}$/);
+});
+
+test('sarif results carry partialFingerprints (GitHub alert tracking across commits)', () => {
+  const dir = tmpRepo({ 'src/lib.rs': VULN });
+  const out = cap();
+  cli.main(['scan', dir, '-f', 'sarif', '--no-fail'], { stdout: out, stderr: cap() });
+  const r = JSON.parse(out.str()).runs[0].results[0];
+  assert.ok(r.partialFingerprints, 'partialFingerprints present on the result');
+  assert.match(r.partialFingerprints['sssFindingId/v1'], /^[0-9a-f]{32}$/);
+});
+
+test('json fingerprint is stable when the finding drifts to a different line', () => {
+  const a = tmpRepo({ 'src/lib.rs': VULN });
+  const b = tmpRepo({ 'src/lib.rs': '\n\n\n\n' + VULN }); // same relative path, finding pushed down
+  const outA = cap(), outB = cap();
+  cli.main(['scan', a, '-f', 'json', '--no-fail', '-r', a], { stdout: outA, stderr: cap() });
+  cli.main(['scan', b, '-f', 'json', '--no-fail', '-r', b], { stdout: outB, stderr: cap() });
+  const fa = JSON.parse(outA.str()).findings.find((x) => x.ruleId === 'SOL-001');
+  const fb = JSON.parse(outB.str()).findings.find((x) => x.ruleId === 'SOL-001');
+  assert.notEqual(fa.line, fb.line, 'the finding is on a different line');
+  assert.equal(fa.fingerprint, fb.fingerprint, 'but the fingerprint is unchanged');
+});

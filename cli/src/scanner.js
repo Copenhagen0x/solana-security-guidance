@@ -13,6 +13,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { matchesAny } = require('./glob');
 
 // Hand-written Rust is tiny; anything larger is generated/vendored. Skip it so a
@@ -107,10 +108,47 @@ function matchOffsets(content, rule) {
   return out;
 }
 
+// Collapse runs of whitespace so reformatting/reindentation (or a match that spans
+// lines) doesn't change a finding's identity. A finding is "the same" if its rule +
+// file + the *shape* of the matched construct are unchanged. Identity is byte-level
+// after this collapse — NOT Unicode-canonical (a precomposed vs decomposed é would
+// differ); fine in practice since Git preserves bytes on checkout, and it can only
+// make a finding look spuriously "new", never silently merge two distinct ones.
+function normalizeMatch(text) {
+  return text.replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Stable per-finding identifier for baseline/diff + suppression. Deliberately
+ * EXCLUDES line/column so an unchanged finding survives code shifting up or down the
+ * file (line drift must never make a finding look "new" — that's what makes a
+ * baseline usable). Identity = rule + file + the normalized matched text; `ordinal`
+ * disambiguates the Nth identical match in the same file. 32 hex chars (128 bits):
+ * a future suppression layer will trust this as a security control, and the file path
+ * + matched source are attacker-controlled, so we size it to put both a targeted
+ * second-preimage (2^128) and a birthday collision (2^64) out of reach. `v1` in the
+ * SARIF key is the contract version — widen/rev the algorithm only by bumping it.
+ *
+ * Limitation (standard occurrence-indexing tradeoff): if two findings in one file
+ * have identical normalized match text, deleting the first shifts the second's
+ * ordinal and so changes its fingerprint. Far better than a pure positional id, and
+ * the same tradeoff CodeQL's primaryLocationLineHash makes.
+ */
+function fingerprint(ruleName, file, matchText, ordinal) {
+  // JSON-encode the identity tuple so field boundaries are unambiguous: a file path
+  // or match text containing any delimiter character can't be mistaken for a field
+  // break the way a hand-rolled separator could.
+  const id = JSON.stringify([ruleName, file, normalizeMatch(matchText), ordinal]);
+  return crypto.createHash('sha256').update(id).digest('hex').slice(0, 32);
+}
+
 /** Scan a single file's content. `relPath` is POSIX-relative to the scan root. */
 function scanContent(content, relPath, rules) {
   let locate = null;
   const findings = [];
+  // (rule + normalized-match) -> count so far, to disambiguate identical repeated
+  // matches within this file. `file` is constant here, so it's not part of the key.
+  const ordinals = new Map();
   for (const rule of rules) {
     if (rule.invalid) continue;
     if (!matchesAny(relPath, rule.paths)) continue;
@@ -119,6 +157,9 @@ function scanContent(content, relPath, rules) {
     if (hits.length && !locate) locate = makeLocator(content);
     for (const h of hits) {
       const { line, column } = locate(h.index);
+      const key = JSON.stringify([rule.name, normalizeMatch(h.text)]);
+      const ordinal = ordinals.get(key) || 0;
+      ordinals.set(key, ordinal + 1);
       findings.push({
         file: relPath,
         line,
@@ -126,6 +167,8 @@ function scanContent(content, relPath, rules) {
         rule: rule.name,
         reminder: rule.reminder,
         match: h.text.length > 100 ? h.text.slice(0, 100) + '…' : h.text,
+        // Stable, position-independent identity for baseline/diff + suppression.
+        fingerprint: fingerprint(rule.name, relPath, h.text, ordinal),
         // Advisory metadata (additive — consumers that predate these ignore them).
         tier: rule.tier,
         severity: rule.severity,
@@ -231,6 +274,8 @@ module.exports = {
   loadRules,
   makeLocator,
   matchOffsets,
+  normalizeMatch,
+  fingerprint,
   scanContent,
   scan,
   toPosixRel,
