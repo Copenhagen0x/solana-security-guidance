@@ -22,6 +22,17 @@ inputs:
     description: 'Path to a custom rules.json (default: the bundled SOL-0XX rules).'
     required: false
     default: ''
+  min-tier:
+    description: >-
+      Report only findings at/above this value tier: "high" drops LOW-tier
+      hygiene/operational noise — concretely, SOL-003/018/022/023/030 disappear
+      from both the annotations and the gate; "low" (or empty, the default)
+      reports everything. A noise floor, NOT a verdict — not for audit-grade
+      scans. Invalid values fail the run (the scanner exits 2), never silently
+      scan with no floor. Safe to set statically; like all inputs, do not wire
+      it from untrusted PR data.
+    required: false
+    default: ''
 
 runs:
   using: 'composite'
@@ -34,6 +45,7 @@ runs:
         # caller who wires an input from untrusted PR data can't inject shell.
         SSS_PATHS: ${{ inputs.paths }}
         SSS_PATTERNS: ${{ inputs.patterns }}
+        SSS_MIN_TIER: ${{ inputs.min-tier }}
         SSS_BIN: ${{ github.action_path }}/cli/bin.js
         SSS_SARIF: ${{ runner.temp }}/solana-security-standard.sarif
       run: |
@@ -41,8 +53,11 @@ runs:
         # Flags first, then a `--` sentinel: anything word-split out of $SSS_PATHS
         # is treated as a PATH, never a flag — so untrusted input can't inject
         # --patterns / --no-fail / -o. --root keeps SARIF paths repo-root-relative.
+        # $SSS_MIN_TIER is passed quoted as ONE argument; the scanner validates it
+        # (exit 2 on anything but high|low) so a bad value fails loud, never quiet.
         args=(scan --format sarif --output "$SSS_SARIF" --root "$GITHUB_WORKSPACE" --no-fail)
         if [ -n "$SSS_PATTERNS" ]; then args+=(--patterns "$SSS_PATTERNS"); fi
+        if [ -n "$SSS_MIN_TIER" ]; then args+=(--min-tier "$SSS_MIN_TIER"); fi
         args+=(-- $SSS_PATHS)
         node "$SSS_BIN" "${args[@]}"
 
@@ -51,7 +66,9 @@ runs:
     - name: Upload SARIF
       if: ${{ inputs.upload-sarif == 'true' }}
       continue-on-error: true
-      uses: github/codeql-action/upload-sarif@v3
+      # SHA-pinned (supply-chain): a hijacked floating tag can't swap the code that
+      # reads our SARIF + repo token. Dependabot bumps the pin via the version comment.
+      uses: github/codeql-action/upload-sarif@dd903d2e4f5405488e5ef1422510ee31c8b32357 # v3.36.2
       with:
         sarif_file: ${{ runner.temp }}/solana-security-standard.sarif
         category: solana-security-standard
@@ -62,12 +79,14 @@ runs:
       env:
         SSS_PATHS: ${{ inputs.paths }}
         SSS_PATTERNS: ${{ inputs.patterns }}
+        SSS_MIN_TIER: ${{ inputs.min-tier }}
         SSS_BIN: ${{ github.action_path }}/cli/bin.js
         SSS_NOFAIL: ${{ inputs.fail-on-findings == 'false' && '1' || '' }}
       run: |
         set -f
         args=(scan --no-color --root "$GITHUB_WORKSPACE")
         if [ -n "$SSS_PATTERNS" ]; then args+=(--patterns "$SSS_PATTERNS"); fi
+        if [ -n "$SSS_MIN_TIER" ]; then args+=(--min-tier "$SSS_MIN_TIER"); fi
         if [ -n "$SSS_NOFAIL" ]; then args+=(--no-fail); fi
         args+=(-- $SSS_PATHS)
         node "$SSS_BIN" "${args[@]}"

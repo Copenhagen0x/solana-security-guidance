@@ -76,6 +76,7 @@ jobs:
           paths: ./programs        # what to scan (default: .)
           # fail-on-findings: true # red X on findings (default)
           # upload-sarif: true     # GitHub code scanning (default)
+          # min-tier: high         # noise floor: drop LOW-tier hygiene findings
 ```
 
 Then show the world you adopt it — drop this badge in your README:
