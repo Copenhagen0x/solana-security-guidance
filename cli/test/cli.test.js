@@ -220,6 +220,166 @@ test('sarif results carry partialFingerprints (GitHub alert tracking across comm
   assert.match(r.partialFingerprints['sssFindingId/v1'], /^[0-9a-f]{32}$/);
 });
 
+// --- baseline / diff (--baseline, --write-baseline) ---
+
+const VULN2 = VULN + 'pub fn redeem(ctx: Context<B>, now_slot: u64) -> Result<()> { Ok(()) }\n';
+
+test('adoption cycle: write baseline -> rescan exits 0 -> new finding gates, drifted old one stays suppressed', () => {
+  const dir = tmpRepo({ 'src/lib.rs': VULN });
+  const base = path.join(dir, 'sss-baseline.json');
+  // Day one: record what exists.
+  let code = cli.main(['scan', dir, '-r', dir, '--write-baseline', base, '--no-fail', '-q'], { stdout: cap(), stderr: cap() });
+  assert.equal(code, 0);
+  assert.ok(fs.existsSync(base), 'baseline written');
+  // Rescan unchanged: nothing new -> green.
+  const out1 = cap();
+  code = cli.main(['scan', dir, '-r', dir, '--baseline', base, '--no-color'], { stdout: out1, stderr: cap() });
+  assert.equal(code, 0, 'no new findings -> exit 0');
+  assert.match(out1.str(), /no NEW findings/);
+  assert.match(out1.str(), /1 finding\(s\) suppressed by baseline/);
+  // Drift the old finding down the file AND add a genuinely new one.
+  fs.writeFileSync(path.join(dir, 'src', 'lib.rs'), '\n\n// drift\n' + VULN2);
+  const out2 = cap();
+  code = cli.main(['scan', dir, '-r', dir, '--baseline', base, '--no-color'], { stdout: out2, stderr: cap() });
+  assert.equal(code, 1, 'the new finding gates');
+  assert.match(out2.str(), /1 NEW finding\(s\)/);
+  assert.match(out2.str(), /1 finding\(s\) suppressed by baseline/, 'drifted old finding still suppressed');
+});
+
+test('json surfaces baseline suppressed + stale counts', () => {
+  const dir = tmpRepo({ 'src/lib.rs': VULN });
+  const base = path.join(dir, 'b.json');
+  cli.main(['scan', dir, '-r', dir, '--write-baseline', base, '--no-fail', '-q'], { stdout: cap(), stderr: cap() });
+  // Fix the finding entirely: its baseline entry goes stale.
+  fs.writeFileSync(path.join(dir, 'src', 'lib.rs'), CLEAN);
+  const out = cap();
+  const code = cli.main(['scan', dir, '-r', dir, '--baseline', base, '-f', 'json', '--no-fail'], { stdout: out, stderr: cap() });
+  assert.equal(code, 0);
+  const parsed = JSON.parse(out.str());
+  assert.deepEqual(parsed.baseline, { suppressed: 0, stale: 1 });
+  assert.equal(parsed.findingCount, 0);
+});
+
+test('json omits the baseline block when --baseline is not used (additive field)', () => {
+  const dir = tmpRepo({ 'src/lib.rs': VULN });
+  const out = cap();
+  cli.main(['scan', dir, '-f', 'json', '--no-fail'], { stdout: out, stderr: cap() });
+  assert.ok(!('baseline' in JSON.parse(out.str())));
+});
+
+test('sarif surfaces baselineSuppressed/baselineStale in run properties', () => {
+  const dir = tmpRepo({ 'src/lib.rs': VULN });
+  const base = path.join(dir, 'b.json');
+  cli.main(['scan', dir, '-r', dir, '--write-baseline', base, '--no-fail', '-q'], { stdout: cap(), stderr: cap() });
+  const out = cap();
+  cli.main(['scan', dir, '-r', dir, '--baseline', base, '-f', 'sarif', '--no-fail'], { stdout: out, stderr: cap() });
+  const props = JSON.parse(out.str()).runs[0].properties;
+  assert.equal(props.baselineSuppressed, 1);
+  assert.equal(props.baselineStale, 0);
+});
+
+test('a malformed baseline exits 2 — never degrades to a baseline-less scan', () => {
+  const dir = tmpRepo({ 'src/lib.rs': VULN, 'bad.json': '{"not":"a baseline"}' });
+  const err = cap();
+  const code = cli.main(['scan', dir, '--baseline', path.join(dir, 'bad.json')], { stdout: cap(), stderr: err });
+  assert.equal(code, 2);
+  assert.match(err.str(), /unrecognized format/);
+});
+
+test('a missing baseline file exits 2', () => {
+  const dir = tmpRepo({ 'src/lib.rs': VULN });
+  const code = cli.main(['scan', dir, '--baseline', path.join(dir, 'nope.json')], { stdout: cap(), stderr: cap() });
+  assert.equal(code, 2);
+});
+
+test('--baseline / --write-baseline without a file path exit 2', () => {
+  assert.equal(cli.main(['scan', '.', '--baseline'], { stdout: cap(), stderr: cap() }), 2);
+  assert.equal(cli.main(['scan', '.', '--write-baseline'], { stdout: cap(), stderr: cap() }), 2);
+});
+
+test('an INCOMPLETE scan still exits 2 even when a baseline suppresses everything', () => {
+  // The cap signal must be un-maskable: a finding-flood can't be "fixed" by a baseline.
+  const dir = tmpRepo({ 'src/lib.rs': VULN2 });
+  const base = path.join(dir, 'b.json');
+  cli.main(['scan', dir, '-r', dir, '--write-baseline', base, '--no-fail', '-q'], { stdout: cap(), stderr: cap() });
+  process.env.SSS_MAX_FINDINGS = '1';
+  try {
+    const code = cli.main(['scan', dir, '-r', dir, '--baseline', base, '-f', 'json'], { stdout: cap(), stderr: cap() });
+    assert.equal(code, 2, 'capped scan exits 2 regardless of baseline');
+  } finally {
+    delete process.env.SSS_MAX_FINDINGS;
+  }
+});
+
+test('refresh flow: --baseline old --write-baseline new keeps prior acknowledgments', () => {
+  const dir = tmpRepo({ 'src/lib.rs': VULN });
+  const oldB = path.join(dir, 'old.json');
+  cli.main(['scan', dir, '-r', dir, '--write-baseline', oldB, '--no-fail', '-q'], { stdout: cap(), stderr: cap() });
+  // Add a second finding, then refresh: the new baseline must contain BOTH.
+  fs.writeFileSync(path.join(dir, 'src', 'lib.rs'), VULN2);
+  const newB = path.join(dir, 'new.json');
+  cli.main(['scan', dir, '-r', dir, '--baseline', oldB, '--write-baseline', newB, '--no-fail', '-q'], { stdout: cap(), stderr: cap() });
+  const doc = JSON.parse(fs.readFileSync(newB, 'utf8'));
+  assert.equal(doc.findingCount, 2, 'refreshed baseline holds the old AND the new finding');
+});
+
+test('--write-baseline records the post-min-tier set (what the scan reports is what it acknowledges)', () => {
+  // VULN fires SOL-001 (high tier); the 32-ones literal fires SOL-018 (low tier).
+  const dir = tmpRepo({ 'src/lib.rs': VULN + 'pub fn s() { let _x = "11111111111111111111111111111111"; }\n' });
+  const base = path.join(dir, 'b.json');
+  cli.main(['scan', dir, '-r', dir, '--min-tier', 'high', '--write-baseline', base, '--no-fail', '-q'], { stdout: cap(), stderr: cap() });
+  const doc = JSON.parse(fs.readFileSync(base, 'utf8'));
+  assert.equal(doc.findingCount, 1, 'only the high-tier finding is recorded under --min-tier high');
+  assert.match(Object.values(doc.fingerprints)[0].rule, /sol_001/);
+});
+
+test('--write-baseline REFUSES an INCOMPLETE scan (a partial baseline must never look authoritative)', () => {
+  const dir = tmpRepo({ 'src/lib.rs': VULN2 }); // two findings; cap to 1 => truncated
+  const base = path.join(dir, 'b.json');
+  process.env.SSS_MAX_FINDINGS = '1';
+  try {
+    const err = cap();
+    const code = cli.main(['scan', dir, '-r', dir, '--write-baseline', base, '--no-fail'], { stdout: cap(), stderr: err });
+    assert.equal(code, 2, 'refused with exit 2 even under --no-fail');
+    assert.match(err.str(), /refusing to write a baseline from an INCOMPLETE scan/);
+    assert.ok(!fs.existsSync(base), 'no partial baseline file is left behind');
+  } finally {
+    delete process.env.SSS_MAX_FINDINGS;
+  }
+});
+
+test('--write-baseline to an unwritable path exits 2', () => {
+  const dir = tmpRepo({ 'src/lib.rs': VULN });
+  const err = cap();
+  const code = cli.main(['scan', dir, '-r', dir, '--write-baseline', path.join(dir, 'no', 'such', 'dir', 'b.json'), '--no-fail'], { stdout: cap(), stderr: err });
+  assert.equal(code, 2);
+  assert.match(err.str(), /cannot write baseline/);
+});
+
+test('a poisoned baseline entry without its snapshot is rejected end-to-end (exit 2)', () => {
+  // The anti-poisoning gate: a hand-minimized {"<fp>": {}} entry must fail the run.
+  const dir = tmpRepo({ 'src/lib.rs': VULN });
+  const poisoned = JSON.stringify({
+    format: 'solana-security-standard-baseline', version: 1,
+    fingerprints: { ['a'.repeat(32)]: {} },
+  });
+  fs.writeFileSync(path.join(dir, 'poison.json'), poisoned);
+  const err = cap();
+  const code = cli.main(['scan', dir, '--baseline', path.join(dir, 'poison.json')], { stdout: cap(), stderr: err });
+  assert.equal(code, 2);
+  assert.match(err.str(), /missing its rule\/file snapshot/);
+});
+
+test('stale baseline entries warn on stderr (the baseline is rotting, refresh it)', () => {
+  const dir = tmpRepo({ 'src/lib.rs': VULN });
+  const base = path.join(dir, 'b.json');
+  cli.main(['scan', dir, '-r', dir, '--write-baseline', base, '--no-fail', '-q'], { stdout: cap(), stderr: cap() });
+  fs.writeFileSync(path.join(dir, 'src', 'lib.rs'), CLEAN);
+  const err = cap();
+  cli.main(['scan', dir, '-r', dir, '--baseline', base, '--no-fail'], { stdout: cap(), stderr: err });
+  assert.match(err.str(), /1 baseline entry matched nothing/);
+});
+
 test('json fingerprint is stable when the finding drifts to a different line', () => {
   const a = tmpRepo({ 'src/lib.rs': VULN });
   const b = tmpRepo({ 'src/lib.rs': '\n\n\n\n' + VULN }); // same relative path, finding pushed down

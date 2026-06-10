@@ -16,11 +16,27 @@ function shortReminder(reminder, max = 140) {
   return r;
 }
 
-function text(findings, { color = false, truncated = false } = {}) {
+// One line that makes baseline suppression visible in text output — shown whether
+// or not any findings remain, so a baselined scan can never read as a plain
+// all-clear. `baseline` is {suppressed, stale} or null/undefined (no baseline).
+function baselineLine(baseline) {
+  if (!baseline) return '';
+  const stale = baseline.stale > 0
+    ? `; ${baseline.stale} stale baseline entr${baseline.stale === 1 ? 'y' : 'ies'} (matched nothing — refresh with --write-baseline)`
+    : '';
+  return `${baseline.suppressed} finding(s) suppressed by baseline${stale}.\n`;
+}
+
+function text(findings, { color = false, truncated = false, baseline = null } = {}) {
   const warn = truncated
     ? 'WARNING: finding cap reached — this scan is INCOMPLETE (results below are partial).\n\n'
     : '';
-  if (!findings.length) return warn + 'Solana Security Standard: no findings.\n';
+  if (!findings.length) {
+    const head = baseline
+      ? `Solana Security Standard: no NEW findings (baseline applied).\n`
+      : 'Solana Security Standard: no findings.\n';
+    return warn + head + baselineLine(baseline);
+  }
   const bold = (s) => (color ? `\x1b[1m${s}\x1b[0m` : s);
   const dim = (s) => (color ? `\x1b[2m${s}\x1b[0m` : s);
   const yellow = (s) => (color ? `\x1b[33m${s}\x1b[0m` : s);
@@ -38,17 +54,20 @@ function text(findings, { color = false, truncated = false } = {}) {
   }
   lines.push('');
   const files = new Set(findings.map((f) => f.file)).size;
-  lines.push(`${findings.length} finding(s) across ${files} file(s).`);
-  return warn + lines.join('\n') + '\n';
+  lines.push(`${findings.length}${baseline ? ' NEW' : ''} finding(s) across ${files} file(s).`);
+  return warn + lines.join('\n') + '\n' + baselineLine(baseline);
 }
 
-function json(findings, { truncated = false } = {}) {
+function json(findings, { truncated = false, baseline = null } = {}) {
   return JSON.stringify(
     {
       standard: 'Solana Security Standard (SOL-0XX)',
       tool: 'solana-security-standard',
       scanComplete: !truncated, // false => finding cap hit; findings below are INCOMPLETE
       findingCount: findings.length,
+      // Present only when --baseline was used: how many findings the baseline
+      // removed (never silent) and how many of its entries matched nothing (stale).
+      ...(baseline ? { baseline: { suppressed: baseline.suppressed, stale: baseline.stale } } : {}),
       findings: findings.map((f) => ({
         ruleId: solId(f.rule),
         ruleName: f.rule,
@@ -68,7 +87,7 @@ function json(findings, { truncated = false } = {}) {
   );
 }
 
-function sarif(findings, rules = [], { version = '0.0.0', truncated: scannerCapped = false } = {}) {
+function sarif(findings, rules = [], { version = '0.0.0', truncated: scannerCapped = false, baseline = null } = {}) {
   // Stable rule list for the driver (deduped by rule_name, in id order).
   const seen = new Map();
   for (const r of rules) {
@@ -108,7 +127,12 @@ function sarif(findings, rules = [], { version = '0.0.0', truncated: scannerCapp
           // `reported` is emitted in BOTH branches so consumers can always read it.
           // `truncated` = SARIF 5000-result cap; `scannerTruncated` = the scanner's
           // finding cap (the whole scan was incomplete) — distinct conditions.
-          properties: { truncated, totalFindings: findings.length, reported: used.length, scannerTruncated: scannerCapped },
+          properties: {
+            truncated, totalFindings: findings.length, reported: used.length, scannerTruncated: scannerCapped,
+            // Present only when --baseline was used — a baselined SARIF run is
+            // visibly baselined, never indistinguishable from a clean scan.
+            ...(baseline ? { baselineSuppressed: baseline.suppressed, baselineStale: baseline.stale } : {}),
+          },
           results: used.map((f) => ({
             ruleId: f.rule,
             ruleIndex: ruleIndex.has(f.rule) ? ruleIndex.get(f.rule) : undefined,
