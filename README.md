@@ -10,7 +10,7 @@
 [![Version](https://img.shields.io/badge/version-1.10.1-blue.svg)](CHANGELOG.md)
 [![Bounty wins](https://img.shields.io/badge/bounty_wins-2_confirmed_(SOL--001)-orange)](https://jelleo.com/cycles)
 
-The same SOL-0XX rules flag Solana-specific bugs while you code — caller-controlled clock values, cross-market state asymmetry, wrapper handlers that drift from engine logic, missing Anchor constraints, and **31 bug classes in all**, drawn from real audits.
+The same SOL-0XX rules flag Solana-specific bugs while you code — caller-controlled clock values, cross-market state asymmetry, wrapper handlers that drift from engine logic, missing Anchor constraints, and **34 bug classes in all**, drawn from real audits.
 
 **Works in:** Claude Code · Codex · Copilot · Cursor · Windsurf · Cline · Aider · any MCP client · the VS Code extension (Open VSX) · the CLI · Semgrep · GitHub Actions. Pick your surface below.
 
@@ -153,7 +153,7 @@ Browse the [database →](hacks/README.md).
 
 ## Every rule, explained — [`content/`](content/)
 
-[`content/`](content/) is a standalone explainer for **all 31 rules**: what each catches, the fix, whether
+[`content/`](content/) is a standalone explainer for **all 34 rules**: what each catches, the fix, whether
 it is machine-checkable or review-only, the real exploits in that class (cross-linked to the Hacks
 Database), and a code example where one exists. One page per rule — all generated from the standard +
 patterns + hacks + examples, so nothing drifts.
@@ -169,7 +169,7 @@ not a blind-accuracy or top-1 claim.
 
 ## What you get
 
-31 rules: **28 on-chain** Solana program bug classes, plus **3 integrator / client-side rules (SOL-029–031)** for the TypeScript/web3.js that builds and sends transactions (bots, keepers, integrators). **SOL-001 covers two confirmed-exploitable bounty wins (the same caller-controlled `now_slot` class fixed in both the ACTIVATE and RETIRE branches of percolator).** Most of the rest are drawn from documented Solana audit patterns — some from our published disclosures (with maintainer triage classifications noted in the Source column), some from public bug-class taxonomy; the integrator trio came from a live buyback-worker report.
+34 rules: **31 on-chain** Solana program bug classes, plus **3 integrator / client-side rules (SOL-029–031)** for the TypeScript/web3.js that builds and sends transactions (bots, keepers, integrators). **SOL-001 covers two confirmed-exploitable bounty wins (the same caller-controlled `now_slot` class fixed in both the ACTIVATE and RETIRE branches of percolator).** Most of the rest are drawn from documented Solana audit patterns — some from our published disclosures (with maintainer triage classifications noted in the Source column), some from public bug-class taxonomy; the integrator trio came from a live buyback-worker report.
 
 | Rule | Catches | Source |
 |---|---|---|
@@ -204,6 +204,9 @@ not a blind-accuracy or top-1 claim.
 | [SOL-029](claude-security-guidance.md#sol-029--preflight-simulation-disabled) | Preflight simulation disabled (`skipPreflight: true`) on a mainnet send | **Integrator** — live buyback-worker report (TS/web3.js) |
 | [SOL-030](claude-security-guidance.md#sol-030--static-priority-fee) | Hardcoded priority fee — no congestion awareness | **Integrator** — live buyback-worker report (TS/web3.js) |
 | [SOL-031](claude-security-guidance.md#sol-031--stale-jupiter-quote) | Jupiter quote consumed without `contextSlot` freshness | **Integrator** — live buyback-worker report (TS/web3.js) |
+| [SOL-032](claude-security-guidance.md#sol-032--decimals-assumed-not-read) | Decimals assumed (hardcoded scale) instead of read from the mint | Jelleo audit pattern — the decimals/accounting loss-of-funds class (review-only: a scale literal isn't machine-distinguishable) |
+| [SOL-033](claude-security-guidance.md#sol-033--stale-account-read-after-cpi) | Account field read after a CPI without `reload()` — stale-state decisions | Generic Anchor (documented reload footgun) |
+| [SOL-034](claude-security-guidance.md#sol-034--manual-lamport-mutation) | Manual lamport mutation desyncs the program's internal ledger | Generic Solana |
 
 ## Why these rules — honest provenance
 
@@ -224,7 +227,7 @@ All published cycle reports: [jelleo.com/cycles](https://jelleo.com/cycles)
 The standard is two source files — a YAML of deterministic patterns and a Markdown threat-model + rule catalog — plus a self-contained scanner. **Every surface runs the same rules:** the CLI, GitHub Action, editor extension, MCP server, and Semgrep apply them directly. In **Claude Code** specifically, Anthropic's [security-guidance plugin](https://code.claude.com/docs/en/security-guidance) reads the two files and reviews edits at three layers:
 
 1. **On each file edit** — fast pattern match (no model call). Reads `.claude/security-patterns.yaml` for regex/substring rules. **Our file provides 20 deterministic patterns.**
-2. **At the end of each turn** — background model review of the full diff. Reads `.claude/claude-security-guidance.md` for semantic guidance. **Our file provides the Solana threat model + 31-rule catalog + review checklist.**
+2. **At the end of each turn** — background model review of the full diff. Reads `.claude/claude-security-guidance.md` for semantic guidance. **Our file provides the Solana threat model + 34-rule catalog + review checklist.**
 3. **On each commit Claude makes** — deeper agentic review that reads surrounding code. Uses the same guidance file.
 
 Every time a rule fires, the reminder text includes the rule ID (e.g. `Jelleo SOL-001:`) and a link back to this repo so you can see the underlying bounty case study.

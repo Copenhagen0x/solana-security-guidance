@@ -111,6 +111,23 @@ patterns:
     exclude_paths: ["**/tests/**", "**/client/**", "**/cli/**", "**/offchain/**", "**/sdk/**"]
     reminder: "Jelleo SOL-025: a sysvar (Clock/Rent) read by RAW-deserializing account data instead of `Clock::get()` or `Sysvar::from_account_info` (both of which key-check the account internally). The raw path trusts whatever account is passed, so an attacker supplies a look-alike carrying chosen time/rent values. Fix: use `Clock::get()` / Anchor `Sysvar<>`; never hand-deserialize a sysvar account. See: github.com/Copenhagen0x/solana-security-standard#sol-025."
 
+  # Bounded cross-line span ([\s\S]{0,600}? — RE2-portable, no lookarounds): a CPI
+  # call followed closely by an Anchor account-field read. Fail-open tripwire —
+  # Anchor serves the deserialized copy from BEFORE the call, so a post-CPI read
+  # without reload() can be stale. reload() does NOT silence the regex (RE2 has
+  # no negative lookahead); the fix clears exclusion #1 instead.
+  - rule_name: sol_033_stale_read_after_cpi
+    regex: "\\b(?:invoke(?:_signed)?|token::(?:transfer|burn|mint_to|close_account))\\s*\\([\\s\\S]{0,600}?\\bctx\\.accounts\\.\\w+\\.(?:amount|owner|delegate|data\\b|lamports\\(\\))"
+    paths: ["**/*.rs"]
+    exclude_paths: ["**/tests/**", "**/client/**", "**/cli/**", "**/offchain/**", "**/sdk/**"]
+    reminder: "Jelleo SOL-033: an account field is read after a CPI in the same handler — the CPI can mutate that account (balance/authority/data), and Anchor serves the deserialized copy from BEFORE the call. Call `x.reload()` (or re-read from the AccountInfo) between the CPI and the read. Heuristic flag — fires on CPI-then-field-read proximity; cite exclusion #1 if the account is reload()ed, #2 if the callee provably can't touch it. See: github.com/Copenhagen0x/solana-security-standard#sol-033."
+
+  - rule_name: sol_034_manual_lamport_mutation
+    substrings: ["try_borrow_mut_lamports", "lamports.borrow_mut()"]
+    paths: ["**/*.rs"]
+    exclude_paths: ["**/tests/**", "**/client/**", "**/cli/**", "**/offchain/**", "**/sdk/**"]
+    reminder: "Jelleo SOL-034: direct lamport mutation (`try_borrow_mut_lamports` / `lamports.borrow_mut()`). The runtime conserves the per-instruction lamport SUM, but your internal ledger does not move with it — verify every manual debit/credit updates the matching recorded balance (vault totals, user claims), the debited account stays rent-exempt, and the destination is validated. For system-owned accounts use a transfer CPI instead. See: github.com/Copenhagen0x/solana-security-standard#sol-034."
+
   # ── Integrator / client-side rules (SOL-029..031) ───────────────────────────
   # These target the TypeScript/JavaScript that BUILDS AND SENDS transactions
   # (bots, keepers, workers, integrators) — not on-chain Rust. The `languages`

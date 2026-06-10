@@ -12,10 +12,10 @@ documented exclusion-cleared cases where the tripwire is retained by design). It
 they encode, and deeper semantic review is what the review-only rules and a
 [Jelleo audit](https://jelleo.com) are for.
 
-## Scoreboard — 20 machine-checkable rules
+## Scoreboard — 22 machine-checkable rules
 
-- **Detection (anti-rot): 20/20** vulnerable examples fire their rule.
-- **FP discipline: 13/20 fixed examples scanner-clean**, 7 exclusion-cleared (tripwire retained by design; the fix satisfies the rule's numbered exclusion).
+- **Detection (anti-rot): 22/22** vulnerable examples fire their rule.
+- **FP discipline: 13/22 fixed examples scanner-clean**, 9 exclusion-cleared (tripwire retained by design; the fix satisfies the rule's numbered exclusion).
 
 | Rule | Tier | Severity | Vulnerable example | Fixed example |
 |------|------|----------|--------------------|---------------|
@@ -39,6 +39,8 @@ they encode, and deeper semantic review is what the review-only rules and a
 | SOL-029 | high | medium | yes | clean |
 | SOL-030 | low | low | yes | clean |
 | SOL-031 | high | medium | yes | exclusion-cleared — Jupiter client kept; fix adds a contextSlot freshness gate (exclusion #1) |
+| SOL-033 | high | high | yes | exclusion-cleared — CPI-then-read shape kept; fix inserts reload() between them, invisible to RE2 (exclusion #1) |
+| SOL-034 | high | high | yes | exclusion-cleared — try_borrow_mut_lamports kept; fix moves the internal ledger with the lamports + rent-exemption guard (exclusion #1) |
 
 ## How this stays honest
 

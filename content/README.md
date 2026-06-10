@@ -1,8 +1,8 @@
-# Rule content — all 31 SOL-0XX explainers
+# Rule content — all 34 SOL-0XX explainers
 
 > One page per rule: what it catches, the fix, whether it is machine-checkable, the real exploits in that class, and a code example where one exists. Generated from the standard + patterns + the [Hacks Database](../hacks/) + examples by [`scripts/sync-content.js`](./scripts/sync-content.js) — do not hand-edit.
 
-**20 of 31** rules are machine-checkable (deterministic pattern); the rest are review-only. **8** map to a catalogued real-world exploit.
+**22 of 34** rules are machine-checkable (deterministic pattern); the rest are review-only. **8** map to a catalogued real-world exploit.
 
 | Rule | Title | Tier | Severity | Enforcement | Real exploits | Example |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -37,5 +37,8 @@
 | [SOL-029](./rules/SOL-029.md) | Preflight simulation disabled | high | medium | pattern | — | ✓ |
 | [SOL-030](./rules/SOL-030.md) | Static priority fee | low | low | pattern | — | ✓ |
 | [SOL-031](./rules/SOL-031.md) | Stale Jupiter quote | high | medium | pattern | — | ✓ |
+| [SOL-032](./rules/SOL-032.md) | Decimals assumed, not read | high | high | review | — | ✓ |
+| [SOL-033](./rules/SOL-033.md) | Stale account read after CPI | high | high | pattern | — | ✓ |
+| [SOL-034](./rules/SOL-034.md) | Manual lamport mutation | high | high | pattern | — | ✓ |
 
 Maintained by [Jelleo](https://jelleo.com). MIT.
