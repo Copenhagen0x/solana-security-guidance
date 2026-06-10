@@ -1,0 +1,26 @@
+{
+  "name": "solana-security-standard",
+  "description": "Official marketplace for the Solana Security Standard (SOL-0XX) — by Jelleo.",
+  "owner": {
+    "name": "Jelleo",
+    "email": "kirill@jelleo.com"
+  },
+  "plugins": [
+    {
+      "name": "solana-security-standard",
+      "displayName": "Solana Security Standard",
+      "description": "Scan Solana/Anchor code against the SOL-0XX rules as you work: MCP scan tool, full 34-rule guidance, /scan command.",
+      "source": "./",
+      "version": "1.10.1",
+      "author": {
+        "name": "Jelleo",
+        "email": "kirill@jelleo.com"
+      },
+      "homepage": "https://github.com/Copenhagen0x/solana-security-standard",
+      "repository": "https://github.com/Copenhagen0x/solana-security-standard",
+      "license": "MIT",
+      "keywords": ["solana", "security", "anchor", "audit", "scanner"],
+      "category": "security"
+    }
+  ]
+}

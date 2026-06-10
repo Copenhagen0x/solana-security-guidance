@@ -35,6 +35,13 @@ Done. Open a Solana program file in Claude Code and the plugin will catch issues
 
 *(This pulls from `main` with no integrity check. For supply-chain-sensitive use, see **Verified install** below.)*
 
+Or install the whole standard as a **Claude Code plugin** (the MCP scan tool + a `/scan` command, auto-wired):
+
+```text
+/plugin marketplace add Copenhagen0x/solana-security-standard
+/plugin install solana-security-standard@solana-security-standard
+```
+
 ## Verified install (pin + checksum)
 
 For CI or supply-chain-sensitive setups, **pin to a release tag and verify the download** against the published `CHECKSUMS.txt` instead of pulling `main`:

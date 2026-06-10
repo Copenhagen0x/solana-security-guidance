@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "solana-security-standard": {
+      "command": "npx",
+      "args": ["-y", "@jelleo/solana-security-mcp"]
+    }
+  }
+}
