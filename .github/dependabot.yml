@@ -1,0 +1,20 @@
+# Dependabot keeps the SHA-pinned actions fresh: it understands the `# vX.Y.Z`
+# comment next to each pin and bumps both the SHA and the comment in one PR.
+version: 2
+updates:
+  # The actions used by our CI workflows AND by action.yml (the composite action
+  # adopters run) — all SHA-pinned; updates arrive as reviewable PRs, never silently.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ['*']
+
+  # The CLI's npm tree (runtime is zero-dep by design; this watches js-yaml, the
+  # single devDependency, so the sync tooling never rots).
+  - package-ecosystem: npm
+    directory: /cli
+    schedule:
+      interval: weekly
