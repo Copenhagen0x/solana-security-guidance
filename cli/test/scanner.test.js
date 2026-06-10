@@ -102,3 +102,64 @@ test('a rule without metadata still scans (tier/severity undefined, not a crash)
   assert.equal(f[0].tier, null);
   assert.equal(f[0].severity, null);
 });
+
+// --- per-finding fingerprint (the stable id baseline/diff + suppression build on) ---
+
+test('every finding carries a 32-hex (128-bit) fingerprint', () => {
+  const f = scanner.scanContent('fn t(now_slot: u64) {}\n', 'src/lib.rs', RULES);
+  assert.equal(f.length, 1);
+  assert.match(f[0].fingerprint, /^[0-9a-f]{32}$/);
+});
+
+test('fingerprint is STABLE across line drift (the whole point — a baseline survives code moving)', () => {
+  const a = scanner.scanContent('fn t(now_slot: u64) {}\n', 'src/lib.rs', RULES);
+  const b = scanner.scanContent('\n\n\n// pushed down\nfn t(now_slot: u64) {}\n', 'src/lib.rs', RULES);
+  assert.notEqual(a[0].line, b[0].line, 'the finding moved to a different line');
+  assert.equal(a[0].fingerprint, b[0].fingerprint, 'but its fingerprint is unchanged');
+});
+
+test('fingerprint is deterministic across repeated scans of identical input', () => {
+  const a = scanner.scanContent('fn t(now_slot: u64) {}\n', 'src/lib.rs', RULES);
+  const b = scanner.scanContent('fn t(now_slot: u64) {}\n', 'src/lib.rs', RULES);
+  assert.equal(a[0].fingerprint, b[0].fingerprint);
+});
+
+test('fingerprint distinguishes the same match in different files', () => {
+  const a = scanner.scanContent('fn t(now_slot: u64) {}\n', 'a.rs', RULES);
+  const b = scanner.scanContent('fn t(now_slot: u64) {}\n', 'b.rs', RULES);
+  assert.notEqual(a[0].fingerprint, b[0].fingerprint);
+});
+
+test('two identical matches in one file get DISTINCT fingerprints (ordinal disambiguation)', () => {
+  const f = scanner.scanContent('fn t(now_slot: u64) {}\nfn t(now_slot: u64) {}\n', 'a.rs', RULES);
+  const sol1 = f.filter((x) => x.rule === 'sol_001_now_slot');
+  assert.equal(sol1.length, 2, 'both identical constructs are found');
+  assert.notEqual(sol1[0].fingerprint, sol1[1].fingerprint, 'and are not collapsed into one id');
+});
+
+test('fingerprint ignores whitespace/reindentation in the matched construct', () => {
+  // Reformatting the matched signature (extra spaces) must NOT change identity.
+  const a = scanner.scanContent('fn t(now_slot: u64) {}\n', 'a.rs', RULES);
+  const b = scanner.scanContent('fn   t(now_slot:   u64) {}\n', 'a.rs', RULES);
+  assert.equal(a[0].fingerprint, b[0].fingerprint);
+});
+
+test('fingerprint is identical for CRLF vs LF (cross-OS determinism — the windows-CI property)', () => {
+  // A line-spanning match hashed on a Windows checkout (CRLF) must equal the same
+  // construct on Linux (LF), or a baseline computed on one OS is useless on the other.
+  const lf = scanner.scanContent('fn activate(\nnow_slot: u64) {}\n', 'a.rs', RULES);
+  const crlf = scanner.scanContent('fn activate(\r\nnow_slot: u64) {}\r\n', 'a.rs', RULES);
+  const a = lf.find((x) => x.rule === 'sol_001_now_slot');
+  const b = crlf.find((x) => x.rule === 'sol_001_now_slot');
+  assert.ok(a && b, 'the multi-line signature fires under both line endings');
+  assert.equal(a.fingerprint, b.fingerprint, 'CRLF and LF source produce the same fingerprint');
+});
+
+test('fingerprint() + normalizeMatch() are exposed and pure', () => {
+  assert.equal(scanner.normalizeMatch('  a   b\n c '), 'a b c');
+  const fp = scanner.fingerprint('sol_x', 'a.rs', 'a  b', 0);
+  assert.match(fp, /^[0-9a-f]{32}$/);
+  assert.equal(fp, scanner.fingerprint('sol_x', 'a.rs', 'a b', 0), 'normalizes the match input');
+  assert.notEqual(fp, scanner.fingerprint('sol_x', 'a.rs', 'a b', 1), 'ordinal changes the id');
+  assert.notEqual(fp, scanner.fingerprint('sol_y', 'a.rs', 'a b', 0), 'rule name changes the id');
+});

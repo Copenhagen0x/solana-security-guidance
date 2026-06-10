@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added — stable per-finding fingerprint
+
+- **Every finding now carries a stable, position-independent `fingerprint`** — `sha256(JSON.stringify([rule, file, whitespace-normalized match, ordinal]))` truncated to 128 bits (32 hex chars). Identity deliberately excludes line/column, so an unchanged finding keeps its id when code drifts up or down a file, and whitespace normalization means reformatting/reindentation (or a CRLF vs LF checkout) doesn't change it either; identical repeated constructs in one file are disambiguated by occurrence ordinal. Surfaced as `fingerprint` in JSON output and as SARIF `partialFingerprints` (`sssFindingId/v1`) — the field GitHub code scanning uses to track an alert across commits, replacing its line-hash default that line drift perturbs. Sized at 128 bits because the hash inputs (file path, matched source) are attacker-controlled and a future baseline/suppression layer will trust this id as a security control: targeted second-preimage 2^128, birthday collision 2^64 — both infeasible. This is the keystone for upcoming baseline/diff scanning and fingerprint-keyed suppression. Purely additive — text output, exit codes, and every existing JSON/SARIF field are unchanged. Reviewed to 0 Critical/High/Medium by code-reviewer + paranoid-goober + threat-modeler, to convergence (incl. a re-verify pass on the 64→128-bit hardening).
+
 ## [1.10.1] — 2026-06-07
 
 ### Fixed — SOL-016 canonical-bump triage precision (no coverage change)
