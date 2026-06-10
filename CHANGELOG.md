@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.0] — 2026-06-10
+
 ### Added — three new rules: SOL-035, SOL-036, SOL-037 (34 → 37)
 
 - **SOL-035 · Instructions sysvar substitution** (machine): instruction introspection (`load_instruction_at_checked` / `load_current_index_checked`) on an instructions sysvar passed as a raw `AccountInfo` whose key is never pinned — an attacker substitutes a forged instructions account to spoof an Ed25519/Secp256k1 precompile signature check or a CPI-origin check. Fix: Anchor `Sysvar<Instructions>` (pins the key) or assert `key == sysvar::instructions::ID`. Distinct from SOL-025 (raw Clock/Rent bincode deserialize) — this is the introspection-API class.
