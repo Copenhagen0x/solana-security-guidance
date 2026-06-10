@@ -279,6 +279,32 @@
         "the mutation is the documented rent-refund path of an account close: the destination is validated against stored state (not caller-chosen), and the account's data is zeroed or discarded in the same instruction",
         "the accounts are system-owned and the movement uses a system-program transfer CPI — a manual write on a system-owned account cannot deduct anyway (the runtime rejects it); flag it as dead/misleading code"
       ]
+    },
+    "SOL-035": {
+      "tier": "high", "severity": "high",
+      "reachability": "the instruction-introspection call site (load_instruction_at_checked / load_current_index_checked / get_instruction_relative) and the instructions-sysvar account it reads",
+      "exclusions": [
+        "BOTH: the account read is an Anchor `Sysvar<'info, Instructions>` (or `account.key() == solana_program::sysvar::instructions::ID` is asserted), AND the introspected precompile instruction's program id, signer pubkey, AND signed message are all validated against the expected values before the result authorizes anything — pinning the sysvar alone is NOT sufficient (a real Ed25519/Secp256k1 ix over an attacker-chosen pubkey/message still passes a 'did a precompile run' check)",
+        "the introspection result is used only for logging/telemetry — never to authorize a state change, accept a precompile-verified signature, or gate a CPI-origin check (a positive 'not security-relevant' proof, not merely 'looks informational')"
+      ]
+    },
+    "SOL-036": {
+      "tier": "high", "severity": "high",
+      "reachability": "the token account trusted as a specific owner's ATA without a canonical-derivation check",
+      "exclusions": [
+        "the account carries Anchor `associated_token::mint = <mint>` AND `associated_token::authority = <owner>` constraints (Anchor re-derives and enforces the canonical ATA)",
+        "the account key is compared against `get_associated_token_address(owner, mint)` (or the Token-2022 variant for the actual token program) before any deposit/payout, with owner and mint both sourced from validated on-chain state — NOT from caller-supplied instruction data",
+        "the token account is a program-owned vault pinned by a PDA seed/has_one (not a per-user ATA at all), so canonical-ATA derivation does not apply"
+      ]
+    },
+    "SOL-037": {
+      "tier": "high", "severity": "high",
+      "reachability": "the invoke/invoke_signed call site whose target program id is not pinned to an expected program",
+      "exclusions": [
+        "the callee program is pinned (a typed Anchor `Program<'info, T>`, or its key asserted == the expected hardcoded/config-stored program id) AND the accounts passed into the CPI are validated/pinned — for an `invoke_signed` that carries this program's PDA authority, a pinned program with attacker-substituted accounts is still a confused-deputy drain (cite SOL-027 for the account validation)",
+        "the program id AND the account metas are all hardcoded constants / program-derived in the CPI call itself (not read from caller-supplied accounts or instruction data), so neither the callee nor its accounts can be redirected",
+        "this is SOL-009's concern (missing CALLER authority) rather than an unpinned CALLEE — cite SOL-009 instead; SOL-037 is specifically the callee-identity gap"
+      ]
     }
   }
 }

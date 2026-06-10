@@ -128,6 +128,12 @@ patterns:
     exclude_paths: ["**/tests/**", "**/client/**", "**/cli/**", "**/offchain/**", "**/sdk/**"]
     reminder: "Jelleo SOL-034: direct lamport mutation (`try_borrow_mut_lamports` / `lamports.borrow_mut()`). The runtime conserves the per-instruction lamport SUM, but your internal ledger does not move with it — verify every manual debit/credit updates the matching recorded balance (vault totals, user claims), the debited account stays rent-exempt, and the destination is validated. For system-owned accounts use a transfer CPI instead. See: github.com/Copenhagen0x/solana-security-standard#sol-034."
 
+  - rule_name: sol_035_instructions_sysvar_substitution
+    substrings: ["load_instruction_at_checked", "load_current_index_checked", "get_instruction_relative"]
+    paths: ["**/*.rs"]
+    exclude_paths: ["**/tests/**", "**/client/**", "**/cli/**", "**/offchain/**", "**/sdk/**"]
+    reminder: "Jelleo SOL-035: instruction introspection (`load_instruction_at_checked` / `load_current_index_checked` / `get_instruction_relative`) to verify a precompile (Ed25519/Secp256k1) signature. TWO checks are required: (1) PIN the instructions sysvar account — Anchor `Sysvar<Instructions>` (pins the key) or assert `account.key() == sysvar::instructions::ID`; AND (2) VALIDATE the introspected precompile instruction's program id AND its parsed signer pubkey + signed message against the expected values. Checking only that 'an Ed25519/Secp256k1 instruction ran' is bypassable — an attacker includes a real precompile ix over their own keypair and message. See: github.com/Copenhagen0x/solana-security-standard#sol-035."
+
   # ── Integrator / client-side rules (SOL-029..031) ───────────────────────────
   # These target the TypeScript/JavaScript that BUILDS AND SENDS transactions
   # (bots, keepers, workers, integrators) — not on-chain Rust. The `languages`

@@ -134,9 +134,9 @@ function readme() {
     'review Solana/Anchor code against the SOL-0XX rules.\n\n' +
     table + '\n\n' +
     '**Coverage.** The AI-instruction files (Codex, Copilot, Cursor, Windsurf, Cline, Aider) carry ' +
-    'all **34 documented SOL-0XX rules** as guidance for the assistant. The machine-checkable ' +
-    'surfaces (CLI, GitHub Action, Semgrep, editor extension) enforce the **22 rules that have ' +
-    'deterministic patterns**; the other 12 are semantic rules an AI or human reviewer applies. ' +
+    'all **37 documented SOL-0XX rules** as guidance for the assistant. The machine-checkable ' +
+    'surfaces (CLI, GitHub Action, Semgrep, editor extension) enforce the **23 rules that have ' +
+    'deterministic patterns**; the other 14 are semantic rules an AI or human reviewer applies. ' +
     'All are generated from the same source - no rule text is duplicated by hand. ' +
     'Full catalog and per-rule detail: ' + REPO + ' .\n'
   );

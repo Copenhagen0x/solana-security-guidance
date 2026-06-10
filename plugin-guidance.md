@@ -47,3 +47,6 @@ Critical first: SOL-001, 003, 004, 021, 023, 024, 015, 006/007, 014, 019, 032, 0
 - **SOL-032** · Decimals assumed, not read — read `mint.decimals`; normalize first
 - **SOL-033** · Stale account read after CPI — `reload()` / re-read after the CPI
 - **SOL-034** · Manual lamport mutation — mutate both sides; assert conservation
+- **SOL-035** · Instructions sysvar substitution — pin the sysvar (Anchor `Sysvar<Instructions>`, or assert `key == sysvar::instructions::ID`) AND validate the introspected instruction's program id plus its parsed signer pubkey and message against the expected values — confirming only that "a precompile ran" is bypassable with any real signature
+- **SOL-036** · ATA derivation unpinned — Anchor `associated_token::mint` + `associated_token::authority` constraints, or compare against `get_associated_token_address(owner, mint)` (owner+mint from validated on-chain state, not caller data) before use
+- **SOL-037** · Arbitrary CPI target — pin the callee — a typed `Program<'info, T>`, or assert the program id equals the expected constant — AND validate the accounts (and any PDA-signer seeds/amounts) passed into the CPI; pinning the program alone leaves account substitution / confused-deputy open (see SOL-027)

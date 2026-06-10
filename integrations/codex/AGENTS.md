@@ -116,6 +116,15 @@ An account field read after a CPI that can mutate it (or cached from before) →
 ### SOL-034 · Manual lamport mutation
 Direct lamport writes (`try_borrow_mut_lamports`) without the matching debit/credit → funds conjured/burned vs program accounting. Fix: mutate both sides; assert conservation.
 
+### SOL-035 · Instructions sysvar substitution
+Instruction introspection (`load_instruction_at_checked`, `load_current_index_checked`) to confirm a precompile (Ed25519/Secp256k1) signature — on an instructions sysvar passed as a raw `AccountInfo` whose key is never pinned, OR trusting that a precompile ran without checking WHAT it verified → attacker forges the sysvar, or includes a real precompile ix over their own pubkey/message, and spoofs the check. Fix: pin the sysvar (Anchor `Sysvar<Instructions>`, or assert `key == sysvar::instructions::ID`) AND validate the introspected instruction's program id plus its parsed signer pubkey and message against the expected values — confirming only that "a precompile ran" is bypassable with any real signature.
+
+### SOL-036 · ATA derivation unpinned
+A token account is trusted as "the user's ATA" without verifying it's the canonical ATA for (owner, mint) → attacker passes a different token account they control, redirecting deposits/payouts. Fix: Anchor `associated_token::mint` + `associated_token::authority` constraints, or compare against `get_associated_token_address(owner, mint)` (owner+mint from validated on-chain state, not caller data) before use.
+
+### SOL-037 · Arbitrary CPI target
+A CPI whose callee program id comes from an account or instruction data that's never checked against the expected program → attacker redirects the call to a malicious program. (SOL-009 checks the CALLER's authority; this checks the CALLEE's identity.) Fix: pin the callee — a typed `Program<'info, T>`, or assert the program id equals the expected constant — AND validate the accounts (and any PDA-signer seeds/amounts) passed into the CPI; pinning the program alone leaves account substitution / confused-deputy open (see SOL-027).
+
 ## Provenance
 
 Honest origins (full table in README): SOL-001 = 2 confirmed bounty wins; SOL-002 = public class; SOL-003/004/005 = our bounty-5 patterns; SOL-021/022/023 = our v16 audit; SOL-029-031 = a live integrator report; rest = documented Solana/DeFi hygiene.

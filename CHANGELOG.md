@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — three new rules: SOL-035, SOL-036, SOL-037 (34 → 37)
+
+- **SOL-035 · Instructions sysvar substitution** (machine): instruction introspection (`load_instruction_at_checked` / `load_current_index_checked`) on an instructions sysvar passed as a raw `AccountInfo` whose key is never pinned — an attacker substitutes a forged instructions account to spoof an Ed25519/Secp256k1 precompile signature check or a CPI-origin check. Fix: Anchor `Sysvar<Instructions>` (pins the key) or assert `key == sysvar::instructions::ID`. Distinct from SOL-025 (raw Clock/Rent bincode deserialize) — this is the introspection-API class.
+- **SOL-036 · ATA derivation unpinned** (review-only): a token account trusted as "the user's ATA" without verifying it's the canonical ATA for (owner, mint) → funds redirected to an attacker-controlled account. Review-only — absence of a derivation check has no syntactic marker; the fix is `associated_token::mint`/`::authority` constraints or a `get_associated_token_address` compare.
+- **SOL-037 · Arbitrary CPI target** (review-only): a CPI whose callee program id is caller-supplied and never pinned → the call is redirected to an attacker program. The callee-identity gap that SOL-009 (which checks the *caller's* authority) doesn't cover. Fix: a typed `Program<'info, T>` or assert the program id equals the expected constant.
+- First rule addition since the 8 KB ceiling was lifted — fit with room to spare (plugin digest now ~4.5 KB / 8192). Ships with meta (tier/severity/reachability/numbered exclusions), example pairs (SOL-035 machine-gated, fix exclusion-cleared; 036/037 illustrative), generated content/integrations/semgrep/MCP+VS Code engine re-vendor/benchmark/**plugin-guidance digest**, the rule-count tripwire 34→37, and every hardcoded count (README ×3 + table rows, mcp, hacks, integrations narrative 37/23/14, test assertions). Reviewed to 0 Critical/High/Medium by code-reviewer + paranoid-goober + threat-modeler.
+
 ### Changed — plugin guidance is now a generated digest (breaks the 8 KB rule ceiling)
 
 - **`claude-security-guidance.md` stays the full hand-authored master but is no longer the file the plugin installs** — and the 8 KB Anthropic cap moves OFF it. The plugin now installs a new **generated `plugin-guidance.md`** digest: the threat model + review checklist verbatim, then one terse cue per rule (`**SOL-NNN** · Title — fix`), then a pointer to full detail (the `list_solana_security_rules` MCP tool, or the master on GitHub). A cue is ~80 B vs ~180 B of full prose, so the digest holds far more rules under the cap — the standard can keep growing without the master's size breaking the plugin file.
