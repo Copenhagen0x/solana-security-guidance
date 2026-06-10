@@ -252,6 +252,33 @@
         "quoteResponse.contextSlot is captured and the route is refetched/rejected when it lags the current slot",
         "the quote is consumed within the same slot as the fetch (an undefined 'freshness window' is not sufficient — prefer ex1's explicit contextSlot check) AND a slippage bound protects the fill"
       ]
+    },
+    "SOL-032": {
+      "tier": "high", "severity": "high",
+      "reachability": "the amount/price computation applying a hardcoded decimals scale where a second mint (or a different-decimals mint) can enter the math",
+      "exclusions": [
+        "decimals are read from the mint account (mint.decimals) and applied before any cross-mint comparison or division",
+        "a single mint is pinned by address in the program, the scale constant cites that mint, and no second mint can enter the math (an SPL mint's decimals are fixed at initializeMint and cannot change afterwards — but a CONFIGURABLE mint address with an assumed scale does NOT qualify)",
+        "the literal is not a token scale at all (compute-unit price, bps denominator, time constant) — name what it actually scales"
+      ]
+    },
+    "SOL-033": {
+      "tier": "high", "severity": "high",
+      "reachability": "the post-CPI read site and the CPI that can mutate the account it reads",
+      "exclusions": [
+        "the account is reload()ed (or re-deserialized from its AccountInfo) between the CPI and the read",
+        "the callee provably cannot mutate the read account — it is not in the CPI's account set and the callee cannot reach it via nested CPI (name the callee and its full account set; 'the callee looks unrelated' is NOT sufficient)",
+        "the read value feeds only logs/events, never a gate, an amount computation, or stored state"
+      ]
+    },
+    "SOL-034": {
+      "tier": "high", "severity": "high",
+      "reachability": "the manual lamport write and the internal balance/claim field it must stay in sync with",
+      "exclusions": [
+        "the mutation updates BOTH the lamports and the matching internal balance/claim field in the same instruction (cite both writes), and the debited account remains rent-exempt afterwards",
+        "the mutation is the documented rent-refund path of an account close: the destination is validated against stored state (not caller-chosen), and the account's data is zeroed or discarded in the same instruction",
+        "the accounts are system-owned and the movement uses a system-program transfer CPI — a manual write on a system-owned account cannot deduct anyway (the runtime rejects it); flag it as dead/misleading code"
+      ]
     }
   }
 }

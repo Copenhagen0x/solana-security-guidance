@@ -7,7 +7,7 @@ A [Model Context Protocol](https://modelcontextprotocol.io) server that brings t
 Two tools:
 
 - **`scan_solana_code`** - scan a snippet of Solana/Anchor Rust against the SOL-0XX fast patterns; returns advisory findings (rule id + line:col + fix hint). A match means "look here," not a confirmed bug. Off-chain paths (client/cli/offchain/sdk/tests) are excluded.
-- **`list_solana_security_rules`** - return the full standard: threat model, review checklist, and all 31 numbered rules with fixes, so the assistant can write and review Solana code safely.
+- **`list_solana_security_rules`** - return the full standard: threat model, review checklist, and all 34 numbered rules with fixes, so the assistant can write and review Solana code safely.
 
 ## Install
 

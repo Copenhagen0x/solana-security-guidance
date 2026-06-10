@@ -6,5 +6,7 @@
   "SOL-009": "invoke_signed kept; fix adds Signer + has_one binding before the CPI (exclusion #1)",
   "SOL-011": "close= kept; fix binds has_one and returns lamports to the owner (exclusion #1/#2)",
   "SOL-020": "set_authority kept; fix constrains the signer == current authority (exclusion #2)",
-  "SOL-031": "Jupiter client kept; fix adds a contextSlot freshness gate (exclusion #1)"
+  "SOL-031": "Jupiter client kept; fix adds a contextSlot freshness gate (exclusion #1)",
+  "SOL-033": "CPI-then-read shape kept; fix inserts reload() between them, invisible to RE2 (exclusion #1)",
+  "SOL-034": "try_borrow_mut_lamports kept; fix moves the internal ledger with the lamports + rent-exemption guard (exclusion #1)"
 }
