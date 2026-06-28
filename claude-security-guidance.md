@@ -42,7 +42,7 @@ PDA used without `find_program_address` validation → attacker passes any accou
 `invoke_signed` without verifying the caller's authority (signing with a PDA ≠ authorization). Fix: check authority before the CPI.
 
 ### SOL-010 · Reinit attack
-`init_if_needed` on accounts holding value/authority → a 2nd call reinits, dropping balances. Fix: plain `init` + explicit existence guard.
+`init_if_needed` on accounts holding value/authority → a 2nd call reinits, dropping balances; the same footgun enables nullifier/spent-marker double-spend (an `init_if_needed` nullifier PDA that doesn't abort on a pre-existing entry, or a spent-marker checked AFTER the transfer, lets one note redeem twice). Fix: plain `init` + an explicit existence guard, checked before any payout.
 
 ### SOL-011 · Lamport drain via close
 `close =` on an account not fully drained, or a close that doesn't zero data (residual reads). Fix: drain + zero + controlled destination.
@@ -125,8 +125,53 @@ A token account is trusted as "the user's ATA" without verifying it's the canoni
 ### SOL-037 · Arbitrary CPI target
 A CPI whose callee program id comes from an account or instruction data that's never checked against the expected program → attacker redirects the call to a malicious program. (SOL-009 checks the CALLER's authority; this checks the CALLEE's identity.) Fix: pin the callee — a typed `Program<'info, T>`, or assert the program id equals the expected constant — AND validate the accounts (and any PDA-signer seeds/amounts) passed into the CPI; pinning the program alone leaves account substitution / confused-deputy open (see SOL-027).
 
+### SOL-038 · PDA seed collision
+A PDA seed scheme with unpinned element boundaries - a caller-controlled variable-length seed (`String`/`Vec<u8>`/slice) adjacent to another variable element, or two schemes whose fixed prefixes differ in length - lets two DISTINCT logical accounts derive the SAME address (Solana hashes `seeds=[...]` as one flat buffer), so an attacker shifts bytes across a boundary to alias a victim's PDA -> overwrite/spoof/type-confusion. Distinct from SOL-008/016 (which verify a PDA, not the scheme's ambiguity). Fix: fixed-width per-type seed tag from one program-wide enum registry (never per-file constants); hash/length-prefix every variable element, never adjoin two unbounded ones
+
+### SOL-039 · Asymmetric partial-CPI state
+A handler mutates its OWN accounts (records a withdrawal, clears a debt, burns shares) then fires a fund-moving CPI whose `Result` is SWALLOWED (`let _ =`, `.ok()`, `.unwrap_or*`, a logged `.is_err()`, or a `match`/`if let Err` arm that does not re-`?`). On Solana only an `Err` returned from the top-level instruction reverts account writes, so a caught inner-CPI failure leaves the outer mutation committed while no tokens moved -> the attacker farms one-sided state by forcing the CPI to fail. Distinct from SOL-033 (stale read after a successful CPI). Fix: propagate the CPI with `?` so the whole instruction reverts; if you must catch the error, roll back every prior self-mutation
+
+### SOL-040 · Credit from requested, not measured (Token-2022)
+A deposit/vault handler credits shares from the REQUESTED `amount` instead of the MEASURED pre/post delta of the destination token account. Under a Token-2022 mint with a transfer-fee or transfer-hook the vault receives strictly less than `amount`, so the depositor is over-credited and the vault under-collateralized; the surplus drains to the next withdrawer. Distinct from SOL-032 (decimals) and SOL-013 (wrong token program). Fix: credit the measured pre/post balance delta (`reload()` before/after), not the requested amount; pin BOTH the destination ATA mint AND authority (a measured delta alone is not enough)
+
+### SOL-041 · Forced-balance / supply desync
+A raw on-chain balance - an account's `lamports()` or a token account's `amount` - is read as the AUTHORITATIVE internal supply/reserve driving a price/share/payout. Anyone can force-add balance the program never accounted for (a direct transfer, rent top-up, or pre-funded init before the program runs), inflating that total with no matching ledger entry -> desynced invariants, excess shares minted, pool drained (the SafeMoon reflection class). Distinct from SOL-011/034 (which write lamports out of sync). Fix: drive math from a program-owned recorded ledger updated by measured deltas; read the raw balance only to assert `live >= recorded`
+
+### SOL-042 · Unbounded account-iteration compute DoS
+An instruction loops over a caller-controlled collection (`remaining_accounts`, a user-grown `Vec`/list) with no per-call length cap, so work scales until the tx exceeds the ~1.4M compute-unit ceiling and EVERY call reverts - permanently bricking the instruction (and any crank/settlement behind it). Cheap-to-grow, expensive-to-process is the lever. Distinct from SOL-027 (validates each account's identity, not the count). Fix: `require!(list.len() <= MAX)` with MAX proven to fit the CU budget, or paginate across txns with a stored cursor
+
+### SOL-043 · Unbounded storage / slot-exhaustion griefing
+A permissionless instruction lets an attacker consume an unbounded share of a persistent SHARED resource - a monotonic global registry/list, program-subsidized account growth, or front-running the init of a depended-on singleton - denying state every other user relies on. Distinct from SOL-012 (rent funding): here growth is attacker-driven and one-way. Fix: per-caller fixed-size caller-paid PDAs, or a self-limiting shared cap (decrement-on-close + a refundable stake); admin-gate close
+
+### SOL-044 · Hardcoded slot-time rate
+Interest/emissions/vesting/funding accrual computed from a hardcoded slot->time conversion (a `SLOTS_PER_YEAR` constant, or a slot delta scaled by an assumed ~400ms/slot) instead of `Clock::get()?.unix_timestamp`. Solana slot time is not constant (it drifts, historically slower), so accrual silently diverges from wall-clock -> compounding over/under-payment an attacker farms around known slow/fast periods. Distinct from SOL-001 (trusting a caller-supplied slot). Fix: accrue on `Clock::get()?.unix_timestamp` deltas (store `last_update_ts`), never a hardcoded slots-per-period constant
+
+### SOL-045 · Incremental Merkle insertion error
+An incrementally-maintained Merkle tree (SPL account-compression `ConcurrentMerkleTree`, Bubblegum cNFTs, or a hand-rolled filled-subtrees/changelog) updates its root from cached state instead of a full recompute. A wrong incremental update for some insert/replace sequence (off-by-one height, stale reused sibling, mismatched empty-node hash, wrong path direction, out-of-order changelog) diverges from the canonical root -> a forged-leaf proof validates or a real leaf is silently dropped. Distinct from SOL-008 (the account is the right tree; its root is wrong). Fix: delegate root maintenance AND proof verification to spl-account-compression via CPI (pin `merkle_tree.owner`); else differential-test the tree
+
+### SOL-046 · Hand-rolled dispatch bypasses framework guards
+A program routes instructions by hand (`match instruction_data[0]` / a native `entrypoint!` that splits the tag byte) instead of Anchor's `#[program]` macro, so NONE of Anchor's auto-generated guards run - no 8-byte discriminator, none of the `#[account(...)]` constraints (`has_one`/`seeds`/`owner`/`signer`/`mut`) - because that code is only emitted for `#[derive(Accounts)]` handlers. Accounts arrive as a bare `&[AccountInfo]`; wrong-type/owner/unsigned/substituted accounts sail through at once. Distinct from SOL-019 (Anchor present, one missing discriminator). Fix: route through `#[program]` + `#[derive(Accounts)]`, or manually re-validate every account on every native arm (discriminator, owner, PDA, signer)
+
+### SOL-047 · Forged receipt token / mint
+A redeem/burn/claim path accepts a caller-supplied receipt `Mint` or share token account and burns it for the underlying asset without asserting it is the mint the deposit path produced -> the attacker passes a mint they control, mints themselves a balance, and the program treats those worthless tokens as genuine shares, draining the vault. Distinct from SOL-007 (owner) and SOL-015 (generic missing constraint). Fix: pin the receipt mint to the stored canonical mint (`address = vault.receipt_mint`) AND bind the burned account's `token::mint`
+
+### SOL-048 · Default/zero value accepted as valid
+An authorization/membership gate trusts a stored field whose pre-init default is the zero value - `Pubkey::default()`, a `[0u8;32]` merkle/whitelist root, a zero nonce, or a freshly-`init`'d (zeroed) account - so the UNINITIALIZED state passes the check and an attacker submits a proof/key matching the zero sentinel (or beats the admin to the gate). On Solana an 8-byte discriminator proves the account was created, not that THIS field was set, so an `Account<T>` check does not rescue you. Distinct from SOL-010 (re-initializing an existing value). Fix: reject the zero sentinel at the gate (`require_keys_neq!(stored, Pubkey::default())`) and assert `is_initialized` on a bound config account
+
+### SOL-049 · Struct-padding / non-canonical flag read
+A security-relevant byte (an `is_admin`/`is_initialized`/`is_frozen` flag, or alignment/padding) read through a HAND-ROLLED zero-copy reinterpretation - a manual `transmute`, a `*const T` cast over `data.borrow()`, or a hand-written `unsafe impl bytemuck::Pod` - where the byte is attacker-writable and never canonicalized: a `bool` that is any non-zero byte reads true, and padding bytes survive the typed reinterpret. Distinct from SOL-017 (use typed deserialize; this survives a typed zero-copy). Fix: use Anchor `#[account(zero_copy)]` / the real `Pod` derive (never a hand `unsafe impl`); store flags as u8 and assert canonicality on every load
+
+### SOL-050 · Serialization symmetry mismatch
+The bytes written for an account and the bytes read back come from two DIFFERENT layouts - write `u64`/read `u32`, a reordered struct field, a second hand-written reader, a `#[repr(Rust)]` zero-copy struct the compiler may reorder, or a hand-computed offset off by N - so the loaded value is not the stored value, silently corrupting a `balance`/`authority`/`bump`; an attacker tunes the bytes at the disagreeing offset. Distinct from SOL-017/025 (an unverified raw deserialize; this survives a fully-typed, owner-checked one). Fix: pack and unpack through ONE shared (de)serializer over the same type; guard with a `size_of` tripwire + a `unpack(pack(x)) == x` test
+
+### SOL-051 · Predictable on-chain entropy
+A value-bearing draw (lottery winner, NFT trait roll, raffle, randomized ordering, airdrop pick) is seeded from on-chain-observable values - `Clock` `unix_timestamp`/`slot`, the `RecentBlockhashes`/`SlotHashes` sysvar, or any field readable before the tx lands - so it is not secret: the submitter simulates and only sends when they win (grinds it), and the slot leader can steer the slot/blockhash -> the prize is deterministically claimable. Distinct from SOL-001 (trusting a caller-supplied slot for auth; here the slot is honest but misused as randomness). Fix: use a VRF (Switchboard/ORAO) or a real commit-reveal; owner-check the oracle result account and bind it to this draw
+
+### SOL-052 · Token-2022 semantics assumed
+Code that accepts a Token-2022 mint but assumes classic SPL-Token behavior: it credits the requested (not received) amount, or never handles extensions - transfer-fee skims a cut so the vault receives less than booked, a transfer-hook runs attacker code mid-CPI, non-transferable / default-frozen silently breaks a transfer or locks a deposit -> vault under-collateralized or shares minted against tokens that never arrived. Distinct from SOL-013 (which program id) and SOL-032 (decimals). Fix: pin classic `Program<Token>` on every token CPI, or measure the received delta and reject unsupported Token-2022 extensions before value moves
+
 ## Provenance
 
-Honest origins (full table in README): SOL-001 = 2 confirmed bounty wins; SOL-002 = public class; SOL-003/004/005 = our bounty-5 patterns; SOL-021/022/023 = our v16 audit; SOL-029-031 = a live integrator report; rest = documented Solana/DeFi hygiene.
+Honest origins (full table in README): SOL-001 = 2 confirmed bounty wins; SOL-002 = public class; SOL-003/004/005 = our bounty-5 patterns; SOL-021/022/023 = our v16 audit; SOL-029-031 = a live integrator report; SOL-038-052 = public Solana/DeFi bug-class taxonomy; rest = documented Solana/DeFi hygiene.
 
 Maintained by [Jelleo](https://jelleo.com). MIT.

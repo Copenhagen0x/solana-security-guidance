@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — 15 new Solana rules: SOL-038…SOL-052 (37 → 52)
+
+- **15 Solana-native rules** drawn from the public Solana/DeFi bug-class taxonomy (Zellic blog case-studies), filtered to pure-Solana, genuinely-new classes: SOL-038 PDA seed collision · SOL-039 Asymmetric partial-CPI state (machine) · SOL-040 Credit from requested not measured / Token-2022 · SOL-041 Forced-balance / supply desync · SOL-042 Unbounded account-iteration compute DoS (machine) · SOL-043 Unbounded storage / slot-exhaustion griefing · SOL-044 Hardcoded slot-time rate (machine) · SOL-045 Incremental Merkle insertion error · SOL-046 Hand-rolled dispatch bypasses framework guards (machine) · SOL-047 Forged receipt token / mint · SOL-048 Default/zero value accepted as valid · SOL-049 Struct-padding / non-canonical flag read · SOL-050 Serialization symmetry mismatch · SOL-051 Predictable on-chain entropy (machine) · SOL-052 Token-2022 semantics assumed.
+- **5 machine-checkable patterns** (SOL-039/042/044/046/051), each with a vulnerable/fixed example pair that fires/clears the scanner; 10 review-only. Counts 37→52 rules, 23→28 machine / 14→24 review, with every hardcoded count, tripwire, content/integrations/semgrep/benchmark/plugin-guidance digest + MCP & VS Code engine re-vendor updated.
+- **SOL-010 extended** to cover the nullifier/spent-marker double-spend class (`init_if_needed` nullifier PDA without a prior-absence check, or a spent-marker checked after the transfer).
+
+### Changed — AI-context surfaces are now scale-invariant (SSS can grow to thousands of rules)
+
+- `sync-plugin-guidance.js` and `sync-integrations.js` now byte-budget the inline rule cues (highest-tier first) with a single "+N more — full catalog via MCP" overflow pointer, so the consumer-capped files (Claude plugin 8 KB, Windsurf 12 KB) **never overflow regardless of rule count**. The CLI / Semgrep / GitHub Action / MCP / master always carry 100% of the rules — only the inline cheat-sheets are bounded. At 52 rules everything still fits inline (plugin 8002/8192, Windsurf 8286/12000); beyond the cap it auto-overflows.
+
 ## [1.11.0] — 2026-06-10
 
 ### Added — three new rules: SOL-035, SOL-036, SOL-037 (34 → 37)

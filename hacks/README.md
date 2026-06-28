@@ -2,7 +2,7 @@
 
 > Real, disclosed Solana exploits mapped to the [Solana Security Standard](../claude-security-guidance.md) (`SOL-0XX`) rule class each one falls under. Generated from [`hacks.json`](./hacks.json) — do not edit by hand (run `node scripts/sync-hacks.js`).
 
-**8 code-level exploits** — $514M lost — mapped to **8 of the 37 rules**. Plus **3 notable incidents no code rule prevents** (stolen keys, off-chain wallets), listed for honesty about scope.
+**8 code-level exploits** — $514M lost — mapped to **8 of the 52 rules**. Plus **3 notable incidents no code rule prevents** (stolen keys, off-chain wallets), listed for honesty about scope.
 
 Every entry is cited. A mapping says "this rule class is the one that flags this bug" — not that any tool would have auto-fixed it. We never claim a rule catches an incident it cannot (see [`SCHEMA.md`](./SCHEMA.md)).
 

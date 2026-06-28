@@ -22,7 +22,7 @@ Critical first: SOL-001, 003, 004, 021, 023, 024, 015, 006/007, 014, 019, 032, 0
 - **SOL-007** · Missing owner verification — check owner first
 - **SOL-008** · Unverified PDA — derive and compare
 - **SOL-009** · CPI without authority check — check authority before the CPI
-- **SOL-010** · Reinit attack — plain `init` + explicit existence guard
+- **SOL-010** · Reinit attack — plain `init` + an explicit existence guard, checked before any payout
 - **SOL-011** · Lamport drain via close — drain + zero + controlled destination
 - **SOL-012** · Rent exemption check missing — assert rent-exempt
 - **SOL-013** · Token Program ID confusion — `anchor_spl::token::ID` via typed accounts
@@ -50,3 +50,18 @@ Critical first: SOL-001, 003, 004, 021, 023, 024, 015, 006/007, 014, 019, 032, 0
 - **SOL-035** · Instructions sysvar substitution — pin the sysvar (Anchor `Sysvar<Instructions>`, or assert `key == sysvar::instructions::ID`) AND validate the introspected instruction's program id plus its parsed signer pubkey and message against the expected values — confirming only that "a precompile ran" is bypassable with any real signature
 - **SOL-036** · ATA derivation unpinned — Anchor `associated_token::mint` + `associated_token::authority` constraints, or compare against `get_associated_token_address(owner, mint)` (owner+mint from validated on-chain state, not caller data) before use
 - **SOL-037** · Arbitrary CPI target — pin the callee — a typed `Program<'info, T>`, or assert the program id equals the expected constant — AND validate the accounts (and any PDA-signer seeds/amounts) passed into the CPI; pinning the program alone leaves account substitution / confused-deputy open (see SOL-027)
+- **SOL-038** · PDA seed collision — fixed-width per-type seed tag from one program-wide enum registry (never per-file constants); hash/length-prefix every variable element, never adjoin two unbounded ones
+- **SOL-039** · Asymmetric partial-CPI state — propagate the CPI with `?` so the whole instruction reverts; if you must catch the error, roll back every prior self-mutation
+- **SOL-040** · Credit from requested, not measured (Token-2022) — credit the measured pre/post balance delta (`reload()` before/after), not the requested amount; pin BOTH the destination ATA mint AND authority (a measured delta alone is not enough)
+- **SOL-041** · Forced-balance / supply desync — drive math from a program-owned recorded ledger updated by measured deltas; read the raw balance only to assert `live >= recorded`
+- **SOL-042** · Unbounded account-iteration compute DoS — `require!(list.len() <= MAX)` with MAX proven to fit the CU budget, or paginate across txns with a stored cursor
+- **SOL-043** · Unbounded storage / slot-exhaustion griefing — per-caller fixed-size caller-paid PDAs, or a self-limiting shared cap (decrement-on-close + a refundable stake); admin-gate close
+- **SOL-044** · Hardcoded slot-time rate — accrue on `Clock::get()?.unix_timestamp` deltas (store `last_update_ts`), never a hardcoded slots-per-period constant
+- **SOL-045** · Incremental Merkle insertion error — delegate root maintenance AND proof verification to spl-account-compression via CPI (pin `merkle_tree.owner`); else differential-test the tree
+- **SOL-046** · Hand-rolled dispatch bypasses framework guards — route through `#[program]` + `#[derive(Accounts)]`, or manually re-validate every account on every native arm (discriminator, owner, PDA, signer)
+- **SOL-047** · Forged receipt token / mint — pin the receipt mint to the stored canonical mint (`address = vault.receipt_mint`) AND bind the burned account's `token::mint`
+- **SOL-048** · Default/zero value accepted as valid — reject the zero sentinel at the gate (`require_keys_neq!(stored, Pubkey::default())`) and assert `is_initialized` on a bound config account
+- **SOL-049** · Struct-padding / non-canonical flag read — use Anchor `#[account(zero_copy)]` / the real `Pod` derive (never a hand `unsafe impl`); store flags as u8 and assert canonicality on every load
+- **SOL-050** · Serialization symmetry mismatch — pack and unpack through ONE shared (de)serializer over the same type; guard with a `size_of` tripwire + a `unpack(pack(x)) == x` test
+- **SOL-051** · Predictable on-chain entropy — use a VRF (Switchboard/ORAO) or a real commit-reveal; owner-check the oracle result account and bind it to this draw
+- **SOL-052** · Token-2022 semantics assumed — pin classic `Program<Token>` on every token CPI, or measure the received delta and reject unsupported Token-2022 extensions before value moves

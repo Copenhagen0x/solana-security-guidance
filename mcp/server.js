@@ -35,7 +35,7 @@ const TOOL_DEFS = [
     name: 'list_solana_security_rules',
     description:
       'Return the full Solana Security Standard (SOL-0XX) guidance: threat model, review checklist, ' +
-      'and all 37 numbered rules with fixes. Use it to write or review Solana/Anchor code safely.',
+      'and all 52 numbered rules with fixes. Use it to write or review Solana/Anchor code safely.',
     inputSchema: { type: 'object', properties: {} },
   },
 ];

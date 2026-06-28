@@ -196,8 +196,8 @@ function main() {
   const { rules, files } = build();
   // Tripwire — BUMP this number when you add/remove a rule. The --check diff catches
   // stale pages; this catches a guidance parse that silently lost or gained a rule.
-  if (rules.length !== 37) {
-    console.error(`content: expected 37 rules, parsed ${rules.length}`);
+  if (rules.length !== 52) {
+    console.error(`content: expected 52 rules, parsed ${rules.length}`);
     process.exit(1);
   }
   if (check) {

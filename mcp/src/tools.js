@@ -64,7 +64,7 @@ function scanCode(args) {
   return `${findings.length} SOL-0XX finding(s):\n${lines.join('\n')}${more}\n\n${ADVISORY}`;
 }
 
-// list_solana_security_rules: the full SOL-0XX guidance (threat model + 37 rules).
+// list_solana_security_rules: the full SOL-0XX guidance (threat model + 52 rules).
 function listRules() {
   return GUIDANCE;
 }
