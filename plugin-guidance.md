@@ -15,7 +15,6 @@ Critical first: SOL-001, 003, 004, 021, 023, 024, 015, 006/007, 014, 019, 032, 0
 
 - **SOL-001** · Unauthenticated now_slot — authenticate against `Clock::get()?.slot`
 - **SOL-002** · Cross-market state asymmetry — gate every write by per-market authorization
-- **SOL-003** · Wrapper re-implements engine — delegate to the engine; the wrapper only marshals accounts
 - **SOL-004** · Penalty/health terms omitted — include every term the spec lists
 - **SOL-005** · Anchor resize without checks — verify all three before resizing
 - **SOL-006** · Missing signer check — `Signer<>`, or check `is_signer`
@@ -30,19 +29,15 @@ Critical first: SOL-001, 003, 004, 021, 023, 024, 015, 006/007, 014, 019, 032, 0
 - **SOL-015** · Anchor constraints missing — tie related accounts together with constraints
 - **SOL-016** · Bump seed unvalidated — bare `bump` / `find_program_address`
 - **SOL-017** · Raw AccountInfo without typed deserialize — typed deserialize + length/field checks
-- **SOL-018** · Hardcoded System Program ID — `solana_program::system_program::ID`
 - **SOL-019** · Missing discriminator check — `try_deserialize`
 - **SOL-020** · SetAuthority without verification — verify current authority first
 - **SOL-021** · Terminal op gated on a live-only condition — a terminal release that ignores freshness/expiry
-- **SOL-022** · Write-only "impaired" counter — add the inverse settlement
-- **SOL-023** · Fee/penalty rounds toward the user — `div_ceil` what the user **owes** — round against the less-trusted party (fee UP, payout DOWN)
 - **SOL-024** · Stale / unchecked oracle price — `get_price_no_older_than(...)`; reject wide-confidence
 - **SOL-025** · Sysvar read by raw deserialize — `Clock::get()` / Anchor `Sysvar<>`
 - **SOL-026** · Duplicate mutable account (native programs) — `require_keys_neq!`
 - **SOL-027** · Unvalidated remaining_accounts — validate every account like a declared one
 - **SOL-028** · Missing slippage / min-out bound — take + enforce a caller bound
 - **SOL-029** · Preflight simulation disabled — keep preflight on, or simulate + assert `err === null`
-- **SOL-030** · Static priority fee — derive from `getRecentPrioritizationFees()` and clamp
 - **SOL-031** · Stale Jupiter quote — refetch/reject when `contextSlot` lags the current slot
 - **SOL-032** · Decimals assumed, not read — read `mint.decimals`; normalize first
 - **SOL-033** · Stale account read after CPI — `reload()` / re-read after the CPI
@@ -50,7 +45,7 @@ Critical first: SOL-001, 003, 004, 021, 023, 024, 015, 006/007, 014, 019, 032, 0
 - **SOL-035** · Instructions sysvar substitution — pin the sysvar (Anchor `Sysvar<Instructions>`, or assert `key == sysvar::instructions::ID`) AND validate the introspected instruction's program id plus its parsed signer pubkey and message against the expected values — confirming only that "a precompile ran" is bypassable with any real signature
 - **SOL-036** · ATA derivation unpinned — Anchor `associated_token::mint` + `associated_token::authority` constraints, or compare against `get_associated_token_address(owner, mint)` (owner+mint from validated on-chain state, not caller data) before use
 - **SOL-037** · Arbitrary CPI target — pin the callee — a typed `Program<'info, T>`, or assert the program id equals the expected constant — AND validate the accounts (and any PDA-signer seeds/amounts) passed into the CPI; pinning the program alone leaves account substitution / confused-deputy open (see SOL-027)
-- **SOL-038** · PDA seed collision — fixed-width per-type seed tag from one program-wide enum registry (never per-file constants); hash/length-prefix every variable element, never adjoin two unbounded ones
+- **SOL-038** · PDA seed collision — fixed-width per-type seed tag of a consistent width across the registry (e.g. all u32) from one program-wide enum registry (never per-file constants, never mixed tag widths); hash/length-prefix every variable element or separate two variables with a fixed-width element, never adjoin two unbounded ones
 - **SOL-039** · Asymmetric partial-CPI state — propagate the CPI with `?` so the whole instruction reverts; if you must catch the error, roll back every prior self-mutation
 - **SOL-040** · Credit from requested, not measured (Token-2022) — credit the measured pre/post balance delta (`reload()` before/after), not the requested amount; pin BOTH the destination ATA mint AND authority (a measured delta alone is not enough)
 - **SOL-041** · Forced-balance / supply desync — drive math from a program-owned recorded ledger updated by measured deltas; read the raw balance only to assert `live >= recorded`
@@ -61,7 +56,8 @@ Critical first: SOL-001, 003, 004, 021, 023, 024, 015, 006/007, 014, 019, 032, 0
 - **SOL-046** · Hand-rolled dispatch bypasses framework guards — route through `#[program]` + `#[derive(Accounts)]`, or manually re-validate every account on every native arm (discriminator, owner, PDA, signer)
 - **SOL-047** · Forged receipt token / mint — pin the receipt mint to the stored canonical mint (`address = vault.receipt_mint`) AND bind the burned account's `token::mint`
 - **SOL-048** · Default/zero value accepted as valid — reject the zero sentinel at the gate (`require_keys_neq!(stored, Pubkey::default())`) and assert `is_initialized` on a bound config account
-- **SOL-049** · Struct-padding / non-canonical flag read — use Anchor `#[account(zero_copy)]` / the real `Pod` derive (never a hand `unsafe impl`); store flags as u8 and assert canonicality on every load
+- **SOL-049** · Struct-padding / non-canonical flag read — use Anchor `#[account(zero_copy)]` / the real `Pod` derive (never a hand `unsafe impl`); store flags as u8 and assert canonicality on every load and write AND validate the account owner + discriminator (canonicalization alone is bypassable)
 - **SOL-050** · Serialization symmetry mismatch — pack and unpack through ONE shared (de)serializer over the same type; guard with a `size_of` tripwire + a `unpack(pack(x)) == x` test
 - **SOL-051** · Predictable on-chain entropy — use a VRF (Switchboard/ORAO) or a real commit-reveal; owner-check the oracle result account and bind it to this draw
 - **SOL-052** · Token-2022 semantics assumed — pin classic `Program<Token>` on every token CPI, or measure the received delta and reject unsupported Token-2022 extensions before value moves
+- *+ 5 more rules — the CLI scanner, Semgrep, GitHub Action, and the `list_solana_security_rules` MCP tool enforce/serve the complete catalog; full per-rule detail in `claude-security-guidance.md` at github.com/Copenhagen0x/solana-security-standard.*

@@ -124,19 +124,22 @@ function render() {
   // byte-budgets the cues (highest-tier first, then ascending id) and funnels the
   // remainder to ONE overflow pointer. The CLI scanner / Semgrep / Action / MCP /
   // master still carry 100% of the rules; only this inline cheat-sheet is bounded.
-  const RESERVE = 360; // headroom reserved for the single overflow line
+  const RESERVE = 330; // headroom reserved for the single overflow line
   let used = Buffer.byteLength(head.join('\n') + '\n', 'utf8');
   const keep = new Set();
-  const byPriority = [...cues].sort(
-    (a, b) => (a.tier === 'high' ? 0 : 1) - (b.tier === 'high' ? 0 : 1) || a.id.localeCompare(b.id)
-  );
-  for (const c of byPriority) {
-    const add = Buffer.byteLength(c.line + '\n', 'utf8');
-    if (used + add <= MAX_BYTES - RESERVE) {
-      keep.add(c.id);
-      used += add;
-    }
-  }
+  const fits = (c) => used + Buffer.byteLength(c.line + '\n', 'utf8') <= MAX_BYTES - RESERVE;
+  const take = (c) => { keep.add(c.id); used += Buffer.byteLength(c.line + '\n', 'utf8'); };
+  const byId = (a, b) => a.id.localeCompare(b.id);
+  // High-tier cues get FIRST claim on the whole budget (ascending id within the tier);
+  // low-tier cues are added ONLY if EVERY high-tier cue was kept. So a high-tier rule is
+  // never dropped while a low-tier cue stays inline — the scale-invariant test. Two
+  // passes (not one sorted prefix) so a single long high-tier cue can't strand shorter
+  // high-tier cues behind it.
+  const highCues = cues.filter((c) => c.tier === 'high').sort(byId);
+  const lowCues = cues.filter((c) => c.tier !== 'high').sort(byId);
+  let anyHighDropped = false;
+  for (const c of highCues) { if (fits(c)) take(c); else anyHighDropped = true; }
+  if (!anyHighDropped) for (const c of lowCues) { if (fits(c)) take(c); }
   const lines = [...head];
   let omitted = 0;
   for (const c of cues) {

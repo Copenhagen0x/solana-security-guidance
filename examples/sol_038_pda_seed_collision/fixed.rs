@@ -3,13 +3,14 @@
 // program-wide registry. Element boundaries are now unambiguous regardless of
 // content, so b"member"||tag||keccak(org)||keccak(name) cannot be shifted to alias
 // another (org,name) pair — the org/name split is fully pinned. Complete fix: this
-// is the program's only var-ending scheme AND the per-type tag plus 32-byte-wide
+// is the program's only var-ending scheme AND the 4-byte per-type tag (>=2 bytes,
+// so it can't collide with a 1-byte literal seed prefix like b"m") plus 32-byte-wide
 // elements remove both intra-scheme shifting and cross-scheme aliasing.
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::keccak;
 
-#[repr(u8)]
-pub enum PdaTag { Member = 1 } // single program-wide registry; never a per-file const
+#[repr(u32)]
+pub enum PdaTag { Member = 1 } // 4-byte tag from one program-wide registry; never a per-file const
 
 pub fn create_member(ctx: Context<CreateMember>, _org: String, _name: String) -> Result<()> {
     ctx.accounts.member.owner = ctx.accounts.payer.key();
@@ -25,7 +26,7 @@ pub struct CreateMember<'info> {
         space = 8 + 32,
         // FIX: fixed-width tag + each variable element hashed to a constant 32 bytes.
         seeds = [
-            &[PdaTag::Member as u8],
+            &(PdaTag::Member as u32).to_le_bytes(),
             keccak::hash(org.as_bytes()).as_ref(),
             keccak::hash(name.as_bytes()).as_ref(),
         ],
