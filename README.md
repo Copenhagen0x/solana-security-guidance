@@ -7,7 +7,7 @@
 [![Solana Security Standard](https://img.shields.io/badge/Solana%20Security%20Standard-SOL--0XX-a855f7?labelColor=6d28d9)](https://github.com/Copenhagen0x/solana-security-standard)
 [![CI](https://github.com/Copenhagen0x/solana-security-standard/actions/workflows/validate.yml/badge.svg)](https://github.com/Copenhagen0x/solana-security-standard/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.11.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.12.0-blue.svg)](CHANGELOG.md)
 [![Bounty wins](https://img.shields.io/badge/bounty_wins-2_confirmed_(SOL--001)-orange)](https://jelleo.com/cycles)
 
 The same SOL-0XX rules flag Solana-specific bugs while you code — caller-controlled clock values, cross-market state asymmetry, wrapper handlers that drift from engine logic, missing Anchor constraints, and **52 bug classes in all**, drawn from real audits.
@@ -48,10 +48,10 @@ Or install the whole standard as a **Claude Code plugin** (the MCP scan tool + a
 
 For CI or supply-chain-sensitive setups, **pin to a release tag and verify the download** against the published `CHECKSUMS.txt` instead of pulling `main`:
 
-> **Note:** the `plugin-guidance.md` digest ships from **v1.11.0** onward. Until that release is tagged, use the **Quick install** above (which pulls the digest from `main`); the pinned-tag flow below works once v1.11.0 exists.
+> **Note:** the `plugin-guidance.md` digest ships from **v1.11.0** onward. Pin the latest release tag in the flow below.
 
 ```bash
-TAG=v1.11.0   # the digest ships from v1.11.0 on; older tags use claude-security-guidance.md directly
+TAG=v1.12.0   # the digest ships from v1.11.0 on; older tags use claude-security-guidance.md directly
 BASE="https://raw.githubusercontent.com/Copenhagen0x/solana-security-standard/$TAG"
 tmp=$(mktemp -d) && cd "$tmp" && mkdir -p semgrep
 curl -fsSL "$BASE/CHECKSUMS.txt"                          -o CHECKSUMS.txt
@@ -66,7 +66,7 @@ cp plugin-guidance.md "$OLDPWD/.claude/claude-security-guidance.md"   # rename t
 # the verified semgrep ruleset stays in $tmp/semgrep/ — point `semgrep --config` at it or copy where you need it
 ```
 
-Pinning to a tag freezes you to a known release (a tampered `main` can't reach you); the checksum confirms nothing was altered in transit. (Hashes are over the LF bytes GitHub serves — verify the *downloaded* files, not a CRLF local checkout.) Tags from `v1.9.1` on are SSH-signed — verify origin with `git verify-tag v1.11.0` (key + steps in [`SECURITY.md`](SECURITY.md)). *(Checksums and the in-repo allowed-signers can't defend against a full account compromise that rewrites both — the signed tag, verified out of band, is the origin check for that.)*
+Pinning to a tag freezes you to a known release (a tampered `main` can't reach you); the checksum confirms nothing was altered in transit. (Hashes are over the LF bytes GitHub serves — verify the *downloaded* files, not a CRLF local checkout.) Tags from `v1.9.1` on are SSH-signed — verify origin with `git verify-tag v1.12.0` (key + steps in [`SECURITY.md`](SECURITY.md)). *(Checksums and the in-repo allowed-signers can't defend against a full account compromise that rewrites both — the signed tag, verified out of band, is the origin check for that.)*
 
 ## Run it in CI — GitHub Action
 
@@ -278,10 +278,10 @@ Open an issue first if you're proposing a new rule category. Keep rules focused:
 
 ## Versioning
 
-This repo follows [Semantic Versioning](https://semver.org/). Pin a tagged release rather than `main` (the `plugin-guidance.md` digest ships from **v1.11.0** onward — before that tag exists, use the Quick install from `main`):
+This repo follows [Semantic Versioning](https://semver.org/). Pin a tagged release rather than `main` (the `plugin-guidance.md` digest ships from **v1.11.0** onward):
 
 ```bash
-curl -sL https://raw.githubusercontent.com/Copenhagen0x/solana-security-standard/v1.11.0/plugin-guidance.md \
+curl -sL https://raw.githubusercontent.com/Copenhagen0x/solana-security-standard/v1.12.0/plugin-guidance.md \
      -o .claude/claude-security-guidance.md
 ```
 

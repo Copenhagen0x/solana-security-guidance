@@ -2,7 +2,7 @@
   "name": "solana-security-standard",
   "displayName": "Solana Security Standard",
   "description": "Inline SOL-0XX security checks for Solana/Anchor Rust and transaction-sending TypeScript/JavaScript.",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "publisher": "jelleo",
   "license": "MIT",
   "icon": "icon.png",
