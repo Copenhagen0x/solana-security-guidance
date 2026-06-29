@@ -223,6 +223,21 @@ not a blind-accuracy or top-1 claim.
 | [SOL-035](claude-security-guidance.md#sol-035--instructions-sysvar-substitution) | Instructions sysvar read unpinned — forged introspection spoofs a precompile/CPI-origin check | Generic Solana (known precompile-bypass class) |
 | [SOL-036](claude-security-guidance.md#sol-036--ata-derivation-unpinned) | Token account trusted as an ATA without canonical (owner, mint) derivation | Generic Solana SPL (review-only) |
 | [SOL-037](claude-security-guidance.md#sol-037--arbitrary-cpi-target) | CPI callee program id unpinned — call redirected to an attacker program | Generic Solana (review-only; the callee-side gap SOL-009 doesn't cover) |
+| [SOL-038](claude-security-guidance.md#sol-038--pda-seed-collision) | Unpinned PDA seed boundaries — two distinct accounts derive the same address | Public Solana bug-class taxonomy (machine) |
+| [SOL-039](claude-security-guidance.md#sol-039--asymmetric-partial-cpi-state) | Swallowed fund-moving CPI `Result` leaves half-applied state | Public Solana bug-class taxonomy (machine) |
+| [SOL-040](claude-security-guidance.md#sol-040--credit-from-requested-not-measured-token-2022) | Crediting the requested amount, not the measured balance delta (Token-2022 fee/hook) | Public Solana bug-class taxonomy (review-only) |
+| [SOL-041](claude-security-guidance.md#sol-041--forced-balance--supply-desync) | Forced token balance / supply desyncs internal accounting | Public Solana bug-class taxonomy (review-only) |
+| [SOL-042](claude-security-guidance.md#sol-042--unbounded-account-iteration-compute-dos) | Unbounded loop over caller-controlled `remaining_accounts` — CU-limit DoS | Public Solana bug-class taxonomy (machine) |
+| [SOL-043](claude-security-guidance.md#sol-043--unbounded-storage--slot-exhaustion-griefing) | Attacker-grown storage / slot exhaustion bricks an instruction | Public Solana bug-class taxonomy (review-only) |
+| [SOL-044](claude-security-guidance.md#sol-044--hardcoded-slot-time-rate) | Hardcoded ~400ms slot time — interest/vesting drifts from wall-clock | Public Solana bug-class taxonomy (machine) |
+| [SOL-045](claude-security-guidance.md#sol-045--incremental-merkle-insertion-error) | Off-by-one in incremental Merkle tree insertion | Public Solana bug-class taxonomy (review-only) |
+| [SOL-046](claude-security-guidance.md#sol-046--hand-rolled-dispatch-bypasses-framework-guards) | Raw-byte instruction dispatcher skips Anchor's account guards | Public Solana bug-class taxonomy (machine) |
+| [SOL-047](claude-security-guidance.md#sol-047--forged-receipt-token--mint) | Receipt token/mint not pinned — forged redemption | Public Solana bug-class taxonomy (review-only) |
+| [SOL-048](claude-security-guidance.md#sol-048--defaultzero-value-accepted-as-valid) | Zeroed/default pubkey or value accepted as authorized | Public Solana bug-class taxonomy (review-only) |
+| [SOL-049](claude-security-guidance.md#sol-049--struct-padding--non-canonical-flag-read) | Hand-rolled zero-copy reads a non-canonical flag / padding byte | Public Solana bug-class taxonomy (machine) |
+| [SOL-050](claude-security-guidance.md#sol-050--serialization-symmetry-mismatch) | serialize/deserialize asymmetry corrupts or forges state | Public Solana bug-class taxonomy (review-only) |
+| [SOL-051](claude-security-guidance.md#sol-051--predictable-on-chain-entropy) | On-chain-observable value seeds a draw — grindable / leader-steerable | Public Solana bug-class taxonomy (machine) |
+| [SOL-052](claude-security-guidance.md#sol-052--token-2022-semantics-assumed) | Token-2022 extensions (transfer hook / fee / freeze) assumed absent | Public Solana bug-class taxonomy (review-only) |
 
 ## Why these rules — honest provenance
 
