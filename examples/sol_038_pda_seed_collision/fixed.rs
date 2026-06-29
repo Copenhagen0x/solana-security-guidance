@@ -3,9 +3,10 @@
 // program-wide registry. Element boundaries are now unambiguous regardless of
 // content, so b"member"||tag||keccak(org)||keccak(name) cannot be shifted to alias
 // another (org,name) pair — the org/name split is fully pinned. Complete fix: this
-// is the program's only var-ending scheme AND the 4-byte per-type tag (>=2 bytes,
-// so it can't collide with a 1-byte literal seed prefix like b"m") plus 32-byte-wide
-// elements remove both intra-scheme shifting and cross-scheme aliasing.
+// is the program's only var-ending scheme AND the per-type tag is a CONSISTENT 4-byte
+// width across the whole registry (all u32 here — never mixed widths, since a narrower
+// tag can prefix a wider one) plus 32-byte-wide elements remove both intra-scheme
+// shifting and cross-scheme aliasing.
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::keccak;
 

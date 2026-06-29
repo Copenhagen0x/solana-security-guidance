@@ -47,6 +47,20 @@ test('when budgeted, no high-tier rule is dropped while a low-tier rule stays in
   if (highOmitted) assert.ok(!lowInline, 'a high-tier rule was dropped while a low-tier rule stayed inline');
 });
 
+test('every high-tier rule stays inline — loud tripwire on digest budget pressure', () => {
+  // The scale-invariant packer preserves the no-high-dropped-while-low-kept invariant even
+  // under capacity pressure, but a high-tier rule silently sliding into the overflow is
+  // still a regression for a security cheat-sheet. Assert none overflow; if one does, the
+  // fix is to lower RESERVE or tighten a high-tier Fix cue — not to accept the eviction.
+  const out = render();
+  const meta = JSON.parse(fs.readFileSync(path.join(repoRoot, 'rules-meta.json'), 'utf8')).rules;
+  const inline = new Set((out.match(/^- \*\*(SOL-\d{3})\*\*/gm) || []).map((s) => s.match(/SOL-\d{3}/)[0]));
+  const highOverflowed = parseRules(master)
+    .filter((r) => (meta[r.id] || {}).tier === 'high' && !inline.has(r.id))
+    .map((r) => r.id);
+  assert.deepStrictEqual(highOverflowed, [], `high-tier rule(s) overflowed the digest: ${highOverflowed.join(', ')} — lower RESERVE or tighten a high-tier Fix cue so every high-tier cue fits inline`);
+});
+
 test('every rule body yields a non-empty single-line fix cue', () => {
   for (const r of parseRules(master)) {
     const fix = extractFix(r.body);

@@ -32,6 +32,11 @@ pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
     Ok(())
 }
 
+// Decommission: a real program adds a CloseConfig instruction whose `config` carries
+// Anchor's close + has_one constraints (drain, then close to a controlled authority) to
+// reclaim rent; a zero_copy account with no close path is un-closeable without manual
+// lamport draining (SOL-011).
+
 #[derive(Accounts)]
 pub struct SetAdmin<'info> {
     // has_one = authority binds config.authority == authority.key(): ONLY the stored
@@ -55,10 +60,11 @@ pub struct Gate<'info> {
     // Owner check + the canonical check below are JOINTLY required — canonicalization
     // alone is bypassable if an attacker supplies a foreign account whose byte[0] is
     // already 0x01. AccountLoader::load also validates the 8-byte discriminator.
-    // SCOPE: this minimal example does not pin `config` to a canonical address, so a
+    // SCOPE NOTE: this minimal example does not pin `config` to a canonical address, so a
     // caller can pass any program-owned Flags account they control (bring-your-own-
-    // config, SOL-048). A real privileged path should also pin config by address
-    // (or bind `caller` to a stored authority) — here the focus is flag canonicalization.
+    // config, SOL-048) — `caller` is NOT a present guard. A real privileged path should
+    // pin config by address (or bind `caller` to a stored authority); here the focus is
+    // flag canonicalization.
     #[account(owner = crate::ID)]
     pub config: AccountLoader<'info, Flags>,
     pub caller: Signer<'info>,
