@@ -15,8 +15,8 @@ const patternIds = c.loadPatternIds(JSON.parse(fs.readFileSync(path.join(REPO, '
 const hacks = JSON.parse(fs.readFileSync(path.join(REPO, 'hacks', 'hacks.json'), 'utf8'));
 const hackIds = new Set(hacks.hacks.map((h) => h.id));
 
-test('parses exactly 37 rules with ids/titles/bodies', () => {
-  assert.strictEqual(rules.length, 37);
+test('parses exactly 52 rules with ids/titles/bodies', () => {
+  assert.strictEqual(rules.length, 52);
   for (const r of rules) {
     assert.match(r.id, /^SOL-\d{3}$/);
     assert.ok(r.title && r.title.length > 0, `${r.id} has no title`);
@@ -26,8 +26,8 @@ test('parses exactly 37 rules with ids/titles/bodies', () => {
   assert.ok(ids.includes('SOL-001') && ids.includes('SOL-028') && ids.includes('SOL-031'));
 });
 
-test('exactly 23 rules are machine-checkable (have a pattern)', () => {
-  assert.strictEqual(patternIds.size, 23, `expected 23 patterns, got ${patternIds.size}`);
+test('exactly 30 rules are machine-checkable (have a pattern)', () => {
+  assert.strictEqual(patternIds.size, 30, `expected 30 patterns, got ${patternIds.size}`);
   // every pattern id is a real rule
   const ruleIds = new Set(rules.map((r) => r.id));
   for (const p of patternIds) assert.ok(ruleIds.has(p), `pattern ${p} has no rule`);
@@ -76,7 +76,7 @@ test('each rule page declares an enforcement line', () => {
   }
 });
 
-test('index lists all 37 rules and links each page', () => {
+test('index lists all 52 rules and links each page', () => {
   const { files } = c.build();
   const idx = files['README.md'];
   for (const r of rules) {

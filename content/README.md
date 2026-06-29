@@ -1,8 +1,8 @@
-# Rule content — all 37 SOL-0XX explainers
+# Rule content — all 52 SOL-0XX explainers
 
 > One page per rule: what it catches, the fix, whether it is machine-checkable, the real exploits in that class, and a code example where one exists. Generated from the standard + patterns + the [Hacks Database](../hacks/) + examples by [`scripts/sync-content.js`](./scripts/sync-content.js) — do not hand-edit.
 
-**23 of 37** rules are machine-checkable (deterministic pattern); the rest are review-only. **8** map to a catalogued real-world exploit.
+**30 of 52** rules are machine-checkable (deterministic pattern); the rest are review-only. **8** map to a catalogued real-world exploit.
 
 | Rule | Title | Tier | Severity | Enforcement | Real exploits | Example |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -43,5 +43,20 @@
 | [SOL-035](./rules/SOL-035.md) | Instructions sysvar substitution | high | high | pattern | — | ✓ |
 | [SOL-036](./rules/SOL-036.md) | ATA derivation unpinned | high | high | review | — | ✓ |
 | [SOL-037](./rules/SOL-037.md) | Arbitrary CPI target | high | high | review | — | ✓ |
+| [SOL-038](./rules/SOL-038.md) | PDA seed collision | high | high | pattern | — | ✓ |
+| [SOL-039](./rules/SOL-039.md) | Asymmetric partial-CPI state | high | high | pattern | — | ✓ |
+| [SOL-040](./rules/SOL-040.md) | Credit from requested, not measured (Token-2022) | high | high | review | — | — |
+| [SOL-041](./rules/SOL-041.md) | Forced-balance / supply desync | high | high | review | — | — |
+| [SOL-042](./rules/SOL-042.md) | Unbounded account-iteration compute DoS | high | medium | pattern | — | ✓ |
+| [SOL-043](./rules/SOL-043.md) | Unbounded storage / slot-exhaustion griefing | high | high | review | — | — |
+| [SOL-044](./rules/SOL-044.md) | Hardcoded slot-time rate | high | medium | pattern | — | ✓ |
+| [SOL-045](./rules/SOL-045.md) | Incremental Merkle insertion error | high | high | review | — | — |
+| [SOL-046](./rules/SOL-046.md) | Hand-rolled dispatch bypasses framework guards | high | high | pattern | — | ✓ |
+| [SOL-047](./rules/SOL-047.md) | Forged receipt token / mint | high | high | review | — | — |
+| [SOL-048](./rules/SOL-048.md) | Default/zero value accepted as valid | high | high | review | — | — |
+| [SOL-049](./rules/SOL-049.md) | Struct-padding / non-canonical flag read | high | high | pattern | — | ✓ |
+| [SOL-050](./rules/SOL-050.md) | Serialization symmetry mismatch | high | high | review | — | — |
+| [SOL-051](./rules/SOL-051.md) | Predictable on-chain entropy | high | high | pattern | — | ✓ |
+| [SOL-052](./rules/SOL-052.md) | Token-2022 semantics assumed | high | high | review | — | — |
 
 Maintained by [Jelleo](https://jelleo.com). MIT.

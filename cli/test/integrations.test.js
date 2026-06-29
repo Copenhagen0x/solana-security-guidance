@@ -14,7 +14,7 @@ const gen = require('../scripts/sync-integrations');
 const repoRoot = path.join(__dirname, '..', '..');
 const intDir = path.join(repoRoot, 'integrations');
 const norm = (s) => s.replace(/\r\n/g, '\n');
-const EXPECTED_IDS = Array.from({ length: 37 }, (_, i) => 'SOL-0' + String(i + 1).padStart(2, '0'));
+const EXPECTED_IDS = Array.from({ length: 52 }, (_, i) => 'SOL-0' + String(i + 1).padStart(2, '0'));
 const read = (rel) => fs.readFileSync(path.join(intDir, rel), 'utf8');
 
 function walk(dir, base, acc = []) {
@@ -39,7 +39,7 @@ test('no orphan files under integrations/ (every on-disk file is generated)', ()
   for (const f of walk(intDir, intDir)) assert.ok(generated.has(f), `orphan file not produced by the generator: ${f}`);
 });
 
-test('every AI-tool rules file carries all 37 SOL-0XX rules + the behavioral intro', () => {
+test('every AI-tool rules file carries all 52 SOL-0XX rules + the behavioral intro', () => {
   const ruleFiles = Object.keys(gen.TOOLS); // codex, copilot, cursor, windsurf, cline, aider
   assert.equal(ruleFiles.length, 6, 'six AI-tool rules files');
   for (const rel of ruleFiles) {
@@ -77,9 +77,9 @@ test('install matrix lists every tool', () => {
   }
 });
 
-test('README is honest about coverage: 37 documented vs 23 machine-checkable', () => {
+test('README is honest about coverage: 52 documented vs 30 machine-checkable', () => {
   const r = read('README.md');
-  assert.match(r, /37 documented SOL-0XX rules/);
-  assert.match(r, /23 rules that have/);
+  assert.match(r, /52 documented SOL-0XX rules/);
+  assert.match(r, /30 rules that have/);
   assert.match(r, /generated from the one source of truth/i);
 });

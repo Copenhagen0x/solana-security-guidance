@@ -31,7 +31,7 @@
 ## Honesty invariants (enforced by the validator)
 
 - `code_preventable: true` ⟺ `sol_rules` is non-empty. A mapped exploit must name its rule class; an out-of-scope incident must **not** claim one.
-- Every `sol_rules` ID is cross-checked against the 37 rules in `claude-security-guidance.md`. A typo or a non-existent rule fails CI.
+- Every `sol_rules` ID is cross-checked against the 52 rules in `claude-security-guidance.md`. A typo or a non-existent rule fails CI.
 - A mapping means "this is the rule class that flags this bug," **not** that any tool would have auto-fixed it. We never claim credit a rule did not earn — the same standard the rest of this repo holds itself to.
 - The free-text fields (`name`, `protocol`, `root_cause`, `rule_link`) render **verbatim** into the public README, so the validator rejects `<`, `>`, `|`, `](`, newlines, and bare `http(s)://` URLs in them (they'd become live links, broken tables, or raw HTML). Put every URL in `sources` — that's the linked field; don't inline links in prose.
 

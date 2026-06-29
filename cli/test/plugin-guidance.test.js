@@ -16,16 +16,49 @@ test('digest is under the 8192-byte Anthropic cap', () => {
   assert.ok(Buffer.byteLength(render(), 'utf8') <= MAX_BYTES, 'plugin-guidance.md exceeds the 8 KB cap');
 });
 
-test('digest carries one cue for every rule in the master', () => {
+test('digest fits the cap and accounts for every rule (inline cue or overflow pointer)', () => {
+  // Scale-invariant: SSS can grow to thousands of rules but the plugin file is
+  // hard-capped at 8192 B by the consumer. Every rule must be EITHER an inline cue
+  // OR counted in the single overflow pointer — never silently dropped.
   const out = render();
   const rules = parseRules(master);
-  assert.ok(rules.length >= 37, 'expected the master to parse to >=37 rules');
-  for (const r of rules) {
-    assert.ok(out.includes(`**${r.id}** · ${r.title}`), `${r.id} missing from the digest`);
+  assert.ok(rules.length >= 52, 'expected the master to parse to >=52 rules');
+  assert.ok(Buffer.byteLength(out, 'utf8') <= MAX_BYTES, 'digest exceeds the 8 KB cap');
+  const cueIds = (out.match(/^- \*\*(SOL-\d{3})\*\* · /gm) || []).map((s) => s.match(/SOL-\d{3}/)[0]);
+  assert.equal(new Set(cueIds).size, cueIds.length, 'duplicate cue line in the digest');
+  for (const id of cueIds) assert.ok(rules.some((r) => r.id === id), `${id} cue is not a real rule`);
+  const omitted = rules.length - cueIds.length;
+  if (omitted > 0) {
+    const m = out.match(/\+ (\d+) more rules/);
+    assert.ok(m, 'rules omitted from the digest but no overflow pointer line');
+    assert.equal(Number(m[1]), omitted, 'overflow count != omitted-rule count');
+  } else {
+    assert.ok(!/\+ \d+ more rules/.test(out), 'overflow pointer present but nothing was omitted');
   }
-  // exactly one cue line per rule (no dupes, no drops)
-  const cueCount = out.split('\n').filter((l) => /^- \*\*SOL-\d{3}\*\* · /.test(l)).length;
-  assert.equal(cueCount, rules.length, 'digest cue count != rule count');
+});
+
+test('when budgeted, no high-tier rule is dropped while a low-tier rule stays inline', () => {
+  const out = render();
+  const meta = JSON.parse(fs.readFileSync(path.join(repoRoot, 'rules-meta.json'), 'utf8')).rules;
+  const inline = new Set((out.match(/^- \*\*(SOL-\d{3})\*\*/gm) || []).map((s) => s.match(/SOL-\d{3}/)[0]));
+  const rules = parseRules(master);
+  const highOmitted = rules.some((r) => !inline.has(r.id) && (meta[r.id] || {}).tier === 'high');
+  const lowInline = rules.some((r) => inline.has(r.id) && (meta[r.id] || {}).tier !== 'high');
+  if (highOmitted) assert.ok(!lowInline, 'a high-tier rule was dropped while a low-tier rule stayed inline');
+});
+
+test('every high-tier rule stays inline — loud tripwire on digest budget pressure', () => {
+  // The scale-invariant packer preserves the no-high-dropped-while-low-kept invariant even
+  // under capacity pressure, but a high-tier rule silently sliding into the overflow is
+  // still a regression for a security cheat-sheet. Assert none overflow; if one does, the
+  // fix is to lower RESERVE or tighten a high-tier Fix cue — not to accept the eviction.
+  const out = render();
+  const meta = JSON.parse(fs.readFileSync(path.join(repoRoot, 'rules-meta.json'), 'utf8')).rules;
+  const inline = new Set((out.match(/^- \*\*(SOL-\d{3})\*\*/gm) || []).map((s) => s.match(/SOL-\d{3}/)[0]));
+  const highOverflowed = parseRules(master)
+    .filter((r) => (meta[r.id] || {}).tier === 'high' && !inline.has(r.id))
+    .map((r) => r.id);
+  assert.deepStrictEqual(highOverflowed, [], `high-tier rule(s) overflowed the digest: ${highOverflowed.join(', ')} — lower RESERVE or tighten a high-tier Fix cue so every high-tier cue fits inline`);
 });
 
 test('every rule body yields a non-empty single-line fix cue', () => {

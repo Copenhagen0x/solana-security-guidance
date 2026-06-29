@@ -12,10 +12,10 @@ documented exclusion-cleared cases where the tripwire is retained by design). It
 they encode, and deeper semantic review is what the review-only rules and a
 [Jelleo audit](https://jelleo.com) are for.
 
-## Scoreboard — 23 machine-checkable rules
+## Scoreboard — 30 machine-checkable rules
 
-- **Detection (anti-rot): 23/23** vulnerable examples fire their rule.
-- **FP discipline: 13/23 fixed examples scanner-clean**, 10 exclusion-cleared (tripwire retained by design; the fix satisfies the rule's numbered exclusion).
+- **Detection (anti-rot): 30/30** vulnerable examples fire their rule.
+- **FP discipline: 20/30 fixed examples scanner-clean**, 10 exclusion-cleared (tripwire retained by design; the fix satisfies the rule's numbered exclusion).
 
 | Rule | Tier | Severity | Vulnerable example | Fixed example |
 |------|------|----------|--------------------|---------------|
@@ -42,6 +42,13 @@ they encode, and deeper semantic review is what the review-only rules and a
 | SOL-033 | high | high | yes | exclusion-cleared — CPI-then-read shape kept; fix inserts reload() between them, invisible to RE2 (exclusion #1) |
 | SOL-034 | high | high | yes | exclusion-cleared — try_borrow_mut_lamports kept; fix moves the internal ledger with the lamports + rent-exemption guard (exclusion #1) |
 | SOL-035 | high | high | yes | exclusion-cleared — load_instruction_at_checked kept; fix reads it via a key-pinned Sysvar<Instructions> (exclusion #1) |
+| SOL-038 | high | high | yes | clean |
+| SOL-039 | high | high | yes | clean |
+| SOL-042 | high | medium | yes | clean |
+| SOL-044 | high | medium | yes | clean |
+| SOL-046 | high | high | yes | clean |
+| SOL-049 | high | high | yes | clean |
+| SOL-051 | high | high | yes | clean |
 
 ## How this stays honest
 

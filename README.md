@@ -10,7 +10,7 @@
 [![Version](https://img.shields.io/badge/version-1.11.0-blue.svg)](CHANGELOG.md)
 [![Bounty wins](https://img.shields.io/badge/bounty_wins-2_confirmed_(SOL--001)-orange)](https://jelleo.com/cycles)
 
-The same SOL-0XX rules flag Solana-specific bugs while you code — caller-controlled clock values, cross-market state asymmetry, wrapper handlers that drift from engine logic, missing Anchor constraints, and **37 bug classes in all**, drawn from real audits.
+The same SOL-0XX rules flag Solana-specific bugs while you code — caller-controlled clock values, cross-market state asymmetry, wrapper handlers that drift from engine logic, missing Anchor constraints, and **52 bug classes in all**, drawn from real audits.
 
 **Works in:** Claude Code · Codex · Copilot · Cursor · Windsurf · Cline · Aider · any MCP client · the VS Code extension (Open VSX) · the CLI · Semgrep · GitHub Actions. Pick your surface below.
 
@@ -166,7 +166,7 @@ Browse the [database →](hacks/README.md).
 
 ## Every rule, explained — [`content/`](content/)
 
-[`content/`](content/) is a standalone explainer for **all 37 rules**: what each catches, the fix, whether
+[`content/`](content/) is a standalone explainer for **all 52 rules**: what each catches, the fix, whether
 it is machine-checkable or review-only, the real exploits in that class (cross-linked to the Hacks
 Database), and a code example where one exists. One page per rule — all generated from the standard +
 patterns + hacks + examples, so nothing drifts.
@@ -182,7 +182,7 @@ not a blind-accuracy or top-1 claim.
 
 ## What you get
 
-37 rules: **34 on-chain** Solana program bug classes, plus **3 integrator / client-side rules (SOL-029–031)** for the TypeScript/web3.js that builds and sends transactions (bots, keepers, integrators). **SOL-001 covers two confirmed-exploitable bounty wins (the same caller-controlled `now_slot` class fixed in both the ACTIVATE and RETIRE branches of percolator).** Most of the rest are drawn from documented Solana audit patterns — some from our published disclosures (with maintainer triage classifications noted in the Source column), some from public bug-class taxonomy; the integrator trio came from a live buyback-worker report.
+52 rules: **49 on-chain** Solana program bug classes, plus **3 integrator / client-side rules (SOL-029–031)** for the TypeScript/web3.js that builds and sends transactions (bots, keepers, integrators). **SOL-001 covers two confirmed-exploitable bounty wins (the same caller-controlled `now_slot` class fixed in both the ACTIVATE and RETIRE branches of percolator).** Most of the rest are drawn from documented Solana audit patterns — some from our published disclosures (with maintainer triage classifications noted in the Source column), some from public bug-class taxonomy; the integrator trio came from a live buyback-worker report.
 
 | Rule | Catches | Source |
 |---|---|---|
@@ -223,6 +223,21 @@ not a blind-accuracy or top-1 claim.
 | [SOL-035](claude-security-guidance.md#sol-035--instructions-sysvar-substitution) | Instructions sysvar read unpinned — forged introspection spoofs a precompile/CPI-origin check | Generic Solana (known precompile-bypass class) |
 | [SOL-036](claude-security-guidance.md#sol-036--ata-derivation-unpinned) | Token account trusted as an ATA without canonical (owner, mint) derivation | Generic Solana SPL (review-only) |
 | [SOL-037](claude-security-guidance.md#sol-037--arbitrary-cpi-target) | CPI callee program id unpinned — call redirected to an attacker program | Generic Solana (review-only; the callee-side gap SOL-009 doesn't cover) |
+| [SOL-038](claude-security-guidance.md#sol-038--pda-seed-collision) | Unpinned PDA seed boundaries — two distinct accounts derive the same address | Public Solana bug-class taxonomy (machine) |
+| [SOL-039](claude-security-guidance.md#sol-039--asymmetric-partial-cpi-state) | Swallowed fund-moving CPI `Result` leaves half-applied state | Public Solana bug-class taxonomy (machine) |
+| [SOL-040](claude-security-guidance.md#sol-040--credit-from-requested-not-measured-token-2022) | Crediting the requested amount, not the measured balance delta (Token-2022 fee/hook) | Public Solana bug-class taxonomy (review-only) |
+| [SOL-041](claude-security-guidance.md#sol-041--forced-balance--supply-desync) | Forced token balance / supply desyncs internal accounting | Public Solana bug-class taxonomy (review-only) |
+| [SOL-042](claude-security-guidance.md#sol-042--unbounded-account-iteration-compute-dos) | Unbounded loop over caller-controlled `remaining_accounts` — CU-limit DoS | Public Solana bug-class taxonomy (machine) |
+| [SOL-043](claude-security-guidance.md#sol-043--unbounded-storage--slot-exhaustion-griefing) | Attacker-grown storage / slot exhaustion bricks an instruction | Public Solana bug-class taxonomy (review-only) |
+| [SOL-044](claude-security-guidance.md#sol-044--hardcoded-slot-time-rate) | Hardcoded ~400ms slot time — interest/vesting drifts from wall-clock | Public Solana bug-class taxonomy (machine) |
+| [SOL-045](claude-security-guidance.md#sol-045--incremental-merkle-insertion-error) | Off-by-one in incremental Merkle tree insertion | Public Solana bug-class taxonomy (review-only) |
+| [SOL-046](claude-security-guidance.md#sol-046--hand-rolled-dispatch-bypasses-framework-guards) | Raw-byte instruction dispatcher skips Anchor's account guards | Public Solana bug-class taxonomy (machine) |
+| [SOL-047](claude-security-guidance.md#sol-047--forged-receipt-token--mint) | Receipt token/mint not pinned — forged redemption | Public Solana bug-class taxonomy (review-only) |
+| [SOL-048](claude-security-guidance.md#sol-048--defaultzero-value-accepted-as-valid) | Zeroed/default pubkey or value accepted as authorized | Public Solana bug-class taxonomy (review-only) |
+| [SOL-049](claude-security-guidance.md#sol-049--struct-padding--non-canonical-flag-read) | Hand-rolled zero-copy reads a non-canonical flag / padding byte | Public Solana bug-class taxonomy (machine) |
+| [SOL-050](claude-security-guidance.md#sol-050--serialization-symmetry-mismatch) | serialize/deserialize asymmetry corrupts or forges state | Public Solana bug-class taxonomy (review-only) |
+| [SOL-051](claude-security-guidance.md#sol-051--predictable-on-chain-entropy) | On-chain-observable value seeds a draw — grindable / leader-steerable | Public Solana bug-class taxonomy (machine) |
+| [SOL-052](claude-security-guidance.md#sol-052--token-2022-semantics-assumed) | Token-2022 extensions (transfer hook / fee / freeze) assumed absent | Public Solana bug-class taxonomy (review-only) |
 
 ## Why these rules — honest provenance
 
@@ -242,15 +257,15 @@ All published cycle reports: [jelleo.com/cycles](https://jelleo.com/cycles)
 
 The standard is two source files — a YAML of deterministic patterns and a Markdown threat-model + rule catalog — plus a self-contained scanner. **Every surface runs the same rules:** the CLI, GitHub Action, editor extension, MCP server, and Semgrep apply them directly. In **Claude Code** specifically, Anthropic's [security-guidance plugin](https://code.claude.com/docs/en/security-guidance) reads the two files and reviews edits at three layers:
 
-1. **On each file edit** — fast pattern match (no model call). Reads `.claude/security-patterns.yaml` for regex/substring rules. **Our file provides 23 deterministic patterns.**
-2. **At the end of each turn** — background model review of the full diff. Reads `.claude/claude-security-guidance.md` for semantic guidance. **Our file provides the Solana threat model + 37-rule catalog + review checklist.**
+1. **On each file edit** — fast pattern match (no model call). Reads `.claude/security-patterns.yaml` for regex/substring rules. **Our file provides 30 deterministic patterns.**
+2. **At the end of each turn** — background model review of the full diff. Reads `.claude/claude-security-guidance.md` for semantic guidance. **Our file provides the Solana threat model + 52-rule catalog + review checklist.**
 3. **On each commit Claude makes** — deeper agentic review that reads surrounding code. Uses the same guidance file.
 
 Every time a rule fires, the reminder text includes the rule ID (e.g. `Jelleo SOL-001:`) and a link back to this repo so you can see the underlying bounty case study.
 
 ## Examples
 
-The [`examples/`](examples/) directory contains **23 paired vulnerable/fixed snippets — one for every machine-checkable rule** (Rust on-chain; TypeScript for the integrator rules). They're self-tested: the scanner must fire on each `vulnerable` file and clear on each `fixed` one, so they can't drift from the rules. Useful for understanding a bug class before reading the rule definition.
+The [`examples/`](examples/) directory contains **30 paired vulnerable/fixed snippets — one for every machine-checkable rule** (Rust on-chain; TypeScript for the integrator rules). They're self-tested: the scanner must fire on each `vulnerable` file and clear on each `fixed` one, so they can't drift from the rules. Useful for understanding a bug class before reading the rule definition.
 
 ## Contributing
 

@@ -182,6 +182,7 @@ rules:
       sss-exclusions:
         - the account holds no lamports, token balances, authority keys, OR access-gating state that a second initialization could reset — access-gating state includes (non-exhaustively) a timestamp / nonce / status used as a lock, AND any field that controls subsequent PDA derivation, account creation, or role assignment
         - an explicit already-initialized guard rejects a second initialization
+        - the value-moving path is gated by a nullifier/spent-marker created with plain `init` so a duplicate redemption ABORTS AT ACCOUNT CREATION before any payout - NOT a mutable boolean flag in an existing account (a flag a reset/reinit path can re-open does NOT clear this rule)
   - id: solana-security-standard.sol-011-close-attr
     languages:
       - rust
@@ -639,3 +640,229 @@ rules:
       sss-exclusions:
         - quoteResponse.contextSlot is captured and the route is refetched/rejected when it lags the current slot
         - the quote is consumed within the same slot as the fetch (an undefined 'freshness window' is not sufficient — prefer ex1's explicit contextSlot check) AND a slippage bound protects the fill
+  - id: solana-security-standard.sol-038-pda-seed-collision
+    languages:
+      - rust
+    severity: WARNING
+    message: 'Jelleo SOL-038: two caller-controlled variable-length seeds (`x.as_bytes(), y.as_bytes()`) sit ADJACENT in `seeds = [...]` with no fixed-width separator. Seeds hash as one flat buffer, so the boundary is unpinned: `a|bX == ab|X` derives the SAME PDA for two DISTINCT accounts (alias/overwrite). Fix: pin every boundary - hash/length-prefix each variable element to a constant width, OR keep one variable element LAST, OR put a fixed-width element (Pubkey/`[u8; N]`) between two variables; AND lead same-namespace schemes with a per-type tag of a CONSISTENT width (all u32, never mixed) from one program-wide enum. Fires on two adjacent `.as_bytes()` seeds in the `seeds = [...]` macro and the native `find_program_address(&[...])` form; misses the cross-scheme and `.as_ref()`-on-slice forms (see exclusions). Distinct from SOL-008/016. See: github.com/Copenhagen0x/solana-security-standard#sol-038.'
+    patterns:
+      - pattern-regex: (?:\bseeds\s*=\s*\[|\b(?:find|create)_program_address\s*\(\s*&\[)[^\]]{0,160}?\.as_bytes\(\)\s*,\s*&?\s*[A-Za-z_][\w.]{0,60}\.as_bytes\(\)
+    paths:
+      exclude:
+        - '**/tests/**'
+        - '**/client/**'
+        - '**/cli/**'
+        - '**/offchain/**'
+        - '**/sdk/**'
+    metadata:
+      sol-id: SOL-038
+      category: security
+      confidence: LOW
+      technology:
+        - solana
+        - anchor
+      references:
+        - https://github.com/Copenhagen0x/solana-security-standard#sol-038
+      license: MIT
+      sss-tier: high
+      sss-severity: high
+      sss-exclusions:
+        - 'The seed array has at most ONE variable-length element and it is the LAST element, every element before it is fixed-width (a fixed-length namespace literal like b"vault", a Pubkey''s 32 bytes, a u8/u64::to_le_bytes(), or a [u8; N]) — AND one of the following holds so cross-scheme aliasing is also excluded: (a) this is the program''s ONLY PDA scheme that ends in a variable-length element, OR (b) every same-namespace scheme that ends in a variable element carries a fixed-width leading per-type discriminator drawn from one program-wide registry (see exclusion 4), OR (c) all sibling schemes'' fixed prefixes are provably equal-length. A single trailing variable prevents only INTRA-scheme byte-shifting; it does NOT prevent two trailing-variable schemes with unequal-length fixed prefixes from aliasing — e.g. [b"a", name] and [b"ab", name2] collide on a|bX == ab|X. Without (a), (b), or (c), do NOT suppress.'
+        - Every variable-length element is normalized to a FIXED width before being placed in the seeds — hashed to 32 bytes (e.g. hash(name).to_bytes() / keccak), length-prefixed with its own byte count, or truncated/padded to a constant [u8; N] — so element boundaries are unambiguous regardless of content. (Width-fixing alone clears the intra-scheme shift; if more than one record type shares this layout it must ALSO carry the exclusion-4 discriminator, since equal-width-but-untagged schemes still cross-alias.)
+        - The seed material is entirely fixed-width or program-controlled (only Pubkeys, fixed integer encodings, enum discriminants, or hardcoded equal-length literals) with NO caller-supplied variable-length bytes, so an attacker cannot shift any boundary or pick a colliding value.
+        - 'Every same-namespace scheme leads with a fixed-width per-type discriminator (seed[0]) drawn from a SINGLE program-wide enum/registry whose variants are guaranteed distinct AND a CONSISTENT fixed width across the registry (e.g. #[repr(u32)] enum PdaTag { ... } used as PdaTag::X as u32, never a 1-byte tag that could equal a literal seed prefix and never mixed widths since a narrower tag can prefix a wider one) AND no remaining element can byte-shift against the next (each is fixed-width or the variable element is last and width-fixed per exclusion 2). A discriminator that is a free-floating per-file const with no registry does NOT qualify — nothing prevents two account types from sharing the same value and re-colliding.'
+        - A fixed-width element (a 32-byte Pubkey via key().as_ref(), a [u8; N], a fixed integer encoding, or a hashed/length-prefixed element) placed BETWEEN two variable-length seeds pins both boundaries independently -- no byte can shift across a fixed separator (matching it would require the variable bytes to reproduce the exact fixed value at a shifted offset, infeasible for a non-degenerate value) -- so two variable seeds separated by a Pubkey or other fixed-width element are SAFE. The regex correctly does not fire on this (only directly-adjacent .as_bytes(), .as_bytes() triggers it); a reviewer applying exclusion 1 should likewise treat any two variables separated by a fixed-width element as cleared.
+  - id: solana-security-standard.sol-039-partial-cpi-state
+    languages:
+      - rust
+    severity: WARNING
+    message: 'Jelleo SOL-039: a fund-moving CPI''s Result is SWALLOWED (`let _ = ...`, `.ok()`, a logged `.is_err()`/`.is_ok()`, `.unwrap_or*`, or a `match`/`if let Err =` arm that does not re-`?`). On Solana only an Err RETURNED from the top-level instruction reverts writes, so a caught inner-CPI failure leaves any account written BEFORE the call committed while the transfer never happened - an asymmetric half-applied state the attacker farms by forcing the CPI to fail. Propagate with `?` so the instruction reverts atomically; if you must catch it, ROLL BACK every prior self-mutation. The regex sees the discarded Result but not whether a self-mutation preceded it: dismiss via exclusion #4 (nothing committed first), #2 (`?`-propagated), #3 (`require!`-guarded `.is_ok()`), #5 (rollback). It DOES fire on `require!(cpi.is_ok())` and a `match` whose `Err` arm returns - both SAFE. Distinct from SOL-033. See: github.com/Copenhagen0x/solana-security-standard#sol-039.'
+    patterns:
+      - pattern-regex: (?:\blet\s+_\s*=\s*(?:invoke(?:_signed)?|token::(?:transfer|transfer_checked|burn|mint_to|close_account|thaw_account|freeze_account|approve|revoke))\s*\(|(?:invoke(?:_signed)?|token::(?:transfer|transfer_checked|burn|mint_to|close_account|thaw_account|freeze_account|approve|revoke))\s*\([^;]{0,1200}?\)\s*\.\s*(?:ok|is_err|is_ok|unwrap_or|unwrap_or_default|unwrap_or_else)\s*\(|\bif\s+let\s+(?:Ok|Err)\s*\([^)]*\)\s*=\s*(?:invoke(?:_signed)?|token::(?:transfer|transfer_checked|burn|mint_to|close_account|thaw_account|freeze_account|approve|revoke))\s*\(|\bmatch\s+(?:invoke(?:_signed)?|token::(?:transfer|transfer_checked|burn|mint_to|close_account|thaw_account|freeze_account|approve|revoke))\s*\()
+    paths:
+      exclude:
+        - '**/tests/**'
+        - '**/test/**'
+        - '**/client/**'
+        - '**/cli/**'
+        - '**/offchain/**'
+        - '**/sdk/**'
+    metadata:
+      sol-id: SOL-039
+      category: security
+      confidence: LOW
+      technology:
+        - solana
+        - anchor
+      references:
+        - https://github.com/Copenhagen0x/solana-security-standard#sol-039
+      license: MIT
+      sss-tier: high
+      sss-severity: high
+      sss-exclusions:
+        - 'The swallowed call is not a fund-moving CPI — a local helper, msg!, or checked-arith Result with no external/cross-account effect. Confirm the discarded Result belongs to an invoke/invoke_signed or token:: CPI, not an unrelated value.'
+        - The CPI is actually `?`-propagated or `.map_err(..)?`'d — the instruction reverts on failure, so there is no asymmetry. (The regex does not fire on a bare `?`/`.map_err(..)?` call; cite this only if a reviewer mis-reads a propagated call.) This also covers a `match`/`if let Err(e) =` whose arm `return Err(e)`s or `?`-propagates - the instruction still reverts, so there is no asymmetry even though the regex fires on the `match`/`if let` head.
+        - 'The discarded Result feeds a `require!` / `assert!` / `ensure!` (e.g. `require!(token::transfer(..).is_ok(), E)`): this RETURNS Err on failure and reverts the whole instruction, so it is SAFE. The regex FIRES on every `require!`/`assert!`/`ensure!`-guarded `.is_ok()` (it is lookbehind-free / RE2-compatible) - cite this exclusion to dismiss them; they are safe because the macro returns Err on failure and reverts the instruction.'
+        - The catch branch (`.ok()` consequence, the `Err(..)` match arm, the `if let Err` body) FULLY rolls back every prior self-mutation before returning — re-credits the debt, un-burns the shares, restores the nonce — so committed state stays symmetric on failure.
+        - 'No program-owned account is written before AND the swallow leaves no attacker-controllable asymmetry — i.e. the CPI is the handler''s only state change, OR the only prior writes are idempotent set-to-constant values that a replay/retry re-derives identically (nothing the attacker can farm by forcing the CPI to fail). NOTE: cite this even when an UNRELATED write follows the CPI later in the handler — the gate is ''was a dependent self-mutation committed before the swallow that a failed CPI would orphan'', not ''is the CPI the literal last statement''.'
+  - id: solana-security-standard.sol-042-compute-budget-dos
+    languages:
+      - rust
+    severity: WARNING
+    message: 'Jelleo SOL-042: a loop iterates `remaining_accounts`, whose length the caller controls. With no per-instruction cap, an attacker pads it until the handler exceeds the ~1.4M CU limit and EVERY call reverts - a permanent DoS that freezes any crank behind it. Bound the trip count: `require!(ctx.remaining_accounts.len() <= MAX, ...)` (MAX proven to fit the CU budget), a fixed slice, or paginate with a stored cursor; also cap any persisted Vec the loop reads at its push site (even an admin-grown list bricks it). DO NOT stop at the count: if the loop pays accounts, bind each iterated account by identity to authoritative state (`require_keys_eq!` vs a stored registry/PDA) or it is a double-pay/skip fund-drain (SOL-027). Fires on `for <x> in ...remaining_accounts...` incl. `for (i, acc) in ...enumerate()`; misses `while i < len()` and `.iter().for_each/map/fold`. Distinct from SOL-027, SOL-014. See: github.com/Copenhagen0x/solana-security-standard#sol-042.'
+    patterns:
+      - pattern-regex: \bfor\s+(?:\w+|\([^)]{0,80}\))\s+in\b[^{;]{0,80}\bremaining_accounts\b
+    paths:
+      exclude:
+        - '**/tests/**'
+        - '**/client/**'
+        - '**/cli/**'
+        - '**/offchain/**'
+        - '**/sdk/**'
+    metadata:
+      sol-id: SOL-042
+      category: security
+      confidence: LOW
+      technology:
+        - solana
+        - anchor
+      references:
+        - https://github.com/Copenhagen0x/solana-security-standard#sol-042
+      license: MIT
+      sss-tier: high
+      sss-severity: medium
+      sss-exclusions:
+        - 'the iteration is bounded by an enforced per-instruction cap BEFORE the loop (require!(list.len() <= MAX) / a fixed-size slice / .take(MAX) over a *validated* length / a `[T; N]` array) where MAX is a constant proven to fit the CU budget for this loop body — NOT an unverified ''it''s usually small'' assumption. HUMAN-VERIFY (RE2 cannot see this): the cap must not be a `.take()`/truncating slice that silently DROPS unprocessed entries when correctness requires all of them (e.g. a settlement/payout set) — that is a correctness bug masquerading as a fix; paginate instead. A truncating cap only qualifies when dropping the tail is provably correct for this handler.'
+        - 'the collection is append-only or growable but its GROWTH path is itself capped so it can never exceed the executable CU bound — a bounded `Vec`/`require!` at *every* push/realloc site, with the cited push site actually shown to be bounded. HUMAN-VERIFY (machine cannot prove a negative across the codebase): ''growth is probably bounded somewhere'' is NOT a dismissal — name the file+line of the push site and show the cap there. A cap on the read/loop while the stored list can still grow unbounded does NOT qualify (a near-max list plus one more entry can still tip a *different* reader over).'
+        - 'the loop length is fixed by program state that can NEVER exceed the executable CU bound — a compile-time constant, a `[T; N]` array, or a count derived from validated PDAs the program itself created under a bounded scheme. NOTE: ''only an admin/Signer can grow it'' does NOT by itself qualify — an admin (or a compromised/buggy admin path) that grows an append-only list past the CU bound bricks the instruction for everyone; the test is ''length is bounded by a CU-provable cap'', not ''an attacker can''t influence the length''. Prove the bound by tracing every write site, not ''this list looks internal''.'
+        - work is explicitly paginated / chunked across transactions with a persisted cursor (or an offset+limit argument) so no single instruction processes more than a bounded slice, the cursor cannot be reset to replay or skip work, AND — when the loop credits/pays/settles accounts — each iterated account is bound by identity to authoritative program state at the cursor offset (require_keys_eq! against a stored registry/PDA per index), so the cursor SELECTS recipients rather than merely counting iterations. A count cap + bare cursor that pays whatever the caller passes does NOT qualify — that is a double-pay/skip fund-drain (SOL-027), strictly worse than the DoS, and is NOT excluded by this rule.
+  - id: solana-security-standard.sol-044-hardcoded-slot-time-rate
+    languages:
+      - rust
+    severity: WARNING
+    message: 'Jelleo SOL-044: a hardcoded slot->time conversion (SLOTS_PER_YEAR/DAY/..., MS_PER_SLOT, or a slot delta `* / 400`) computes elapsed time. Solana slot time is NOT a fixed ~400ms - it drifts with load (historically slower) - so interest/emissions/vesting/funding accrued this way diverges from wall-clock (over/under-payment that compounds; an attacker farms the drift). Fix: accrue on `Clock::get()?.unix_timestamp` deltas (store `last_update_ts: i64`; use `now_ts - last_update_ts`), never a slots-per-period constant. If you clamp the delta, advance the cursor by only the charged amount (`last_update_ts += elapsed`) - a `.min(MAX)` then `last_update_ts = now` silently forgives time beyond MAX (deterministic interest evasion). Dismiss via exclusion #1 (logs/UI only), #2 (not a slot->time scale), #3 (per-slot by spec), #4 (conservative bound that can only REJECT). Distinct from SOL-001. See: github.com/Copenhagen0x/solana-security-standard#sol-044.'
+    patterns:
+      - pattern-regex: \bSLOTS_PER_(?:YEAR|DAY|HOUR|MINUTE|WEEK|MONTH|EPOCH|SECOND)\b|\b(?:MS_PER_SLOT|SLOT_DURATION_MS|SLOT_TIME_MS|MILLIS_PER_SLOT)\b|\bslots?\b[^;\n]{0,40}?[*/]\s*400\b
+    paths:
+      exclude:
+        - '**/tests/**'
+        - '**/test/**'
+        - '**/client/**'
+        - '**/cli/**'
+        - '**/offchain/**'
+        - '**/sdk/**'
+    metadata:
+      sol-id: SOL-044
+      category: security
+      confidence: LOW
+      technology:
+        - solana
+        - anchor
+      references:
+        - https://github.com/Copenhagen0x/solana-security-standard#sol-044
+      license: MIT
+      sss-tier: high
+      sss-severity: medium
+      sss-exclusions:
+        - the elapsed time driving the accrual is computed from Clock::get()?.unix_timestamp deltas (e.g. now_ts - last_update_ts on stored i64 timestamps), and the slots-per-period / ms-per-slot constant is used only for a non-economic, non-priority purpose such as log formatting or a UI hint that never scales a payout and never decides ordering/fill/liquidation/seniority — naming which it is
+        - the hardcoded constant is NOT a slot→time conversion at all — name what it actually is (a compute-unit budget, a bps/percentage denominator, a fixed-point Q-scale, a seeds/byte-length constant, or a per-slot reward that is intentionally denominated in slots by spec with the slot-denomination cited) — so no wall-clock assumption is embedded
+        - 'the protocol is provably slot-denominated by design: cite the spec clause that defines the rate per SLOT rather than per unit of real time, AND trace every consumer of the slot-accrued field to confirm none compares, sums, or mixes it with a unix_timestamp-derived value (any such mix reintroduces the drift; this is an explicit trace of all readers, not a glance)'
+        - the slot delta is converted to time only to form an UPPER/LOWER bound in a conservative safety check, AND the citer states (a) the comparison sign and (b) the worst-case drift direction (slots historically run SLOWER than 400ms → the same slot delta spans MORE wall-clock), and shows that under that drift the check can only ever REJECT more than wall-clock would (stricter), never ACCEPT more value than real time allows — a max-staleness gate `now_slot - last_slot < MAX` is NOT covered, because slow slots make it accept quotes that are actually staler than intended
+  - id: solana-security-standard.sol-046-hand-rolled-dispatch
+    languages:
+      - rust
+    severity: WARNING
+    message: 'Jelleo SOL-046: a hand-rolled instruction dispatcher (`match instruction_data[0]` / split-first tag byte) routes by raw bytes instead of Anchor''s `#[program]` macro. This BYPASSES the framework: no 8-byte discriminator check and NONE of the `#[account(...)]` constraints (has_one, seeds/bump, owner, signer, mut) run - they are only emitted for `#[derive(Accounts)]` handlers. The pattern flags the DISPATCHER; the bug lives in the ROUTED handler - if it takes a bare `&[AccountInfo]`, every account is unvalidated (wrong-type/owner, unsigned, PDA-substituted). Routing only to typed `Context<T>` handlers is safe. Fix: route through `#[program]` + `#[derive(Accounts)]`, OR (if native) re-validate EVERY account on EVERY arm - `try_deserialize` (discriminator), `owner == program_id`, canonical-vs-stored bump (SOL-016), `is_signer`. FP: also fires on `match <local>[0]` over validated program-owned data. See: github.com/Copenhagen0x/solana-security-standard#sol-046.'
+    patterns:
+      - pattern-regex: match\s+(?:instruction_data|_?ix_?data|data|input)\s*(?:\.\s*(?:first|split_first|get)\s*\([^)]{0,40}\)|\[\s*0\s*\])
+    paths:
+      exclude:
+        - '**/tests/**'
+        - '**/test/**'
+        - '**/client/**'
+        - '**/cli/**'
+        - '**/offchain/**'
+        - '**/sdk/**'
+    metadata:
+      sol-id: SOL-046
+      category: security
+      confidence: LOW
+      technology:
+        - solana
+        - anchor
+      references:
+        - https://github.com/Copenhagen0x/solana-security-standard#sol-046
+      license: MIT
+      sss-tier: high
+      sss-severity: high
+      sss-exclusions:
+        - the dispatched handler is an Anchor `#[derive(Accounts)]` context (the accounts arrive as a typed `Context<T>` whose struct carries the relevant `Account<'info,_>` / `Signer<>` / `has_one` / `seeds`+`bump` / `owner` constraints) — i.e. the hand-rolled `match` only selects an Anchor handler and does NOT itself consume a raw `&[AccountInfo]`; Anchor's generated guards still run
+        - 'this IS a deliberate native (non-Anchor) program AND every account on the matched arm is manually re-validated before use — a positive ''all four guards present on THIS arm'' proof, not ''the program looks careful'': (a) the 8-byte discriminator is verified via `try_deserialize` (NOT `try_deserialize_unchecked`) or an explicit constant-tag compare; (b) `owner == program_id` (or the expected program) is asserted on each account whose data is trusted; (c) each claimed PDA is re-derived via `find_program_address` and the returned CANONICAL bump is compared against the account''s STORED bump (SOL-016) — re-derivation via `create_program_address` with a CALLER-SUPPLIED bump does NOT count, because it accepts any valid off-curve bump and re-introduces the non-canonical-bump bug; and (d) `is_signer` is checked on every privileged/authority account'
+        - the byte-match is not an instruction dispatcher at all — it is a bounded enum/version-tag parse on already-program-owned, discriminator-validated data (e.g. matching a state-machine status byte read out of an `Account<'info,T>` whose owner and discriminator Anchor already checked), so no account validation is being skipped
+        - 'the matched first byte selects only among handlers that take ZERO accounts (pure compute / read-only view that returns data WITHOUT reading, writing, moving lamports from, or CPI-ing through any passed account) — so there is no account whose owner/signer/PDA/discriminator could be forged. NOTE: a ''view'' that READS even one passed account is NOT covered — it must still validate that account''s owner and discriminator before trusting the data it returns'
+  - id: solana-security-standard.sol-049-struct-padding-flag
+    languages:
+      - rust
+    severity: WARNING
+    message: 'Jelleo SOL-049: a HAND-WRITTEN `unsafe impl Pod`/`Zeroable for ...` on account-data. The real `#[derive(Pod, Zeroable)]` rejects a `bool` or implicit padding at compile time; a hand impl silently asserts Pod, so a security-relevant byte (a bool flag or reserved padding) is read with NO canonicalization - a `bool` reads `true` for ANY non-zero byte, and if attacker-writable that opens an authority gate. Distinct from SOL-017, SOL-007. Fix (ALL required): drop the hand impl - use `#[account(zero_copy)]` + `AccountLoader::load()` or the REAL derive, over a layout with NO bool and NO implicit padding (named fields; reserved bytes zero-checked on load AND zeroed on write); store flags as `u8`, assert canonicality on EVERY load (`require!(flag <= 1)`, branch `== 1`); AND validate the OWNER + 8-byte discriminator (canonicalization alone is bypassable). Fires only on a single-line hand `unsafe impl ... for`; raw `bytemuck` casts are review-only. See: github.com/Copenhagen0x/solana-security-standard#sol-049.'
+    patterns:
+      - pattern-regex: unsafe\s+impl\b[^;{\n]{0,80}\b(?:Pod|Zeroable)\s+for\b
+    paths:
+      exclude:
+        - '**/tests/**'
+        - '**/client/**'
+        - '**/cli/**'
+        - '**/offchain/**'
+        - '**/sdk/**'
+    metadata:
+      sol-id: SOL-049
+      category: security
+      confidence: LOW
+      technology:
+        - solana
+        - anchor
+      references:
+        - https://github.com/Copenhagen0x/solana-security-standard#sol-049
+      license: MIT
+      sss-tier: high
+      sss-severity: high
+      sss-exclusions:
+        - the flag is a u8 (not a bool) AND every read path asserts canonicality before use — require!(flag <= 1) (or a match that rejects all bytes except the enumerated valid ones) runs on EVERY load, not only at init — AND the branch tests an exact value (flag == 1), never flag != 0
+        - 'the struct uses Anchor''s #[account(zero_copy)] (or derives bytemuck::Pod/Zeroable via the real derive macro — NOT a hand-written `unsafe impl Pod`) on a layout with NO bool fields and NO implicit padding: every byte is a named field, reserved/padding fields included, and those reserved bytes are zero-checked on load — so there is no type-system-skipped byte for an attacker to set and no UB-bool path'
+        - 'no padding/reserved byte and no aliased/union field is ever observable: the reinterpreted value is used field-by-field only, and no whole-struct bytes are hashed, equality-compared, serialized, or re-borrowed through an overlapping view (this disqualifies the hand-impl-Pod padding-leak trap that survives a clean u8 flag)'
+        - 'the account holding the buffer is provably never attacker-writable for this byte: it is program-owned and only ever written by handlers gated to a signer bound by constraint to a hardcoded/program-stored admin key (a bare Signer<> the caller self-assigns is NOT sufficient), and the buffer is not a caller-supplied AccountInfo reinterpreted with this layout (that is the SOL-017/SOL-007 trap)'
+        - the value is provably discarded — never used in an authority/state gate, written back, hashed, or emitted (a positive 'not security-relevant' proof, not merely 'this handler does not seem to use it')
+  - id: solana-security-standard.sol-051-predictable-onchain-entropy
+    languages:
+      - rust
+    severity: WARNING
+    message: 'Jelleo SOL-051: an on-chain-observable value (Clock unix_timestamp/slot, RecentBlockhashes/SlotHashes sysvar) seeds a draw. HIGH-FP arms: `unix_timestamp %` and `slot % len` fire on legitimate time-bucketing/cooldown windows and round-robin indexing - DISMISS (exclusion #4) unless a payout/mint/rank decision READS the modulo result. Real bug: these values are NOT random - every node computes the same one, so the submitter simulates and only sends when they win (grind), and the slot leader can steer them. If it seeds a value-bearing outcome (lottery/raffle/airdrop) it is deterministically claimable -> drain; hashing/XOR-mixing does NOT help. Fix needs ALL: a VRF (Switchboard/ORAO) or commit-reveal; an OWNER check that the result account is the oracle program''s (a program-local struct is forgeable); binding to THIS draw via a key stored at request time; the oracle reveal method that fails when unfulfilled; a commit-slot freshness check. See: github.com/Copenhagen0x/solana-security-standard#sol-051.'
+    patterns:
+      - pattern-regex: \brecent_blockhashes\b|\bRecentBlockhashes\b|\bslot_hashes\b|\bSlotHashes\b|\bunix_timestamp\b[\s\S]{0,80}?%|\bslot\b[\s\S]{0,40}?%[\s\S]{0,40}?\blen\b
+    paths:
+      exclude:
+        - '**/tests/**'
+        - '**/test/**'
+        - '**/client/**'
+        - '**/cli/**'
+        - '**/offchain/**'
+        - '**/sdk/**'
+    metadata:
+      sol-id: SOL-051
+      category: security
+      confidence: LOW
+      technology:
+        - solana
+        - anchor
+      references:
+        - https://github.com/Copenhagen0x/solana-security-standard#sol-051
+      license: MIT
+      sss-tier: high
+      sss-severity: high
+      sss-exclusions:
+        - the randomness comes from a VRF whose ORACLE-OWNED result account is verified before use — you assert `*acct.owner == <switchboard/orao program id>` (or use the oracle's typed wrapper that enforces it) AND parse it with the oracle's type (e.g. Switchboard `RandomnessAccountData::parse`), AND that result account is bound to THIS specific draw by a key recorded at request/commit time (`has_one`, or comparison against a `Pubkey` stored in your state) — a VRF whose result account is read but never owner-checked, OR bound only via a `seeds=[…, pool.key()]` PDA re-derived under YOUR program id (which can never point at a genuine oracle account and is itself attacker-writable), is NOT sufficient
+        - the value is read through the oracle's reveal method that FAILS when the round is not yet fulfilled (e.g. `RandomnessAccountData::get_value(clock.slot)` returning `RandomnessNotResolved`) and a zeroed/unrevealed buffer is rejected — a self-set `fulfilled`/`settled` bool on a program-local account, or reading the buffer before fulfillment, does NOT qualify, AND the request is fresh (the committed `seed_slot`/commit slot is checked so a stale or expired round cannot be replayed)
+        - the draw uses a commit–reveal where the committed value is stored on-chain BEFORE the seed material becomes knowable and the reveal is checked against the commitment (hash preimage) — a 'commit' that commits to a value the committer can still grind at reveal time does NOT qualify
+        - the timestamp/slot feeds time-bucketing, a cooldown or rate-limit window, or expiry math (`now % period`, `slot % epoch_len` as an epoch/round index), NOT a value-bearing draw outcome — proven by tracing that no payout, mint, rank, or fund-routing decision reads the modulo result (this is the single most common legitimate use of `unix_timestamp %` / `slot % len` and is the primary false-positive class on the timestamp/slot regex arms)
+        - the on-chain value (timestamp/slot/blockhash/key) feeds a NON-value-bearing, non-adversarial use only — a UI tiebreaker, a non-prize display shuffle, or jitter on a value no party profits from steering — proven by tracing that no payout, mint, rank, or fund-routing decision reads the result (a positive 'no value rides on this draw' proof, not 'looks cosmetic')
+        - the value is used as a uniqueness/nonce or PDA seed, NOT as the random outcome itself (predictability is fine for a nonce; the draw result must not be a function of it)

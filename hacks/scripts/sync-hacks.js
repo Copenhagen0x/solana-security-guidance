@@ -136,7 +136,7 @@ function renderReadme(data, ruleTitles) {
   L.push('');
   L.push('> Real, disclosed Solana exploits mapped to the [Solana Security Standard](../claude-security-guidance.md) (`SOL-0XX`) rule class each one falls under. Generated from [`hacks.json`](./hacks.json) — do not edit by hand (run `node scripts/sync-hacks.js`).');
   L.push('');
-  L.push(`**${mapped.length} code-level exploits** — ${formatMoney(totalMapped)} lost — mapped to **${coveredRules.length} of the 37 rules**. Plus **${outOfScope.length} notable incidents no code rule prevents** (stolen keys, off-chain wallets), listed for honesty about scope.`);
+  L.push(`**${mapped.length} code-level exploits** — ${formatMoney(totalMapped)} lost — mapped to **${coveredRules.length} of the 52 rules**. Plus **${outOfScope.length} notable incidents no code rule prevents** (stolen keys, off-chain wallets), listed for honesty about scope.`);
   L.push('');
   L.push('Every entry is cited. A mapping says "this rule class is the one that flags this bug" — not that any tool would have auto-fixed it. We never claim a rule catches an incident it cannot (see [`SCHEMA.md`](./SCHEMA.md)).');
   L.push('');

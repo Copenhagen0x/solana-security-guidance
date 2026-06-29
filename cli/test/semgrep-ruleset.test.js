@@ -40,6 +40,16 @@ test('committed ruleset is in sync with security-patterns.yaml (else run npm run
   assert.equal(norm(fs.readFileSync(yamlPath, 'utf8')), norm(expected));
 });
 
+// Mirrors the "Validate guidance files" CI gate (which the local suite otherwise can't
+// see), so an over-long reminder fails locally instead of only on a pushed branch.
+// Reminders are the IDE-displayed text; deep detail belongs in the uncapped rules-meta.
+test('every reminder is within the 1024-byte cap', () => {
+  for (const p of srcPatterns) {
+    const bytes = Buffer.byteLength(p.reminder || '', 'utf8');
+    assert.ok(bytes <= 1024, `${p.rule_name}: reminder is ${bytes} bytes (>1024) — trim it; move detail to the rules-meta exclusions`);
+  }
+});
+
 test('one Semgrep rule per deterministic (regex|substrings) source rule', () => {
   const matchers = rules.filter((r) => r.regex || (r.substrings && r.substrings.length));
   assert.equal(doc.rules.length, matchers.length);

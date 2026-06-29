@@ -63,7 +63,7 @@ In CI, treat the baseline file like a security control: add it to `CODEOWNERS` s
 
 ## What it flags
 
-The 23 deterministic SOL-0XX patterns — 20 on-chain Rust checks (caller-controlled `now_slot`, missing signer/owner checks, unchecked arithmetic, `init_if_needed` reinit, raw sysvar deserialize, and more) plus 3 integrator checks for the transaction-sending TypeScript/JS (preflight disabled, static priority fee, stale Jupiter quote). These are **fast, advisory tripwires** — a finding means "look here," not "definitely a bug." The on-chain patterns skip off-chain code (`client/`, `cli/`, `offchain/`, `sdk/`, `tests/`) where they're harmless; the integrator patterns target the TS/JS that builds and sends transactions. The full semantic review lives in the [Claude Code plugin](https://github.com/Copenhagen0x/solana-security-standard) and in a [Jelleo audit](https://jelleo.com).
+The 30 deterministic SOL-0XX patterns — 27 on-chain Rust checks (caller-controlled `now_slot`, missing signer/owner checks, unchecked arithmetic, `init_if_needed` reinit, raw sysvar deserialize, and more) plus 3 integrator checks for the transaction-sending TypeScript/JS (preflight disabled, static priority fee, stale Jupiter quote). These are **fast, advisory tripwires** — a finding means "look here," not "definitely a bug." The on-chain patterns skip off-chain code (`client/`, `cli/`, `offchain/`, `sdk/`, `tests/`) where they're harmless; the integrator patterns target the TS/JS that builds and sends transactions. The full semantic review lives in the [Claude Code plugin](https://github.com/Copenhagen0x/solana-security-standard) and in a [Jelleo audit](https://jelleo.com).
 
 ## Rules source of truth
 

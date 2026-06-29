@@ -2,7 +2,7 @@
   "name": "solana-security-standard",
   "displayName": "Solana Security Standard",
   "version": "1.11.0",
-  "description": "The Solana Security Standard (SOL-0XX) in Claude Code: the scan_solana_code MCP tool + the full 37-rule guidance, plus a /scan command — by Jelleo.",
+  "description": "The Solana Security Standard (SOL-0XX) in Claude Code: the scan_solana_code MCP tool + the full 52-rule guidance, plus a /scan command — by Jelleo.",
   "author": {
     "name": "Jelleo",
     "email": "kirill@jelleo.com"

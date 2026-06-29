@@ -46,6 +46,60 @@ function coreBody() {
   return md.slice(i + 1).trimEnd() + '\n'; // +1 skips the anchor's leading newline
 }
 
+const pg = require('./sync-plugin-guidance');
+
+// Rule tier (high|low) from the advisory meta — prioritizes which cues stay inline
+// when the full set would overflow a tool's cap.
+function loadTiers() {
+  const rules = (JSON.parse(fs.readFileSync(path.join(repoRoot, 'rules-meta.json'), 'utf8')) || {}).rules || {};
+  const t = {};
+  for (const id of Object.keys(rules)) t[id] = rules[id].tier === 'high' ? 'high' : 'low';
+  return t;
+}
+
+// SCALE-INVARIANT AI-context body. SSS may grow to thousands of rules, but every AI
+// tool file is consumer-capped (Windsurf hard-caps at 12,000 chars). So the tool
+// files carry the threat model + review checklist + terse SOL-0XX cues (id · title ·
+// fix), byte-budgeted (highest-tier first) with ONE overflow pointer. The CLI /
+// Semgrep / Action / MCP / master still carry 100% of the rules; only this inline
+// cheat-sheet is bounded — so it never overflows for any N.
+function aiBody() {
+  const md = fs.readFileSync(srcGuidance, 'utf8').replace(/\r\n/g, '\n');
+  const rules = pg.parseRules(md);
+  const tiers = loadTiers();
+  const headBlock = pg.preamble(md) + '\n\n## Rules — flag the pattern, apply the fix, cite the SOL-0XX id\n\n';
+  const cues = rules.map((r) => ({
+    id: r.id,
+    tier: tiers[r.id] || 'low',
+    line: `- **${r.id}** · ${r.title} — ${pg.extractFix(r.body)}`,
+  }));
+  // Budget the BODY so even the largest per-tool header + INTRO stays under the cap.
+  const CAP = WINDSURF_MAX - 1100;
+  const fullBody = headBlock + cues.map((c) => c.line).join('\n') + '\n';
+  if (Buffer.byteLength(fullBody, 'utf8') <= CAP) return fullBody;
+  const RESERVE = 380; // headroom for the single overflow line
+  let used = Buffer.byteLength(headBlock, 'utf8');
+  const keep = new Set();
+  const byPriority = [...cues].sort(
+    (a, b) => (a.tier === 'high' ? 0 : 1) - (b.tier === 'high' ? 0 : 1) || a.id.localeCompare(b.id)
+  );
+  for (const c of byPriority) {
+    const add = Buffer.byteLength(c.line + '\n', 'utf8');
+    if (used + add <= CAP - RESERVE) {
+      keep.add(c.id);
+      used += add;
+    }
+  }
+  const kept = cues.filter((c) => keep.has(c.id));
+  const omitted = cues.length - kept.length;
+  return (
+    headBlock +
+    kept.map((c) => c.line).join('\n') +
+    '\n' +
+    `- *+ ${omitted} more rules — the CLI scanner, Semgrep, GitHub Action, and the \`list_solana_security_rules\` MCP tool enforce/serve the complete catalog; full per-rule detail in \`claude-security-guidance.md\` at ${REPO}.*\n`
+  );
+}
+
 const INTRO =
   'When you write, edit, or review Solana code in this project — on-chain Anchor/Rust programs AND ' +
   'the TypeScript/JavaScript that builds and sends transactions (bots, keepers, integrators) — apply ' +
@@ -134,22 +188,22 @@ function readme() {
     'review Solana/Anchor code against the SOL-0XX rules.\n\n' +
     table + '\n\n' +
     '**Coverage.** The AI-instruction files (Codex, Copilot, Cursor, Windsurf, Cline, Aider) carry ' +
-    'all **37 documented SOL-0XX rules** as guidance for the assistant. The machine-checkable ' +
-    'surfaces (CLI, GitHub Action, Semgrep, editor extension) enforce the **23 rules that have ' +
-    'deterministic patterns**; the other 14 are semantic rules an AI or human reviewer applies. ' +
+    'all **52 documented SOL-0XX rules** as guidance for the assistant. The machine-checkable ' +
+    'surfaces (CLI, GitHub Action, Semgrep, editor extension) enforce the **30 rules that have ' +
+    'deterministic patterns**; the other 22 are semantic rules an AI or human reviewer applies. ' +
     'All are generated from the same source - no rule text is duplicated by hand. ' +
     'Full catalog and per-rule detail: ' + REPO + ' .\n'
   );
 }
 
 function build() {
-  const body = coreBody();
+  const body = aiBody();
   const files = {};
   for (const [rel, render] of Object.entries(TOOLS)) files[rel] = render(body);
   for (const [rel, content] of Object.entries(STATIC)) files[rel] = content;
   files['README.md'] = readme();
-  if (files[WINDSURF_FILE].length >= WINDSURF_MAX) {
-    throw new Error(`sync-integrations: Windsurf file is ${files[WINDSURF_FILE].length} chars, over the ${WINDSURF_MAX} cap`);
+  if (Buffer.byteLength(files[WINDSURF_FILE], 'utf8') >= WINDSURF_MAX) {
+    throw new Error(`sync-integrations: Windsurf file is ${Buffer.byteLength(files[WINDSURF_FILE], 'utf8')} bytes, over the ${WINDSURF_MAX} cap`);
   }
   return files;
 }
