@@ -77,9 +77,9 @@ test('install matrix lists every tool', () => {
   }
 });
 
-test('README is honest about coverage: 52 documented vs 28 machine-checkable', () => {
+test('README is honest about coverage: 52 documented vs 30 machine-checkable', () => {
   const r = read('README.md');
   assert.match(r, /52 documented SOL-0XX rules/);
-  assert.match(r, /28 rules that have/);
+  assert.match(r, /30 rules that have/);
   assert.match(r, /generated from the one source of truth/i);
 });

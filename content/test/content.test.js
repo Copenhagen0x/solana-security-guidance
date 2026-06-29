@@ -26,8 +26,8 @@ test('parses exactly 52 rules with ids/titles/bodies', () => {
   assert.ok(ids.includes('SOL-001') && ids.includes('SOL-028') && ids.includes('SOL-031'));
 });
 
-test('exactly 28 rules are machine-checkable (have a pattern)', () => {
-  assert.strictEqual(patternIds.size, 28, `expected 28 patterns, got ${patternIds.size}`);
+test('exactly 30 rules are machine-checkable (have a pattern)', () => {
+  assert.strictEqual(patternIds.size, 30, `expected 30 patterns, got ${patternIds.size}`);
   // every pattern id is a real rule
   const ruleIds = new Set(rules.map((r) => r.id));
   for (const p of patternIds) assert.ok(ruleIds.has(p), `pattern ${p} has no rule`);

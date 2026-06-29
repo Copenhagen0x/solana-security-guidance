@@ -492,6 +492,29 @@
       ]
     },
     {
+      "rule_name": "sol_038_pda_seed_collision",
+      "regex": "\\bseeds\\s*=\\s*\\[[^\\]]{0,160}?\\.as_bytes\\(\\)\\s*,\\s*&?\\s*[A-Za-z_][\\w.]{0,60}\\.as_bytes\\(\\)",
+      "paths": [
+        "**/*.rs"
+      ],
+      "exclude_paths": [
+        "**/tests/**",
+        "**/client/**",
+        "**/cli/**",
+        "**/offchain/**",
+        "**/sdk/**"
+      ],
+      "reminder": "Jelleo SOL-038: two caller-controlled variable-length seed elements (`x.as_bytes(), y.as_bytes()`) sit ADJACENT inside a `seeds = [...]` array with no fixed-width separator between them. Solana hashes `seeds=[...]` as one flat buffer, so the boundary between these two strings is unpinned — an attacker picks values where `a|bX == ab|X`, deriving the SAME PDA for two DISTINCT logical accounts (alias/overwrite/spoof/type-confusion). Fix: pin every element boundary — hash or length-prefix each variable element to a constant width (`&keccak::hash(name.as_bytes()).to_bytes()`, or a length byte ahead of each), OR keep at most ONE variable element and make it LAST behind only fixed-width elements, AND lead same-namespace schemes with a fixed-width per-type tag drawn from ONE program-wide enum registry (never per-file consts). Heuristic flag — fires on two adjacent `.as_bytes()` seeds (the intra-scheme byte-shift); it MISSES the cross-scheme variant (two `seeds=[...]` whose fixed prefixes differ in length — needs cross-site review), the `.as_ref()`-on-slice form (indistinguishable from the SAFE fixed-width `pubkey.key().as_ref()`, so excluded to avoid spam), and `String`/`Vec<u8>` seeds passed as bare identifiers with no method call. Distinct from SOL-008/016 (which verify a PDA, not the scheme's ambiguity). Dismiss only via the exclusions (some require human verification RE2 cannot do). See: github.com/Copenhagen0x/solana-security-standard#sol-038.",
+      "tier": "high",
+      "severity": "high",
+      "exclusions": [
+        "The seed array has at most ONE variable-length element and it is the LAST element, every element before it is fixed-width (a fixed-length namespace literal like b\"vault\", a Pubkey's 32 bytes, a u8/u64::to_le_bytes(), or a [u8; N]) — AND one of the following holds so cross-scheme aliasing is also excluded: (a) this is the program's ONLY PDA scheme that ends in a variable-length element, OR (b) every same-namespace scheme that ends in a variable element carries a fixed-width leading per-type discriminator drawn from one program-wide registry (see exclusion 4), OR (c) all sibling schemes' fixed prefixes are provably equal-length. A single trailing variable prevents only INTRA-scheme byte-shifting; it does NOT prevent two trailing-variable schemes with unequal-length fixed prefixes from aliasing — e.g. [b\"a\", name] and [b\"ab\", name2] collide on a|bX == ab|X. Without (a), (b), or (c), do NOT suppress.",
+        "Every variable-length element is normalized to a FIXED width before being placed in the seeds — hashed to 32 bytes (e.g. hash(name).to_bytes() / keccak), length-prefixed with its own byte count, or truncated/padded to a constant [u8; N] — so element boundaries are unambiguous regardless of content. (Width-fixing alone clears the intra-scheme shift; if more than one record type shares this layout it must ALSO carry the exclusion-4 discriminator, since equal-width-but-untagged schemes still cross-alias.)",
+        "The seed material is entirely fixed-width or program-controlled (only Pubkeys, fixed integer encodings, enum discriminants, or hardcoded equal-length literals) with NO caller-supplied variable-length bytes, so an attacker cannot shift any boundary or pick a colliding value.",
+        "Every same-namespace scheme leads with a fixed-width per-type discriminator (seed[0]) drawn from a SINGLE program-wide enum/registry whose variants are guaranteed distinct (e.g. #[repr(u8)] enum PdaTag { ... } used as PdaTag::X as u8, or equal-length distinct type literals controlled in one place) AND no remaining element can byte-shift against the next (each is fixed-width or the variable element is last and width-fixed per exclusion 2). A discriminator that is a free-floating per-file const with no registry does NOT qualify — nothing prevents two account types from sharing the same value and re-colliding."
+      ]
+    },
+    {
       "rule_name": "sol_039_partial_cpi_state",
       "regex": "(?:\\blet\\s+_\\s*=\\s*(?:invoke(?:_signed)?|token::(?:transfer|transfer_checked|burn|mint_to|close_account|thaw_account|freeze_account|approve|revoke))\\s*\\(|(?:invoke(?:_signed)?|token::(?:transfer|transfer_checked|burn|mint_to|close_account|thaw_account|freeze_account|approve|revoke))\\s*\\([^;]{0,1200}?\\)\\s*\\.\\s*(?:ok|is_err|is_ok|unwrap_or|unwrap_or_default|unwrap_or_else)\\s*\\(|\\bif\\s+let\\s+(?:Ok|Err)\\s*\\([^)]*\\)\\s*=\\s*(?:invoke(?:_signed)?|token::(?:transfer|transfer_checked|burn|mint_to|close_account|thaw_account|freeze_account|approve|revoke))\\s*\\(|\\bmatch\\s+(?:invoke(?:_signed)?|token::(?:transfer|transfer_checked|burn|mint_to|close_account|thaw_account|freeze_account|approve|revoke))\\s*\\()",
       "paths": [
@@ -585,6 +608,30 @@
         "this IS a deliberate native (non-Anchor) program AND every account on the matched arm is manually re-validated before use — a positive 'all four guards present on THIS arm' proof, not 'the program looks careful': (a) the 8-byte discriminator is verified via `try_deserialize` (NOT `try_deserialize_unchecked`) or an explicit constant-tag compare; (b) `owner == program_id` (or the expected program) is asserted on each account whose data is trusted; (c) each claimed PDA is re-derived via `find_program_address` and the returned CANONICAL bump is compared against the account's STORED bump (SOL-016) — re-derivation via `create_program_address` with a CALLER-SUPPLIED bump does NOT count, because it accepts any valid off-curve bump and re-introduces the non-canonical-bump bug; and (d) `is_signer` is checked on every privileged/authority account",
         "the byte-match is not an instruction dispatcher at all — it is a bounded enum/version-tag parse on already-program-owned, discriminator-validated data (e.g. matching a state-machine status byte read out of an `Account<'info,T>` whose owner and discriminator Anchor already checked), so no account validation is being skipped",
         "the matched first byte selects only among handlers that take ZERO accounts (pure compute / read-only view that returns data WITHOUT reading, writing, moving lamports from, or CPI-ing through any passed account) — so there is no account whose owner/signer/PDA/discriminator could be forged. NOTE: a 'view' that READS even one passed account is NOT covered — it must still validate that account's owner and discriminator before trusting the data it returns"
+      ]
+    },
+    {
+      "rule_name": "sol_049_struct_padding_flag",
+      "regex": "unsafe\\s+impl\\b[^;{\\n]{0,80}\\b(?:Pod|Zeroable)\\s+for\\b|\\bbytemuck\\s*::\\s*(?:from_bytes(?:_mut)?|try_from_bytes(?:_mut)?|cast_ref|cast_mut|cast_slice(?:_mut)?|cast)\\b",
+      "paths": [
+        "**/*.rs"
+      ],
+      "exclude_paths": [
+        "**/tests/**",
+        "**/client/**",
+        "**/cli/**",
+        "**/offchain/**",
+        "**/sdk/**"
+      ],
+      "reminder": "Jelleo SOL-049: a hand-rolled zero-copy reinterpret of account bytes — a hand-written `unsafe impl Pod`/`Zeroable for ...` and/or a `bytemuck::from_bytes`/`try_from_bytes`/`cast_ref`/`cast` over a buffer. Risk: a security-relevant byte (an `is_admin`/`is_initialized`/`is_frozen` bool, or alignment/reserved padding) is read through this typed view with NO canonicalization — a `bool` reads `true` for ANY non-zero byte (UB), and padding bytes survive the reinterpret; if that byte is attacker-writable, they set it to open an authority/state gate, and if padding flows into a hash/equality/serialization it forges or collides. Distinct from SOL-017 (use a typed deserialize — this survives a clean zero-copy) and SOL-007 (owner check). Fix: use Anchor `#[account(zero_copy)]` + `AccountLoader::load()` (validates owner+discriminator) or the REAL `#[derive(bytemuck::Pod, Zeroable)]` (never a hand `unsafe impl`) over a layout with NO bool field and NO implicit padding (every byte a named field, reserved bytes zero-checked on load); store each flag as a `u8` and assert canonicality on EVERY load with an EXACT-value test — `require!(flag <= 1)` then branch on `flag == 1`, never `flag != 0`. Heuristic flag — fires on the hand `unsafe impl Pod/Zeroable for` and the `bytemuck::from_bytes`/`cast_ref` load sites; MISSES the raw `*const T` cast / `mem::transmute` path (that is SOL-017), a `let p = bytes.as_ptr() as *const T` cast, and direct `[u8; N]` byte-indexing of a flag, and it CANNOT prove the byte is attacker-writable or that canonicalization is absent (review those). Dismiss only via the exclusions (most require human verification RE2 cannot do). See: github.com/Copenhagen0x/solana-security-standard#sol-049.",
+      "tier": "high",
+      "severity": "high",
+      "exclusions": [
+        "the flag is a u8 (not a bool) AND every read path asserts canonicality before use — require!(flag <= 1) (or a match that rejects all bytes except the enumerated valid ones) runs on EVERY load, not only at init — AND the branch tests an exact value (flag == 1), never flag != 0",
+        "the struct uses Anchor's #[account(zero_copy)] (or derives bytemuck::Pod/Zeroable via the real derive macro — NOT a hand-written `unsafe impl Pod`) on a layout with NO bool fields and NO implicit padding: every byte is a named field, reserved/padding fields included, and those reserved bytes are zero-checked on load — so there is no type-system-skipped byte for an attacker to set and no UB-bool path",
+        "no padding/reserved byte and no aliased/union field is ever observable: the reinterpreted value is used field-by-field only, and no whole-struct bytes are hashed, equality-compared, serialized, or re-borrowed through an overlapping view (this disqualifies the hand-impl-Pod padding-leak trap that survives a clean u8 flag)",
+        "the account holding the buffer is provably never attacker-writable for this byte: it is program-owned and only ever written by handlers gated to a signer bound by constraint to a hardcoded/program-stored admin key (a bare Signer<> the caller self-assigns is NOT sufficient), and the buffer is not a caller-supplied AccountInfo reinterpreted with this layout (that is the SOL-017/SOL-007 trap)",
+        "the value is provably discarded — never used in an authority/state gate, written back, hashed, or emitted (a positive 'not security-relevant' proof, not merely 'this handler does not seem to use it')"
       ]
     },
     {

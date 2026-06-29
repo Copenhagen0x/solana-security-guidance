@@ -189,8 +189,8 @@ function readme() {
     table + '\n\n' +
     '**Coverage.** The AI-instruction files (Codex, Copilot, Cursor, Windsurf, Cline, Aider) carry ' +
     'all **52 documented SOL-0XX rules** as guidance for the assistant. The machine-checkable ' +
-    'surfaces (CLI, GitHub Action, Semgrep, editor extension) enforce the **28 rules that have ' +
-    'deterministic patterns**; the other 24 are semantic rules an AI or human reviewer applies. ' +
+    'surfaces (CLI, GitHub Action, Semgrep, editor extension) enforce the **30 rules that have ' +
+    'deterministic patterns**; the other 22 are semantic rules an AI or human reviewer applies. ' +
     'All are generated from the same source - no rule text is duplicated by hand. ' +
     'Full catalog and per-rule detail: ' + REPO + ' .\n'
   );

@@ -242,7 +242,7 @@ All published cycle reports: [jelleo.com/cycles](https://jelleo.com/cycles)
 
 The standard is two source files — a YAML of deterministic patterns and a Markdown threat-model + rule catalog — plus a self-contained scanner. **Every surface runs the same rules:** the CLI, GitHub Action, editor extension, MCP server, and Semgrep apply them directly. In **Claude Code** specifically, Anthropic's [security-guidance plugin](https://code.claude.com/docs/en/security-guidance) reads the two files and reviews edits at three layers:
 
-1. **On each file edit** — fast pattern match (no model call). Reads `.claude/security-patterns.yaml` for regex/substring rules. **Our file provides 28 deterministic patterns.**
+1. **On each file edit** — fast pattern match (no model call). Reads `.claude/security-patterns.yaml` for regex/substring rules. **Our file provides 30 deterministic patterns.**
 2. **At the end of each turn** — background model review of the full diff. Reads `.claude/claude-security-guidance.md` for semantic guidance. **Our file provides the Solana threat model + 52-rule catalog + review checklist.**
 3. **On each commit Claude makes** — deeper agentic review that reads surrounding code. Uses the same guidance file.
 
@@ -250,7 +250,7 @@ Every time a rule fires, the reminder text includes the rule ID (e.g. `Jelleo SO
 
 ## Examples
 
-The [`examples/`](examples/) directory contains **28 paired vulnerable/fixed snippets — one for every machine-checkable rule** (Rust on-chain; TypeScript for the integrator rules). They're self-tested: the scanner must fire on each `vulnerable` file and clear on each `fixed` one, so they can't drift from the rules. Useful for understanding a bug class before reading the rule definition.
+The [`examples/`](examples/) directory contains **30 paired vulnerable/fixed snippets — one for every machine-checkable rule** (Rust on-chain; TypeScript for the integrator rules). They're self-tested: the scanner must fire on each `vulnerable` file and clear on each `fixed` one, so they can't drift from the rules. Useful for understanding a bug class before reading the rule definition.
 
 ## Contributing
 
