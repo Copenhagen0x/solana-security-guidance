@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.12.0] — 2026-06-29
+
 ### Added — 15 new Solana rules: SOL-038…SOL-052 (37 → 52)
 
 - **15 Solana-native rules** drawn from the public Solana/DeFi bug-class taxonomy (Zellic blog case-studies), filtered to pure-Solana, genuinely-new classes: SOL-038 PDA seed collision (machine) · SOL-039 Asymmetric partial-CPI state (machine) · SOL-040 Credit from requested not measured / Token-2022 · SOL-041 Forced-balance / supply desync · SOL-042 Unbounded account-iteration compute DoS (machine) · SOL-043 Unbounded storage / slot-exhaustion griefing · SOL-044 Hardcoded slot-time rate (machine) · SOL-045 Incremental Merkle insertion error · SOL-046 Hand-rolled dispatch bypasses framework guards (machine) · SOL-047 Forged receipt token / mint · SOL-048 Default/zero value accepted as valid · SOL-049 Struct-padding / non-canonical flag read (machine) · SOL-050 Serialization symmetry mismatch · SOL-051 Predictable on-chain entropy (machine) · SOL-052 Token-2022 semantics assumed.
