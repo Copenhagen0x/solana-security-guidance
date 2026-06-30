@@ -1,0 +1,44 @@
+{
+  "manifest_version": "0.3",
+  "name": "solana-security-standard",
+  "display_name": "Solana Security Standard",
+  "version": "1.5.0",
+  "description": "Scan Solana/Anchor code against the Solana Security Standard and serve its 52-rule ruleset to any MCP client.",
+  "long_description": "The Solana Security Standard MCP server gives any MCP-compatible assistant two read-only tools: scan a Solana/Anchor Rust snippet against the open Solana Security Standard (52 numbered SOL-0XX rules) for fast advisory findings, and fetch the full ruleset (threat model, review checklist, and every rule with its fix) to write or review on-chain code safely. Zero dependencies, fully local: code never leaves your machine. Source: github.com/Copenhagen0x/solana-security-standard.",
+  "author": {
+    "name": "Jelleo, Inc.",
+    "email": "info@jelleo.com",
+    "url": "https://jelleo.com"
+  },
+  "homepage": "https://jelleo.com",
+  "documentation": "https://github.com/Copenhagen0x/solana-security-standard/tree/main/mcp",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Copenhagen0x/solana-security-standard"
+  },
+  "license": "MIT",
+  "keywords": ["solana", "security", "anchor", "rust", "audit", "smart-contracts", "mcp", "static-analysis"],
+  "server": {
+    "type": "node",
+    "entry_point": "server.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/server.js"]
+    }
+  },
+  "tools": [
+    {
+      "name": "scan_solana_code",
+      "description": "Scan a snippet of Solana/Anchor Rust against the Solana Security Standard (SOL-0XX) fast patterns. Returns advisory findings."
+    },
+    {
+      "name": "list_solana_security_rules",
+      "description": "Return the full Solana Security Standard guidance: threat model, review checklist, and all 52 rules with fixes."
+    }
+  ],
+  "compatibility": {
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  }
+}

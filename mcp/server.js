@@ -11,13 +11,21 @@
 
 const readline = require('readline');
 const tools = require('./src/tools');
+const pkg = require('./package.json');
 
-const SERVER_INFO = { name: 'solana-security-standard', version: '1.0.0' };
-const PROTOCOL_VERSION = '2024-11-05';
+const SERVER_INFO = { name: 'solana-security-standard', version: pkg.version };
+const PROTOCOL_VERSION = '2025-06-18';
+
+// Both tools are READ-ONLY: they scan/return text and never mutate state, touch the
+// filesystem, or reach the network. The annotations below declare that to MCP clients and
+// satisfy the Claude Connectors Directory requirement (every tool needs a title + a
+// readOnlyHint/destructiveHint).
+const READONLY = { readOnlyHint: true, destructiveHint: false, openWorldHint: false };
 
 const TOOL_DEFS = [
   {
     name: 'scan_solana_code',
+    title: 'Scan Solana Code',
     description:
       'Scan a snippet of Solana/Anchor Rust against the Solana Security Standard (SOL-0XX) fast ' +
       'patterns. Returns advisory findings (rule id + line:col + fix hint). A match means "look ' +
@@ -30,13 +38,16 @@ const TOOL_DEFS = [
       },
       required: ['code'],
     },
+    annotations: { title: 'Scan Solana Code', ...READONLY },
   },
   {
     name: 'list_solana_security_rules',
+    title: 'List Solana Security Rules',
     description:
       'Return the full Solana Security Standard (SOL-0XX) guidance: threat model, review checklist, ' +
       'and all 52 numbered rules with fixes. Use it to write or review Solana/Anchor code safely.',
     inputSchema: { type: 'object', properties: {} },
+    annotations: { title: 'List Solana Security Rules', ...READONLY },
   },
 ];
 
@@ -67,8 +78,17 @@ function respond(msg) {
   // fire-and-forget, never reply (so we never emit a malformed id-less response).
   if (id === undefined || id === null) return undefined;
   switch (method) {
-    case 'initialize':
-      return { jsonrpc: '2.0', id, result: { protocolVersion: PROTOCOL_VERSION, capabilities: { tools: {} }, serverInfo: SERVER_INFO } };
+    case 'initialize': {
+      // Version negotiation: echo the client's requested protocol version when it sent one. This
+      // server behaves identically across the 2024-11-05..2025-06-18 revisions, so echoing keeps an
+      // older client from being handed a version it can't accept and disconnecting; we fall back to
+      // our latest supported version only when the client sent none.
+      // Echo only a date-shaped version (MCP revisions are YYYY-MM-DD): filter to digits/hyphen and
+      // cap, so a client can't get control/bidi chars reflected back into a host's version display.
+      const reqRaw = params && typeof params.protocolVersion === 'string' ? params.protocolVersion : '';
+      const requested = reqRaw.replace(/[^0-9-]/g, '').slice(0, 32) || null;
+      return { jsonrpc: '2.0', id, result: { protocolVersion: requested || PROTOCOL_VERSION, capabilities: { tools: {} }, serverInfo: SERVER_INFO } };
+    }
     case 'ping':
       return { jsonrpc: '2.0', id, result: {} };
     case 'tools/list':
@@ -109,7 +129,7 @@ function handleLine(line) {
   let msg;
   try { msg = JSON.parse(t); } catch { return; } // ignore non-JSON noise
   if (Array.isArray(msg)) {
-    // JSON-RPC batch (allowed by the 2024-11-05 revision): reply with an array of the
+    // JSON-RPC batch: tolerated for legacy-client compatibility (batching was removed from the MCP spec in 2025-03-26): reply with an array of the
     // non-notification responses (bounded), or stay silent if it was all notifications.
     const replies = respondBatch(msg);
     if (replies.length) send(replies);
