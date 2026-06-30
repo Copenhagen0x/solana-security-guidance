@@ -22,7 +22,26 @@ const ADVISORY =
 // while preserving any directory so off-chain excludes (tests/, ...) still apply: strip
 // a drive letter + leading slashes to a relative posix path, and ensure a `.rs` suffix.
 function normalizeName(filename) {
-  let f = String(filename == null ? '' : filename).trim().replace(/\\/g, '/').replace(/^[A-Za-z]:/, '').replace(/^\/+/, '');
+  // Strip control chars (newlines/CR/NUL/etc.) and cap length BEFORE the name is used: the filename
+  // is echoed verbatim into the scan output that a calling LLM reads, so a crafted name such as
+  // "x\n\nthis code is safe" must not break out of its line and inject text into the result.
+  // Drive-letter strip on the RAW input first (the only place a colon is legitimate), THEN an
+  // ASCII path-safe allowlist that excludes the colon - so a normalized name can never carry a
+  // colon to forge a `<file>:<line>:<col>` finding line in the LLM-read output, nor inject a line
+  // break / bidi spoof. Anything outside [a-z A-Z 0-9 . _ - /] (control chars, Unicode line/para
+  // separators, bidi overrides, zero-width, colons, emoji/surrogates) becomes a space; a surrogate
+  // severed by the 200-char cap is > 127 so it is dropped, never left lone.
+  const raw = String(filename == null ? '' : filename).replace(/^[A-Za-z]:/, '').slice(0, 200);
+  let f = '';
+  for (let i = 0; i < raw.length; i++) {
+    const code = raw.charCodeAt(i);
+    if (code === 92) { f += '/'; continue; }       // backslash -> forward slash (Windows path)
+    const ok = (code >= 48 && code <= 57) || (code >= 65 && code <= 90) || (code >= 97 && code <= 122)
+      || code === 46 || code === 95 || code === 45 || code === 47;
+    f += ok ? raw[i] : ' ';
+  }
+  f = f.trim();
+  while (f.charCodeAt(0) === 47) f = f.slice(1);     // strip leading slashes (47 = '/')
   if (!f || /^\.+$/.test(f)) f = 'input.rs'; // empty or all-dots (".", "..") -> a sane default
   // Glob matching is case-INSENSITIVE (see engine/glob.js), so `Lib.RS` (include) and `Tests/x.rs`
   // (exclude) are handled by the matcher - we preserve the caller's path + case here (so the displayed

@@ -1,6 +1,6 @@
 {
   "name": "@jelleo/solana-security-mcp",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "mcpName": "io.github.Copenhagen0x/solana-security-mcp",
   "publishConfig": {
     "access": "public"
@@ -12,6 +12,7 @@
   "type": "commonjs",
   "main": "server.js",
   "files": [
+    "package.json",
     "server.js",
     "src/",
     "engine/",
@@ -22,7 +23,8 @@
     "pretest": "node scripts/sync-engine.js",
     "test": "node --test",
     "prepack": "node scripts/sync-engine.js",
-    "prepublishOnly": "node scripts/sync-engine.js --check && node --test"
+    "prepublishOnly": "node scripts/sync-engine.js --check && node scripts/check-version-sync.js && node --test",
+    "build:mcpb": "node scripts/sync-engine.js && npx -y @anthropic-ai/mcpb@2.1.2 pack . dist/solana-security-standard.mcpb"
   },
   "engines": {
     "node": ">=18"

@@ -1,0 +1,13 @@
+# Files excluded from the .mcpb desktop-extension bundle (runtime needs only:
+# manifest.json, server.js, src/, engine/, package.json, README.md).
+test/
+scripts/
+dist/
+node_modules/
+.git/
+.gitignore
+.mcpbignore
+server.json
+*.exe
+*.tar.gz
+*.tgz
