@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.Copenhagen0x/solana-security-mcp",
   "description": "Scan Solana/Anchor code against the Solana Security Standard and serve the ruleset to MCP clients.",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "title": "Solana Security Standard",
   "websiteUrl": "https://github.com/Copenhagen0x/solana-security-standard",
   "repository": {
@@ -14,7 +14,7 @@
     {
       "registryType": "npm",
       "identifier": "@jelleo/solana-security-mcp",
-      "version": "1.4.0",
+      "version": "1.5.0",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"
