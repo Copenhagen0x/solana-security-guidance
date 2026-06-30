@@ -17,6 +17,7 @@
     "url": "https://github.com/Copenhagen0x/solana-security-standard"
   },
   "license": "MIT",
+  "privacy_policies": ["https://jelleo.com/privacy.html"],
   "keywords": ["solana", "security", "anchor", "rust", "audit", "smart-contracts", "mcp", "static-analysis"],
   "server": {
     "type": "node",

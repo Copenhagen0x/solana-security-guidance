@@ -26,9 +26,17 @@ Add it to your MCP client config (no global install needed):
 
 That's the whole setup. The server speaks JSON-RPC 2.0 over stdio.
 
-## Privacy
+## Privacy Policy
 
-100% local. It runs the same zero-dependency scanner as the [CLI](https://github.com/Copenhagen0x/solana-security-standard) on your machine - no network calls, no telemetry. The scanner core and rules are vendored into the package; nothing is fetched at runtime.
+100% local. This server runs the same zero-dependency scanner as the [CLI](https://github.com/Copenhagen0x/solana-security-standard) entirely on your machine - **no network calls, no telemetry, nothing fetched at runtime**. The scanner core and rules are vendored into the package.
+
+- **Data collection:** none - the code you scan and the rules you fetch never leave your machine.
+- **Usage & storage:** inputs are processed in memory to produce the scan result; nothing is stored or logged.
+- **Third-party sharing:** none.
+- **Retention:** none - no data is persisted by this server.
+- **Contact:** info@jelleo.com
+
+Full policy: https://jelleo.com/privacy.html
 
 ## How it fits
 
