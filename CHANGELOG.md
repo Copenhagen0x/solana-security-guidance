@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.12.1] — 2026-07-02
+
 ### Changed
 - **SOL-010 (Reinit attack)** now matches the reinit *property*, not the `init_if_needed` idiom alone. Added the hand-rolled forms — a raw account-header write via `.data.borrow_mut()` / `try_borrow_mut_data()` with no zero/discriminator/`is_initialized` guard — so a native/manual reinitialization is flagged, not just Anchor's `init_if_needed`. Closes a gap from an external field test (Metaplex Candy Machine v1 config-drain slipped past the idiom-only match). Guidance + rules-meta exclusions rephrased property-first; canonical safe form is Orca's `initialize_dynamic_tick_array` discriminator check. No rule-count change (edit to SOL-010).
 

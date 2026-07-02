@@ -11,7 +11,7 @@
       "displayName": "Solana Security Standard",
       "description": "Scan Solana/Anchor code against the SOL-0XX rules as you work: MCP scan tool, full 52-rule guidance, /scan command.",
       "source": "./",
-      "version": "1.12.0",
+      "version": "1.12.1",
       "author": {
         "name": "Jelleo",
         "email": "kirill@jelleo.com"
