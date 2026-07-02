@@ -42,7 +42,7 @@ PDA used without `find_program_address` validation → attacker passes any accou
 `invoke_signed` without verifying the caller's authority (signing with a PDA ≠ authorization). Fix: check authority before the CPI.
 
 ### SOL-010 · Reinit attack
-`init_if_needed` on accounts holding value/authority → a 2nd call reinits, dropping balances; the same footgun enables nullifier/spent-marker double-spend (an `init_if_needed` nullifier PDA that doesn't abort on a pre-existing entry, or a spent-marker checked AFTER the transfer, lets one note redeem twice). Fix: plain `init` + an explicit existence guard, checked before any payout.
+A reinitialization that overwrites a live account — matched on the PROPERTY, not one idiom. Two forms: (1) Anchor `init_if_needed` on an account holding value/authority → a 2nd call reinits, dropping balances (and the same footgun enables nullifier/spent-marker double-spend: an `init_if_needed` nullifier PDA that doesn't abort on a pre-existing entry, or a spent-marker checked AFTER the transfer, lets one note redeem twice); (2) a hand-rolled reinit — a raw `.data.borrow_mut()` / `try_borrow_mut_data()` write of the account header with no `#[account(zero)]` / discriminator / `is_initialized` guard, so a caller re-inits a live account and overwrites its stored authority (the Metaplex Candy Machine v1 config-drain). `owner == program_id` proves ownership, NOT freshness. Fix: reject a re-init before the write (check discriminator).
 
 ### SOL-011 · Lamport drain via close
 `close =` on an account not fully drained, or a close that doesn't zero data (residual reads). Fix: drain + zero + controlled destination.

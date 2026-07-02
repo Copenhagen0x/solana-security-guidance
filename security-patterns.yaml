@@ -47,10 +47,10 @@ patterns:
     reminder: "Jelleo SOL-009: `invoke_signed` CPI. Verify the CALLER has authority for this operation BEFORE the CPI — `invoke_signed` just signs with a PDA, it doesn't validate upstream authority. See: github.com/Copenhagen0x/solana-security-standard#sol-009."
 
   - rule_name: sol_010_init_if_needed
-    substrings: ["init_if_needed"]
+    substrings: ["init_if_needed", ".data.borrow_mut()", "try_borrow_mut_data"]
     paths: ["**/*.rs"]
     exclude_paths: ["**/tests/**"]
-    reminder: "Jelleo SOL-010: init_if_needed enables reinit attacks. If the account holds value or grants authority, a second call can drop balances. Use plain `init` with explicit existence checks unless reinit is truly required. See: github.com/Copenhagen0x/solana-security-standard#sol-010."
+    reminder: "Jelleo SOL-010: reinitialization / account takeover — matched on the PROPERTY, not one idiom. Fires on Anchor `init_if_needed` AND on a hand-rolled reinit: a raw account-header write via `.data.borrow_mut()` / `try_borrow_mut_data()`. If a permissionless handler (re)writes an account WITHOUT first proving it is FRESH (8-byte discriminator all-zero, `is_initialized == false`, or `#[account(zero)]`), a second call re-inits a LIVE account: the caller-chosen authority/owner overwrites the stored one, and a downstream `has_one = authority` instruction (withdraw/close) then trusts the attacker -> takeover -> drain. `owner == program_id` proves ownership, NOT freshness. SAFE form: read `data[0..8] != [0;8]` and reject an already-initialized account (Orca `initialize_dynamic_tick_array`), or plain `init` / `#[account(zero)]` + an existence guard checked before any payout. Real incident: Metaplex Candy Machine v1 config-drain. See: github.com/Copenhagen0x/solana-security-standard#sol-010."
 
   - rule_name: sol_011_close_attr
     regex: "#\\[account\\((?:[^)(]|\\((?:[^)(]|\\([^)(]{0,100}\\)){0,150}\\)){0,300}close\\s*="

@@ -77,10 +77,10 @@
     },
     "SOL-010": {
       "tier": "high", "severity": "high",
-      "reachability": "the init_if_needed account that holds value or authority (re-init drops it)",
+      "reachability": "the reinit site — an init_if_needed account, OR a raw account-header write (.data.borrow_mut() / try_borrow_mut_data) — that holds value or authority (re-init drops/overwrites it)",
       "exclusions": [
         "the account holds no lamports, token balances, authority keys, OR access-gating state that a second initialization could reset — access-gating state includes (non-exhaustively) a timestamp / nonce / status used as a lock, AND any field that controls subsequent PDA derivation, account creation, or role assignment",
-        "an explicit already-initialized guard rejects a second initialization",
+        "an explicit already-initialized guard REJECTS a second initialization before any write — for a hand-rolled `.data.borrow_mut()`/`try_borrow_mut_data` write the 8-byte discriminator is asserted all-zero (`data[0..8] == [0;8]`) or an `is_initialized`/version flag asserted false and the handler returns Err when already set (Orca `initialize_dynamic_tick_array`), for Anchor it is plain `init` / `#[account(zero)]`; a bare `.data.borrow_mut()` that only writes a data region of an already-type-validated account (discriminator/authority untouched) also clears this",
         "the value-moving path is gated by a nullifier/spent-marker created with plain `init` so a duplicate redemption ABORTS AT ACCOUNT CREATION before any payout - NOT a mutable boolean flag in an existing account (a flag a reset/reinit path can re-open does NOT clear this rule)"
       ]
     },

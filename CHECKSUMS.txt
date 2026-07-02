@@ -2,6 +2,6 @@
 # Verify a download:  sha256sum -c CHECKSUMS.txt  (Linux)  or  shasum -a 256 -c CHECKSUMS.txt  (macOS)
 # Regenerate:         node scripts/checksums.js
 # Hashes are over LF-normalized bytes (what GitHub serves).
-1bdc8b4656a2e19fda43516aa51639a20a31b4be997670537bdc5bbc58306b67  plugin-guidance.md
-cb048c61016a686bdcbe7b515b27fa055066a7105fee22b7a113b9bfc06b4e6c  security-patterns.yaml
-66782480fd56353683bdfbf94b47338ffcae591ccad4695322950a4025d98c34  semgrep/solana-security-standard.yaml
+00d5ec437ad2a89e0689f8b8a5921cbc900b86242d663448b74c600e562e8a04  plugin-guidance.md
+aeb2d09a57001c45d6aaf51ebbcf924ec8184edf2e8bf4107bb5181456019940  security-patterns.yaml
+babf91199fa640b024edc6cf1f89ea82204a0d91d2141b8afda0abe0d347d02e  semgrep/solana-security-standard.yaml

@@ -23,7 +23,7 @@ Critical first: SOL-001, 003, 004, 021, 023, 024, 015, 006/007, 014, 019, 032, 0
 - **SOL-007** · Missing owner verification — check owner first
 - **SOL-008** · Unverified PDA — derive and compare
 - **SOL-009** · CPI without authority check — check authority before the CPI
-- **SOL-010** · Reinit attack — plain `init` + an explicit existence guard, checked before any payout
+- **SOL-010** · Reinit attack — reject a re-init before the write (check discriminator)
 - **SOL-011** · Lamport drain via close — drain + zero + controlled destination
 - **SOL-012** · Rent exemption check missing — assert rent-exempt
 - **SOL-013** · Token Program ID confusion — `anchor_spl::token::ID` via typed accounts

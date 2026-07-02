@@ -111,7 +111,9 @@
     {
       "rule_name": "sol_010_init_if_needed",
       "substrings": [
-        "init_if_needed"
+        "init_if_needed",
+        ".data.borrow_mut()",
+        "try_borrow_mut_data"
       ],
       "paths": [
         "**/*.rs"
@@ -119,12 +121,12 @@
       "exclude_paths": [
         "**/tests/**"
       ],
-      "reminder": "Jelleo SOL-010: init_if_needed enables reinit attacks. If the account holds value or grants authority, a second call can drop balances. Use plain `init` with explicit existence checks unless reinit is truly required. See: github.com/Copenhagen0x/solana-security-standard#sol-010.",
+      "reminder": "Jelleo SOL-010: reinitialization / account takeover — matched on the PROPERTY, not one idiom. Fires on Anchor `init_if_needed` AND on a hand-rolled reinit: a raw account-header write via `.data.borrow_mut()` / `try_borrow_mut_data()`. If a permissionless handler (re)writes an account WITHOUT first proving it is FRESH (8-byte discriminator all-zero, `is_initialized == false`, or `#[account(zero)]`), a second call re-inits a LIVE account: the caller-chosen authority/owner overwrites the stored one, and a downstream `has_one = authority` instruction (withdraw/close) then trusts the attacker -> takeover -> drain. `owner == program_id` proves ownership, NOT freshness. SAFE form: read `data[0..8] != [0;8]` and reject an already-initialized account (Orca `initialize_dynamic_tick_array`), or plain `init` / `#[account(zero)]` + an existence guard checked before any payout. Real incident: Metaplex Candy Machine v1 config-drain. See: github.com/Copenhagen0x/solana-security-standard#sol-010.",
       "tier": "high",
       "severity": "high",
       "exclusions": [
         "the account holds no lamports, token balances, authority keys, OR access-gating state that a second initialization could reset — access-gating state includes (non-exhaustively) a timestamp / nonce / status used as a lock, AND any field that controls subsequent PDA derivation, account creation, or role assignment",
-        "an explicit already-initialized guard rejects a second initialization",
+        "an explicit already-initialized guard REJECTS a second initialization before any write — for a hand-rolled `.data.borrow_mut()`/`try_borrow_mut_data` write the 8-byte discriminator is asserted all-zero (`data[0..8] == [0;8]`) or an `is_initialized`/version flag asserted false and the handler returns Err when already set (Orca `initialize_dynamic_tick_array`), for Anchor it is plain `init` / `#[account(zero)]`; a bare `.data.borrow_mut()` that only writes a data region of an already-type-validated account (discriminator/authority untouched) also clears this",
         "the value-moving path is gated by a nullifier/spent-marker created with plain `init` so a duplicate redemption ABORTS AT ACCOUNT CREATION before any payout - NOT a mutable boolean flag in an existing account (a flag a reset/reinit path can re-open does NOT clear this rule)"
       ]
     },
